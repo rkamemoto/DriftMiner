@@ -35,6 +35,15 @@ const revealedTiles = new Set();
 const OPEN_VISIBILITY_RADIUS = 2;
 const FLARE_VISIBILITY_RADIUS = 5;
 const MONSTER_SPAWN_INTERVAL = 150;
+const MAX_MONSTERS = 4;
+const MONSTER_ATTACK_COOLDOWN = 1.15;
+const MONSTER_REPATH_INTERVAL = 0.45;
+const MONSTER_HP_PER_LEVEL = 14;
+const MONSTER_BASE_ATTACK_DAMAGE = 4;
+const MONSTER_ATTACK_DAMAGE_PER_LEVEL = 4;
+const HELPER_SPEED_MULTIPLIER = 0.25;
+const BLASTER_MONSTER_DAMAGE_MULTIPLIER = 1.4;
+const BLASTER_BLOCK_DAMAGE_MULTIPLIER = 0.1;
 
 const resourceColors = {
   copper: "#cf7a43",
@@ -333,21 +342,52 @@ function updateMonsters(dt) {
 
   for (const monster of monsters) {
     monster.hitFlash = Math.max(0, monster.hitFlash - dt);
+    monster.attackFlash = Math.max(0, monster.attackFlash - dt);
+    monster.attackCooldown = Math.max(0, monster.attackCooldown - dt);
+    monster.repathTimer = Math.max(0, monster.repathTimer - dt);
     const dx = miner.x - monster.x;
     const dy = miner.y - monster.y;
     const distance = Math.hypot(dx, dy);
-    if (distance > 1) {
-      const speed = 34 + monster.level * 3;
-      monster.x += (dx / distance) * speed * dt;
-      monster.y += (dy / distance) * speed * dt;
+    followMonsterPath(monster, dt);
+    if (distance <= monster.radius + miner.radius + 3) {
+      attackMiner(monster, dx, dy, distance);
     }
   }
 }
 
 function spawnMonster() {
-  const openTiles = [];
+  if (monsters.length >= MAX_MONSTERS) return;
+
+  const openTiles = getMonsterSpawnTiles();
+  if (openTiles.length === 0) return;
+
+  const spawnTile = openTiles[Math.floor(Math.random() * openTiles.length)];
+  const level = getMonsterLevel(spawnTile.y);
+  const maxHp = getMonsterMaxHp(level);
+  monsters.push({
+    x: spawnTile.x * TILE + TILE / 2,
+    y: spawnTile.y * TILE + TILE / 2,
+    radius: 11,
+    level,
+    hp: maxHp,
+    maxHp,
+    hitFlash: 0,
+    attackFlash: 0,
+    attackCooldown: 1,
+    path: [],
+    pathTarget: null,
+    repathTimer: 0,
+  });
+  setMessage(`Level ${level} monster detected.`);
+}
+
+function getMonsterSpawnTiles() {
   const minerTile = { x: Math.floor(miner.x / TILE), y: Math.floor(miner.y / TILE) };
-  for (let y = SURFACE_ROWS; y < ROWS; y++) {
+  const deepestDugY = getDeepestDugY();
+  const minY = Math.max(SURFACE_ROWS, deepestDugY - 2);
+  const openTiles = [];
+
+  for (let y = deepestDugY; y >= minY; y--) {
     for (let x = 0; x < COLS; x++) {
       if (!isOpenTile(x, y)) continue;
       if (Math.hypot(x - minerTile.x, y - minerTile.y) < 8) continue;
@@ -355,19 +395,17 @@ function spawnMonster() {
     }
   }
 
-  const spawnTile = openTiles[Math.floor(Math.random() * openTiles.length)] ?? getNearestOpenTile({ x: 15, y: SURFACE_ROWS - 1 });
-  if (!spawnTile) return;
-  const level = getMonsterLevel(spawnTile.y);
-  monsters.push({
-    x: spawnTile.x * TILE + TILE / 2,
-    y: spawnTile.y * TILE + TILE / 2,
-    radius: 11,
-    level,
-    hp: level * 10,
-    maxHp: level * 10,
-    hitFlash: 0,
-  });
-  setMessage(`Level ${level} monster detected.`);
+  return openTiles;
+}
+
+function getDeepestDugY() {
+  let deepest = SURFACE_ROWS - 1;
+  for (let y = SURFACE_ROWS; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      if (isOpenTile(x, y)) deepest = y;
+    }
+  }
+  return deepest;
 }
 
 function getMonsterLevel(tileY) {
@@ -376,6 +414,171 @@ function getMonsterLevel(tileY) {
     if (tileY >= blockDefs[i].depth) level = i + 1;
   }
   return level;
+}
+
+function getMonsterMaxHp(level) {
+  return level * MONSTER_HP_PER_LEVEL;
+}
+
+function attackMiner(monster, dx, dy, distance) {
+  if (monster.attackCooldown > 0) return;
+
+  monster.attackCooldown = MONSTER_ATTACK_COOLDOWN;
+  monster.attackFlash = 0.18;
+  miner.health = Math.max(0, miner.health - (MONSTER_BASE_ATTACK_DAMAGE + monster.level * MONSTER_ATTACK_DAMAGE_PER_LEVEL));
+
+  const force = distance || 1;
+  const knockback = 12 + monster.level * 2;
+  moveIfOpen(
+    clamp(miner.x + (dx / force) * knockback, miner.radius, COLS * TILE - miner.radius),
+    clamp(miner.y + (dy / force) * knockback, miner.radius, ROWS * TILE - miner.radius),
+  );
+  bounceMonsterFromMiner(monster, dx, dy, force);
+
+  setMessage(miner.health <= 0 ? "Drill disabled. Return to base." : "Monster damaged the drill.");
+}
+
+function bounceMonsterFromMiner(monster, dx, dy, force) {
+  const bounce = 22 + monster.level * 3;
+  const nextX = clamp(monster.x - (dx / force) * bounce, monster.radius, COLS * TILE - monster.radius);
+  const nextY = clamp(monster.y - (dy / force) * bounce, monster.radius, ROWS * TILE - monster.radius);
+
+  if (!isMonsterBlockedAt(monster, nextX, nextY)) {
+    monster.x = nextX;
+    monster.y = nextY;
+  } else if (!isMonsterBlockedAt(monster, nextX, monster.y)) {
+    monster.x = nextX;
+  } else if (!isMonsterBlockedAt(monster, monster.x, nextY)) {
+    monster.y = nextY;
+  }
+
+  monster.path = [];
+  monster.repathTimer = 0;
+}
+
+function followMonsterPath(monster, dt) {
+  if (monster.repathTimer <= 0) {
+    setMonsterPath(monster);
+  }
+
+  if (monster.path.length === 0) return;
+
+  const target = getMonsterStepTarget(monster);
+  if (!target) return;
+
+  moveMonsterToward(monster, target.x, target.y, dt);
+  if (Math.hypot(monster.x - target.x, monster.y - target.y) < 3 && target.pathTile) {
+    monster.path.shift();
+  }
+}
+
+function setMonsterPath(monster) {
+  monster.repathTimer = MONSTER_REPATH_INTERVAL + Math.random() * 0.2;
+  const start = getNearestOpenTile(getMonsterTile(monster), 3);
+  const target = getNearestReachableMinerTile(start);
+  monster.pathTarget = target ? { x: target.x, y: target.y } : null;
+  monster.path = start && target ? findOpenPath(start, target) : [];
+
+  if (!start) return;
+
+  const currentTile = getMonsterTile(monster);
+  if (!isOpenTile(currentTile.x, currentTile.y)) {
+    monster.x = start.x * TILE + TILE / 2;
+    monster.y = start.y * TILE + TILE / 2;
+    return;
+  }
+
+  const centerX = start.x * TILE + TILE / 2;
+  const centerY = start.y * TILE + TILE / 2;
+  if (Math.hypot(monster.x - centerX, monster.y - centerY) > 3) {
+    monster.path.unshift({ x: start.x, y: start.y });
+  }
+}
+
+function getMonsterStepTarget(monster) {
+  const currentTile = getMonsterTile(monster);
+  const currentCenter = {
+    x: currentTile.x * TILE + TILE / 2,
+    y: currentTile.y * TILE + TILE / 2,
+  };
+  const next = monster.path[0];
+  if (!next) return null;
+
+  if (next.x === currentTile.x && next.y === currentTile.y) {
+    return { ...currentCenter, pathTile: true };
+  }
+
+  if (Math.hypot(monster.x - currentCenter.x, monster.y - currentCenter.y) > 3) {
+    return { ...currentCenter, pathTile: false };
+  }
+
+  return {
+    x: next.x * TILE + TILE / 2,
+    y: next.y * TILE + TILE / 2,
+    pathTile: true,
+  };
+}
+
+function getNearestReachableMinerTile(start) {
+  if (!start) return null;
+  return getNearestReachableTile(start, {
+    x: Math.floor(miner.x / TILE),
+    y: Math.floor(miner.y / TILE),
+  });
+}
+
+function moveMonsterToward(monster, x, y, dt) {
+  const dx = x - monster.x;
+  const dy = y - monster.y;
+  const distance = Math.hypot(dx, dy);
+  if (distance < 1) return;
+
+  const speed = 34 + monster.level * 3;
+  const step = Math.min(distance, speed * dt);
+  const nextX = monster.x + (dx / distance) * step;
+  const nextY = monster.y + (dy / distance) * step;
+
+  if (!isMonsterBlockedAt(monster, nextX, nextY)) {
+    monster.x = nextX;
+    monster.y = nextY;
+  } else if (Math.abs(dx) > Math.abs(dy) && !isMonsterBlockedAt(monster, nextX, monster.y)) {
+    monster.x = nextX;
+  } else if (!isMonsterBlockedAt(monster, monster.x, nextY)) {
+    monster.y = nextY;
+  } else {
+    centerMonsterInOpenTile(monster);
+    monster.path = [];
+    monster.repathTimer = 0;
+  }
+}
+
+function centerMonsterInOpenTile(monster) {
+  const tile = getNearestOpenTile(getMonsterTile(monster), 2);
+  if (!tile) return;
+  monster.x = tile.x * TILE + TILE / 2;
+  monster.y = tile.y * TILE + TILE / 2;
+}
+
+function isMonsterBlockedAt(monster, x, y) {
+  const checks = [
+    [x - monster.radius, y - monster.radius],
+    [x + monster.radius, y - monster.radius],
+    [x - monster.radius, y + monster.radius],
+    [x + monster.radius, y + monster.radius],
+  ];
+
+  return checks.some(([px, py]) => {
+    const tx = Math.floor(px / TILE);
+    const ty = Math.floor(py / TILE);
+    return !isOpenTile(tx, ty);
+  });
+}
+
+function getMonsterTile(monster) {
+  return {
+    x: Math.floor(monster.x / TILE),
+    y: Math.floor(monster.y / TILE),
+  };
 }
 
 function updateExplosions(dt) {
@@ -435,7 +638,7 @@ function fireBlaster() {
 function updateBlastHit(blast) {
   const monster = findMonsterAt(blast.x, blast.y);
   if (monster) {
-    damageMonster(monster, miner.power * getDamageMultiplier() * 0.1);
+    damageMonster(monster, LEVEL_ONE_DRILL_DAMAGE * BLASTER_MONSTER_DAMAGE_MULTIPLIER);
     return true;
   }
 
@@ -444,7 +647,7 @@ function updateBlastHit(blast) {
   const tile = world[y]?.[x];
   if (!tile) return false;
 
-  tile.hp -= miner.power * getDamageMultiplier() * 0.1;
+  tile.hp -= miner.power * getDamageMultiplier() * BLASTER_BLOCK_DAMAGE_MULTIPLIER;
   tile.hitFlash = 0.12;
   if (tile.hp <= 0) breakTile(x, y, tile);
   return true;
@@ -505,7 +708,7 @@ function moveMouseToward(x, y, dt) {
   const distance = Math.hypot(dx, dy);
   if (distance < 1) return;
 
-  const speed = LEVEL_ONE_SPEED * 0.5;
+  const speed = LEVEL_ONE_SPEED * HELPER_SPEED_MULTIPLIER;
   const step = Math.min(distance, speed * dt);
   mouseHelper.x += (dx / distance) * step;
   mouseHelper.y += (dy / distance) * step;
@@ -635,7 +838,7 @@ function moveDogToward(x, y, dt) {
   const distance = Math.hypot(dx, dy);
   if (distance < 1) return;
 
-  const speed = LEVEL_ONE_SPEED * 0.5;
+  const speed = LEVEL_ONE_SPEED * HELPER_SPEED_MULTIPLIER;
   const step = Math.min(distance, speed * dt);
   dogHelper.x += (dx / distance) * step;
   dogHelper.y += (dy / distance) * step;
@@ -813,8 +1016,10 @@ function moveMiner(dx, dy, dt) {
   const nextY = clamp(miner.y + dy, miner.radius, ROWS * TILE - miner.radius);
   const monster = findMonsterAt(nextX, nextY, miner.radius);
   if (monster) {
-    drillMonster(monster);
-    applyDrillBounce(dx, dy);
+    if (Math.hypot(dx, dy) > 0.05) {
+      drillMonster(monster);
+      applyDrillBounce(dx, dy);
+    }
     return;
   }
   const hit = findCollision(nextX, nextY);
@@ -879,8 +1084,23 @@ function damageMonster(monster, amount) {
   if (monster.hp <= 0) {
     const index = monsters.indexOf(monster);
     if (index >= 0) monsters.splice(index, 1);
+    dropMonsterLoot(monster);
     setMessage("Monster defeated.");
   }
+}
+
+function dropMonsterLoot(monster) {
+  const type = getMonsterDropType(monster.level);
+  const tileX = Math.floor(monster.x / TILE);
+  const tileY = Math.floor(monster.y / TILE);
+  dropResource(type, tileX, tileY, 1 + Math.floor(monster.level / 2));
+}
+
+function getMonsterDropType(level) {
+  if (level >= 4) return "diamond";
+  if (level >= 3) return "gold";
+  if (level >= 2) return "silver";
+  return "copper";
 }
 
 function findCollision(x, y) {
@@ -979,8 +1199,7 @@ function collectPickups() {
 }
 
 function handleBase(dt) {
-  const onPad = miner.y < SURFACE_ROWS * TILE && miner.x > 11 * TILE && miner.x < 19 * TILE;
-  if (!onPad) return;
+  if (!isMinerAtBase()) return;
 
   if (carried > 0) {
     const secured = carried;
@@ -997,7 +1216,16 @@ function handleBase(dt) {
   }
 }
 
+function isMinerAtBase() {
+  return miner.y < SURFACE_ROWS * TILE && miner.x > 11 * TILE && miner.x < 19 * TILE;
+}
+
 function buyUpgrade(type) {
+  if (!isMinerAtBase()) {
+    setMessage("Return to base to install upgrades.");
+    return;
+  }
+
   const recipe = getUpgradeRecipe(type);
   if (!canAfford(recipe)) {
     setMessage(`Need ${formatRecipe(recipe)} for ${upgradeDefs[type].label}.`);
@@ -1066,6 +1294,10 @@ function getSpeedMultiplier() {
 
 function repairDrill() {
   const recipe = getRepairRecipe();
+  if (!isMinerAtBase()) {
+    setMessage("Return to base to repair the drill.");
+    return;
+  }
   if (miner.health >= miner.maxHealth) {
     setMessage("Drill is already fully repaired.");
     return;
@@ -1331,7 +1563,7 @@ function drawMonsters() {
     const x = monster.x - camera.x;
     const y = monster.y - camera.y;
     const flash = monster.hitFlash > 0;
-    ctx.fillStyle = flash ? "#fff0b8" : "#c44d5c";
+    ctx.fillStyle = monster.attackFlash > 0 ? "#ff9b4f" : flash ? "#fff0b8" : "#c44d5c";
     ctx.beginPath();
     ctx.arc(x, y, monster.radius, 0, Math.PI * 2);
     ctx.fill();
@@ -1404,15 +1636,54 @@ function drawPickups() {
     ctx.beginPath();
     ctx.ellipse(x, y + 9, 9, 3, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = resourceColors[pickup.type] ?? "#ffffff";
-    ctx.beginPath();
-    ctx.arc(x, y, 7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
-    ctx.beginPath();
-    ctx.arc(x - 2, y - 3, 2, 0, Math.PI * 2);
-    ctx.fill();
+    drawOrePickup(x, y, pickup.type);
   }
+}
+
+function drawOrePickup(x, y, type) {
+  const color = resourceColors[type] ?? "#ffffff";
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(Math.sin(performance.now() / 300 + x) * 0.12);
+  ctx.fillStyle = "#2a2522";
+  ctx.beginPath();
+  ctx.moveTo(-8, -2);
+  ctx.lineTo(-3, -8);
+  ctx.lineTo(6, -6);
+  ctx.lineTo(9, 1);
+  ctx.lineTo(4, 8);
+  ctx.lineTo(-6, 6);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(-5, -3);
+  ctx.lineTo(-1, -6);
+  ctx.lineTo(5, -4);
+  ctx.lineTo(7, 1);
+  ctx.lineTo(2, 5);
+  ctx.lineTo(-5, 4);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.42)";
+  ctx.beginPath();
+  ctx.moveTo(-1, -6);
+  ctx.lineTo(5, -4);
+  ctx.lineTo(1, -1);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-5, 4);
+  ctx.lineTo(1, -1);
+  ctx.lineTo(7, 1);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawMiner() {
@@ -1511,6 +1782,7 @@ function drawVignette() {
 }
 
 function updateHud() {
+  const atBase = isMinerAtBase();
   document.querySelector("#depthStat").textContent = `${Math.max(0, Math.floor((miner.y - SURFACE_ROWS * TILE) / TILE))}m`;
   document.querySelector("#cargoStat").textContent = `${carried} / ${miner.capacity}`;
   document.querySelector("#healthStat").textContent = `${Math.round(100 - (miner.health / miner.maxHealth) * 100)}%`;
@@ -1519,14 +1791,16 @@ function updateHud() {
   for (const type of Object.keys(upgradeDefs)) {
     const recipe = getUpgradeRecipe(type);
     const button = document.querySelector(`[data-upgrade="${type}"]`);
-    document.querySelector(`#${type}Cost`).textContent = `Lv ${miner.upgrades[type] + 1}: ${formatRecipe(recipe)}`;
-    button.disabled = !canAfford(recipe);
+    const cost = `Lv ${miner.upgrades[type] + 1}: ${formatRecipe(recipe)}`;
+    document.querySelector(`#${type}Cost`).textContent = atBase ? cost : `Base: ${cost}`;
+    button.disabled = !atBase || !canAfford(recipe);
   }
 
   const repairRecipe = getRepairRecipe();
   const repairButton = document.querySelector("[data-repair='drill']");
-  document.querySelector("#repairCost").textContent = formatRecipe(repairRecipe);
-  repairButton.disabled = miner.health >= miner.maxHealth || !canAfford(repairRecipe);
+  const repairCost = formatRecipe(repairRecipe);
+  document.querySelector("#repairCost").textContent = atBase ? repairCost : `Base: ${repairCost}`;
+  repairButton.disabled = !atBase || miner.health >= miner.maxHealth || !canAfford(repairRecipe);
 
   updateRelicHud("impact");
   updateRelicHud("speed");
