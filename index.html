@@ -23,18 +23,75 @@
             <strong id="cargoStat">0 / 6</strong>
           </div>
           <div>
-            <span>Drill Damage</span>
-            <strong id="healthStat">0%</strong>
+            <span>Hull Integrity</span>
+            <strong id="healthStat">100 / 100</strong>
           </div>
           <div>
             <span>Upgrades</span>
             <strong id="upgradeStat">0</strong>
+          </div>
+          <div>
+            <span>Time</span>
+            <strong id="timeStat">0:00</strong>
+          </div>
+          <div>
+            <span>Base</span>
+            <strong id="baseStat">200 / 200</strong>
+            <small id="baseWarning" hidden>UNDER ATTACK</small>
           </div>
         </div>
       </section>
 
       <section class="play-area" aria-label="Mining game">
         <canvas id="gameCanvas" width="960" height="640"></canvas>
+        <div class="start-overlay" id="startOverlay">
+          <div class="start-panel">
+            <p class="eyebrow">Planetfall</p>
+            <h2>Select World Size</h2>
+            <label for="startWorldSizeSelect">Area size</label>
+            <select id="startWorldSizeSelect">
+              <option value="small">Small - 30 x 80</option>
+              <option value="medium">Medium - 50 x 160</option>
+              <option value="large">Large - 80 x 300</option>
+            </select>
+            <div class="intro-copy">
+              <p>You descend through the violet storm clouds of an unknown world, your ship shuddering as it breaks into the lower atmosphere. For weeks, the signal has led you across dead sectors, ruined moons, and forgotten star lanes. Now, at last, the beacon is clear—steady, deliberate, and impossibly old.</p>
+              <p>This planet should not be here. No maps name it. No records mention it. Yet somewhere beneath its alien surface may lie the lost relic of Galactica Antares, a legendary artifact said to hold the final memory of a vanished civilization.</p>
+              <p>You have landed with little more than hope, fading fuel, and one question burning in your mind: is the relic truly here… or has something been waiting for you to answer its call?</p>
+            </div>
+            <button type="button" id="startGameButton">OK</button>
+          </div>
+        </div>
+        <div class="game-over-overlay" id="gameOverOverlay" hidden>
+          <div class="game-over-panel">
+            <p>Cargo lost</p>
+            <h2>Hull Breached!</h2>
+            <strong id="breachCountdown">10s</strong>
+            <button type="button" id="restartButton" hidden>Restart</button>
+          </div>
+        </div>
+        <div class="pause-overlay" id="pauseOverlay" hidden>
+          <div class="pause-panel">
+            <p>Systems paused</p>
+            <h2>Paused</h2>
+            <button type="button" id="resumeButton">Resume</button>
+          </div>
+        </div>
+        <div class="treasure-bubble" id="treasureBubble" hidden>
+          <button type="button" id="treasureBubbleClose" aria-label="Close treasure instructions">x</button>
+          <p>You've found the ancient treasure! You are unable to open it here due to the intricate lock on its face. You may need to bring it back to base to examine it more closely.</p>
+          <strong>Click or E to pick it up. Hit E to drop the chest.</strong>
+        </div>
+        <div class="relic-toast" id="relicToast" role="status" aria-live="polite" hidden>
+          <span>Relic recovered</span>
+          <strong id="relicToastTitle"></strong>
+          <p id="relicToastDescription"></p>
+        </div>
+        <div class="room-toast" id="roomToast" role="status" aria-live="polite" hidden>
+          <span id="roomToastKicker">Special room</span>
+          <strong id="roomToastTitle"></strong>
+          <p id="roomToastDescription"></p>
+        </div>
         <aside class="panel">
           <div class="panel-section">
             <h2>Upgrades</h2>
@@ -50,42 +107,70 @@
               <span>Cargo Bay</span>
               <strong id="capacityCost">30c</strong>
             </button>
-            <button class="upgrade" data-repair="drill">
-              <span>Repair Drill</span>
-              <strong id="repairCost">3 copper</strong>
+            <button class="upgrade" data-upgrade="hardening">
+              <span>Hull Hardening</span>
+              <strong id="hardeningCost">25c</strong>
+            </button>
+            <button class="upgrade" data-repair-base>
+              <span>Repair Base</span>
+              <strong id="baseRepairCost">2 carapace</strong>
             </button>
           </div>
 
           <div class="panel-section" id="relicPanel" hidden>
             <h2>Relics</h2>
-            <button class="upgrade relic-control" data-relic="impact">
-              <span>Impact Drill</span>
-              <strong id="impactStatus">Locked</strong>
-            </button>
-            <button class="upgrade relic-control" data-relic="speed">
-              <span>Speed Burst</span>
-              <strong id="speedStatus">Locked</strong>
-            </button>
-            <button class="upgrade relic-control" data-relic="flare">
-              <span>Flare</span>
-              <strong id="flareStatus">Locked</strong>
-            </button>
-            <button class="upgrade relic-control" data-relic="blaster">
-              <span>Blaster</span>
-              <strong id="blasterStatus">Locked</strong>
-            </button>
-            <button class="upgrade relic-control" data-relic="bomb">
-              <span>Bomb</span>
-              <strong id="bombStatus">Locked</strong>
-            </button>
-            <button class="upgrade relic-control" data-relic="mouse">
-              <span>Mouse</span>
-              <strong id="mouseStatus">Locked</strong>
-            </button>
-            <button class="upgrade relic-control" data-relic="dog">
-              <span>Dog</span>
-              <strong id="dogStatus">Locked</strong>
-            </button>
+            <div class="relic-row" data-relic-row="impact" hidden>
+              <button class="upgrade relic-control" data-relic="impact"><span>Impact Drill</span><strong id="impactStatus">Locked</strong></button>
+              <button class="relic-upgrade-segment" data-relic-upgrade="impact"><strong id="impactUpgradeCost">Locked</strong></button>
+            </div>
+            <div class="relic-row" data-relic-row="speed" hidden>
+              <button class="upgrade relic-control" data-relic="speed"><span>Speed Burst</span><strong id="speedStatus">Locked</strong></button>
+              <button class="relic-upgrade-segment" data-relic-upgrade="speed"><strong id="speedUpgradeCost">Locked</strong></button>
+            </div>
+            <div class="relic-row" data-relic-row="flare" hidden>
+              <button class="upgrade relic-control" data-relic="flare"><span>Flare</span><strong id="flareStatus">Locked</strong></button>
+              <button class="relic-upgrade-segment" data-relic-upgrade="flare"><strong id="flareUpgradeCost">Locked</strong></button>
+            </div>
+            <div class="relic-row" data-relic-row="blaster" hidden>
+              <button class="upgrade relic-control" data-relic="blaster"><span>Blaster</span><strong id="blasterStatus">Locked</strong></button>
+              <button class="relic-upgrade-segment" data-relic-upgrade="blaster"><strong id="blasterUpgradeCost">Locked</strong></button>
+            </div>
+            <div class="relic-row" data-relic-row="bomb" hidden>
+              <button class="upgrade relic-control" data-relic="bomb"><span>Bomb</span><strong id="bombStatus">Locked</strong></button>
+              <button class="relic-upgrade-segment" data-relic-upgrade="bomb"><strong id="bombUpgradeCost">Locked</strong></button>
+            </div>
+            <div class="relic-row" data-relic-row="mouse" hidden>
+              <button class="upgrade relic-control" data-relic="mouse"><span>Mouse</span><strong id="mouseStatus">Locked</strong></button>
+              <button class="relic-upgrade-segment" data-relic-upgrade="mouse"><strong id="mouseUpgradeCost">Locked</strong></button>
+            </div>
+            <div class="relic-row" data-relic-row="dog" hidden>
+              <button class="upgrade relic-control" data-relic="dog"><span>Dog</span><strong id="dogStatus">Locked</strong></button>
+              <button class="relic-upgrade-segment" data-relic-upgrade="dog"><strong id="dogUpgradeCost">Locked</strong></button>
+            </div>
+            <div class="relic-row" data-relic-row="radiation" hidden>
+              <button class="upgrade relic-control" data-relic="radiation"><span>Radiation</span><strong id="radiationStatus">Locked</strong></button>
+              <button class="relic-upgrade-segment" data-relic-upgrade="radiation"><strong id="radiationUpgradeCost">Locked</strong></button>
+            </div>
+            <div class="relic-row" data-relic-row="rocket" hidden>
+              <button class="upgrade relic-control" data-relic="rocket"><span>Rocket Launcher</span><strong id="rocketStatus">Locked</strong></button>
+              <button class="relic-upgrade-segment" data-relic-upgrade="rocket"><strong id="rocketUpgradeCost">Locked</strong></button>
+            </div>
+            <div class="relic-row" data-relic-row="magnet" hidden>
+              <button class="upgrade relic-control" data-relic="magnet"><span>Magnet</span><strong id="magnetStatus">Locked</strong></button>
+              <button class="relic-upgrade-segment" data-relic-upgrade="magnet"><strong id="magnetUpgradeCost">Locked</strong></button>
+            </div>
+            <div class="relic-row" data-relic-row="thirdEye" hidden>
+              <button class="upgrade relic-control" data-relic="thirdEye"><span>3rd Eye</span><strong id="thirdEyeStatus">Locked</strong></button>
+              <button class="relic-upgrade-segment" data-relic-upgrade="thirdEye"><strong id="thirdEyeUpgradeCost">Locked</strong></button>
+            </div>
+            <div class="relic-row" data-relic-row="laserSword" hidden>
+              <button class="upgrade relic-control" data-relic="laserSword"><span>Laser Sword</span><strong id="laserSwordStatus">Locked</strong></button>
+              <button class="relic-upgrade-segment" data-relic-upgrade="laserSword"><strong id="laserSwordUpgradeCost">Locked</strong></button>
+            </div>
+            <div class="relic-row" data-relic-row="converter" hidden>
+              <button class="upgrade relic-control" data-relic="converter"><span>Resource Converter</span><strong id="converterStatus">Locked</strong></button>
+              <button class="relic-upgrade-segment" data-relic-upgrade="converter"><strong id="converterUpgradeCost">Locked</strong></button>
+            </div>
           </div>
 
           <div class="panel-section inventory">
@@ -97,10 +182,84 @@
             <h2>Log</h2>
             <p id="messageLog">Launch from the pad and start digging.</p>
           </div>
+
+          <div class="panel-section world-settings">
+            <h2>World</h2>
+            <label for="worldSizeSelect">Area size</label>
+            <select id="worldSizeSelect">
+              <option value="small">Small - 30 x 80</option>
+              <option value="medium">Medium - 50 x 160</option>
+              <option value="large">Large - 80 x 300</option>
+            </select>
+            <button class="upgrade" id="pauseButton">
+              <span>Pause</span>
+              <strong>P</strong>
+            </button>
+          </div>
+
+          <div class="panel-section">
+            <button class="upgrade debug-toggle" id="debugToggle">
+              <span>Debug Mode</span>
+              <strong>Off</strong>
+            </button>
+          </div>
+
+          <div class="panel-section debug-panel" id="debugPanel" hidden>
+            <h2>Debug</h2>
+            <button class="upgrade" data-debug="resources">
+              <span>Add Resources</span>
+              <strong>+50</strong>
+            </button>
+            <button class="upgrade" data-debug="repair">
+              <span>Restore Hull</span>
+              <strong>Full</strong>
+            </button>
+            <button class="upgrade" data-debug="monster">
+              <span>Spawn Monster</span>
+              <strong>Near</strong>
+            </button>
+            <button class="upgrade" data-debug="allRelics">
+              <span>Unlock All Relics</span>
+              <strong>All</strong>
+            </button>
+            <button class="upgrade" data-debug="rooms">
+              <span>Reveal Rooms</span>
+              <strong>A-F</strong>
+            </button>
+            <button class="upgrade" data-debug="map">
+              <span>Reveal Map</span>
+              <strong>All</strong>
+            </button>
+            <button class="upgrade" data-debug="zoom">
+              <span>Zoom Out</span>
+              <strong id="debugZoomStatus">16x</strong>
+            </button>
+            <div class="debug-grid" aria-label="Debug upgrades">
+              <button data-debug-upgrade="power">Power +1</button>
+              <button data-debug-upgrade="speed">Speed +1</button>
+              <button data-debug-upgrade="capacity">Cargo +1</button>
+              <button data-debug-upgrade="hardening">Hardening +1</button>
+            </div>
+            <div class="debug-grid" aria-label="Debug relics">
+              <button data-debug-relic="impact">Impact</button>
+              <button data-debug-relic="speed">Speed</button>
+              <button data-debug-relic="flare">Flare</button>
+              <button data-debug-relic="blaster">Blaster</button>
+              <button data-debug-relic="bomb">Bomb</button>
+              <button data-debug-relic="mouse">Mouse</button>
+              <button data-debug-relic="dog">Dog</button>
+              <button data-debug-relic="radiation">Radiation</button>
+              <button data-debug-relic="rocket">Rocket</button>
+              <button data-debug-relic="magnet">Magnet</button>
+              <button data-debug-relic="thirdEye">3rd Eye</button>
+              <button data-debug-relic="laserSword">Sword</button>
+              <button data-debug-relic="converter">Converter</button>
+            </div>
+          </div>
         </aside>
       </section>
     </main>
 
-    <script src="game.js"></script>
+    <script src="game.js?v=new-relics"></script>
   </body>
 </html>
