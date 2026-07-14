@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Drift Miner: Silent Vessel</title>
+    <link rel="stylesheet" href="styles.css?v=stage4-ground-move-outlines-1" />
+  </head>
+  <body class="stage-four">
+    <main class="game-shell stage-four-shell">
+      <section class="hud stage-four-hud">
+        <div class="resource-hud">
+          <p class="eyebrow">Stage 4</p>
+          <div>
+            <h1>Silent Vessel</h1>
+            <p>Enter the intact alien ship and salvage the power relic at its heart.</p>
+          </div>
+        </div>
+        <div class="s4-top-inventory">
+          <h2>Inventory</h2>
+          <div class="s4-inventory" id="s4Inventory"></div>
+          <button type="button" id="s4ClearItem" hidden>Put item away</button>
+        </div>
+        <a class="stage-link" href="index.html">Operations</a>
+      </section>
+
+      <section class="stage-four-area">
+        <div class="stage-four-board">
+          <canvas id="stageFourCanvas" width="960" height="640" aria-label="Alien airlock point and click puzzle"></canvas>
+          <div class="s4-room-title">
+            <span>Level 1</span>
+            <strong>Breached Airlock</strong>
+          </div>
+          <p class="controller-status s4-controller-status" id="s4ControllerStatus">Controller: left stick / D-pad moves cursor · A clicks · B puts item away · LB/RB cycles items</p>
+          <div class="s4-toast" id="s4Toast" hidden></div>
+        </div>
+
+        <p class="s4-log" id="s4Log" hidden>The outer hatch seals behind you. The ship is quiet, but not dead.</p>
+      </section>
+    </main>
+
+    <script src="stage4.js?v=stage4-painted-load-gate-1"></script>
+  </body>
+</html>

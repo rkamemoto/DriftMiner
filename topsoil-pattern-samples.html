@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Drift Miner Topsoil Samples</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      background: #0b1013;
+      color: #edf5f3;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #0b1013;
+    }
+
+    main {
+      width: min(1060px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 30px 0 42px;
+    }
+
+    h1, h2, p { margin: 0; }
+
+    header {
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      font-size: 26px;
+      letter-spacing: 0;
+    }
+
+    header p,
+    .copy {
+      color: #9fb0b2;
+      line-height: 1.45;
+    }
+
+    .samples {
+      display: grid;
+      gap: 12px;
+    }
+
+    article {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      align-items: center;
+      overflow: hidden;
+      border: 1px solid #2a3b40;
+      border-radius: 8px;
+      background: #121a1e;
+    }
+
+    .description {
+      padding: 18px;
+    }
+
+    h2 {
+      margin-bottom: 6px;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    .copy {
+      font-size: 13px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #0d1417;
+      image-rendering: pixelated;
+    }
+
+    @media (max-width: 680px) {
+      article {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Topsoil Pattern Variations</h1>
+      <p>Eight neighboring blocks are shown for each approach to reveal repetition.</p>
+    </header>
+
+    <section class="samples">
+      <article>
+        <div class="description">
+          <h2>A · Broken Sediment</h2>
+          <p class="copy">Short, irregular fragments at varied heights. Keeps the layered geology without continuous stripes.</p>
+        </div>
+        <canvas data-style="broken" width="800" height="156"></canvas>
+      </article>
+
+      <article>
+        <div class="description">
+          <h2>B · Mottled Earth</h2>
+          <p class="copy">Mostly clumps, grains, and small pockets. The least directional and least obviously tiled.</p>
+        </div>
+        <canvas data-style="mottled" width="800" height="156"></canvas>
+      </article>
+
+      <article>
+        <div class="description">
+          <h2>C · Mixed Sediment</h2>
+          <p class="copy">Some blocks have broken layers, some are mottled, and some have compacted diagonal fragments.</p>
+        </div>
+        <canvas data-style="mixed" width="800" height="156"></canvas>
+      </article>
+
+      <article>
+        <div class="description">
+          <h2>D · Broad Patches</h2>
+          <p class="copy">Larger, low-contrast soil pockets with sparse grains. Calmer at normal gameplay scale.</p>
+        </div>
+        <canvas data-style="patches" width="800" height="156"></canvas>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const TILE = 32;
+    const SCALE = 3;
+    const SIZE = TILE * SCALE;
+    const COLOR = "#6c5640";
+
+    function noise(a, b, seed) {
+      let value = Math.imul(a + seed * 17, 374761393) + Math.imul(b + seed * 29, 668265263);
+      value = Math.imul(value ^ (value >>> 13), 1274126177);
+      return ((value ^ (value >>> 16)) >>> 0) / 4294967295;
+    }
+
+    function shade(hex, amount) {
+      const value = parseInt(hex.slice(1), 16);
+      const r = Math.max(0, Math.min(255, (value >> 16) + amount));
+      const g = Math.max(0, Math.min(255, ((value >> 8) & 255) + amount));
+      const b = Math.max(0, Math.min(255, (value & 255) + amount));
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function base(ctx) {
+      ctx.fillStyle = COLOR;
+      ctx.fillRect(0, 0, TILE, TILE);
+      ctx.fillStyle = "rgba(255,255,255,0.035)";
+      ctx.fillRect(1, 1, TILE - 2, 1);
+      ctx.strokeStyle = "rgba(0,0,0,0.34)";
+      ctx.strokeRect(0.5, 0.5, TILE - 1, TILE - 1);
+    }
+
+    function grains(ctx, seed, count = 7, brightness = 13) {
+      ctx.fillStyle = shade(COLOR, brightness);
+      for (let i = 0; i < count; i++) {
+        const x = 3 + Math.floor(noise(i, seed, 4) * 26);
+        const y = 3 + Math.floor(noise(i, seed, 5) * 26);
+        ctx.fillRect(x, y, i % 4 === 0 ? 2 : 1, 1);
+      }
+    }
+
+    function broken(ctx, seed, darkness = -12, brightness = 13) {
+      ctx.fillStyle = shade(COLOR, darkness);
+      const count = 4 + Math.floor(noise(seed, 1, 8) * 3);
+      for (let i = 0; i < count; i++) {
+        const x = 2 + Math.floor(noise(i, seed, 9) * 23);
+        const y = 4 + Math.floor(noise(i, seed, 10) * 24);
+        const width = 3 + Math.floor(noise(i, seed, 11) * 7);
+        ctx.fillRect(x, y, Math.min(width, 30 - x), 1);
+      }
+      grains(ctx, seed, 7, brightness);
+    }
+
+    function mottled(ctx, seed, darkness = -14, brightness = 13) {
+      ctx.fillStyle = shade(COLOR, darkness);
+      for (let i = 0; i < 7; i++) {
+        const x = 3 + Math.floor(noise(i, seed, 12) * 25);
+        const y = 3 + Math.floor(noise(i, seed, 13) * 25);
+        const width = 1 + Math.floor(noise(i, seed, 14) * 3);
+        const height = 1 + Math.floor(noise(i, seed, 15) * 2);
+        ctx.fillRect(x, y, width, height);
+      }
+      grains(ctx, seed, 9, brightness);
+    }
+
+    function diagonal(ctx, seed, darkness = -12, brightness = 13) {
+      ctx.strokeStyle = shade(COLOR, darkness);
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 3; i++) {
+        const x = 3 + Math.floor(noise(i, seed, 16) * 19);
+        const y = 5 + Math.floor(noise(i, seed, 17) * 20);
+        const direction = noise(i, seed, 18) > 0.5 ? 1 : -1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 5, y + direction * 2);
+        ctx.lineTo(x + 9, y + direction);
+        ctx.stroke();
+      }
+      grains(ctx, seed, 6, brightness);
+    }
+
+    function patches(ctx, seed, darkness = -8, brightness = 13) {
+      ctx.fillStyle = shade(COLOR, darkness);
+      for (let i = 0; i < 3; i++) {
+        const x = 3 + Math.floor(noise(i, seed, 19) * 20);
+        const y = 4 + Math.floor(noise(i, seed, 20) * 22);
+        const width = 5 + Math.floor(noise(i, seed, 21) * 6);
+        ctx.fillRect(x, y, Math.min(width, 29 - x), 2);
+        if (i % 2 === 0) ctx.fillRect(x + 2, y + 2, Math.max(2, width - 4), 1);
+      }
+      grains(ctx, seed, 5, brightness);
+    }
+
+    function drawTile(style, seed) {
+      const tile = document.createElement("canvas");
+      tile.width = TILE;
+      tile.height = TILE;
+      const ctx = tile.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+      base(ctx);
+
+      if (style === "broken") broken(ctx, seed);
+      if (style === "mottled") mottled(ctx, seed);
+      if (style === "patches") patches(ctx, seed);
+      if (style === "mixed") {
+        const mixedPatterns = [
+          () => broken(ctx, seed, -21, 18),
+          () => mottled(ctx, seed, -23, 18),
+          () => diagonal(ctx, seed, -21, 18),
+          () => patches(ctx, seed, -18, 18),
+        ];
+        mixedPatterns[seed % 4]();
+      }
+      return tile;
+    }
+
+    document.querySelectorAll("canvas").forEach((canvas) => {
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+      ctx.fillStyle = "#0d1417";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < 8; i++) {
+        const x = 10 + i * 98;
+        ctx.drawImage(drawTile(canvas.dataset.style, i + 1), x, 22, SIZE, SIZE);
+      }
+    });
+  </script>
+</body>
+</html>

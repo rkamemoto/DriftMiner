@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Drift Miner: Base Defense</title>
+    <link rel="stylesheet" href="styles.css?v=endless-mode-1" />
+  </head>
+  <body class="stage-two">
+    <main class="game-shell stage-two-shell">
+      <section class="hud stage-two-hud" aria-label="Base defense status">
+        <div class="resource-hud">
+          <p class="eyebrow">Base Defense</p>
+          <div class="stage-two-stat-strip">
+            <div><span>Debris</span><strong id="debrisStat">0</strong></div>
+            <div><span>Carapaces</span><strong id="carapaceStat">0</strong></div>
+            <div><span>Wave</span><strong id="waveStat">1</strong></div>
+            <div><span>Base Integrity</span><strong id="baseHpStat">300 / 300</strong></div>
+            <div><span>Weapon</span><strong id="weaponStat">Mk I</strong></div>
+          </div>
+        </div>
+        <a class="stage-link" href="index.html">Mine</a>
+      </section>
+
+      <section class="play-area stage-two-area" aria-label="Base defense game">
+        <canvas id="stageTwoCanvas" width="960" height="640"></canvas>
+
+        <div class="wave-intermission" id="waveIntermission" hidden>
+          <div class="wave-intermission-header">
+            <p class="eyebrow">Wave cleared</p>
+            <h2 id="waveIntermissionTitle">Prepare for Wave 2</h2>
+            <p>Purchase upgrades before launching the next attack.</p>
+            <div class="intermission-base-hp">
+              <span>Base Integrity</span>
+              <strong id="intermissionBaseHp">300 / 300</strong>
+            </div>
+            <div class="intermission-resources">
+              <div><span>Debris</span><strong id="intermissionDebris">0</strong></div>
+              <div><span>Carapaces</span><strong id="intermissionCarapaces">0</strong></div>
+            </div>
+            <div class="intermission-upgrade-description" id="intermissionUpgradeDescription" hidden></div>
+            <button type="button" id="nextWaveButton">Start Next Wave</button>
+            <small>Start / Enter, or A when no upgrade is selected</small>
+          </div>
+        </div>
+
+        <div class="start-overlay" id="stageTwoStartOverlay">
+          <div class="start-panel">
+            <p class="eyebrow">Stage 2</p>
+            <h2>Hold the Base</h2>
+            <div class="intro-copy">
+              <p>The artifact is locked inside the base. Alien ships are breaking through the upper atmosphere and diving straight for it.</p>
+              <p>Move the defense cannon side to side, shoot the attackers down, then collect the falling debris before the next wave overwhelms the base.</p>
+            </div>
+            <div class="controls-list" aria-label="Controls">
+              <div><span>Move turret</span><strong>A / D / Left Stick</strong></div>
+              <div><span>Aim cannon</span><strong>Right Stick</strong></div>
+              <div><span>Fire</span><strong>Space / A / RT</strong></div>
+              <div><span>Homing weapon</span><strong>H / Y</strong></div>
+              <div><span>Flak cannon</span><strong>F / X</strong></div>
+              <div><span>EMP pulse</span><strong>R / Right Stick Click</strong></div>
+              <div><span>Minefield</span><strong>E / B</strong></div>
+              <div><span>Gravity Well</span><strong>G / LT</strong></div>
+              <div><span>Drone Squadron</span><strong>Passive</strong></div>
+              <div><span>Collect debris</span><strong>Move into it</strong></div>
+              <div><span>Upgrades</span><strong>D-pad grid / LB / RB, then A</strong></div>
+            </div>
+            <button type="button" id="stageTwoStartButton">Start Defense</button>
+            <p class="controller-status">Press A or Start</p>
+            <p class="controller-status" id="stageTwoControllerStatus">Waiting for controller input...</p>
+          </div>
+        </div>
+
+        <div class="pause-overlay" id="stageTwoPauseOverlay" hidden>
+          <div class="pause-panel">
+            <p class="eyebrow">Systems paused</p>
+            <h2>Paused</h2>
+            <div class="pause-controls">
+              <section>
+                <h3>Controller</h3>
+                <dl class="control-table">
+                  <div><dt>Move turret</dt><dd>Left Stick / D-pad</dd></div>
+                  <div><dt>Aim cannon</dt><dd>Right Stick</dd></div>
+                  <div><dt>Fire cannon</dt><dd>A / RT</dd></div>
+                  <div><dt>Select upgrade</dt><dd>D-pad grid / LB / RB</dd></div>
+                  <div><dt>Buy selected</dt><dd>A</dd></div>
+                  <div><dt>Exit upgrades</dt><dd>B</dd></div>
+                  <div><dt>Pause</dt><dd>Start</dd></div>
+                </dl>
+              </section>
+              <section id="stageTwoPauseRelics" hidden>
+                <h3>Relic Weapons</h3>
+                <dl class="control-table">
+                  <div data-stage2-relic-control="homing" hidden><dt>Homing Missile</dt><dd>Y</dd></div>
+                  <div data-stage2-relic-control="flak" hidden><dt>Flak Cannon</dt><dd>X</dd></div>
+                  <div data-stage2-relic-control="emp" hidden><dt>EMP Pulse</dt><dd>Right Stick Click</dd></div>
+                  <div data-stage2-relic-control="railgun" hidden><dt>Minefield</dt><dd>B</dd></div>
+                  <div data-stage2-relic-control="gravity" hidden><dt>Gravity Well</dt><dd>LT</dd></div>
+                  <div data-stage2-relic-control="drones" hidden><dt>Drone Squadron</dt><dd>Passive</dd></div>
+                </dl>
+              </section>
+              <section>
+                <h3>Keyboard</h3>
+                <dl class="control-table">
+                  <div><dt>Move turret</dt><dd>A / D / Arrows</dd></div>
+                  <div><dt>Fire cannon</dt><dd>Space</dd></div>
+                  <div data-stage2-relic-control="homing" hidden><dt>Homing weapon</dt><dd>H</dd></div>
+                  <div data-stage2-relic-control="flak" hidden><dt>Flak cannon</dt><dd>F</dd></div>
+                  <div data-stage2-relic-control="emp" hidden><dt>EMP pulse</dt><dd>R</dd></div>
+                  <div data-stage2-relic-control="railgun" hidden><dt>Minefield</dt><dd>E</dd></div>
+                  <div data-stage2-relic-control="gravity" hidden><dt>Gravity Well</dt><dd>G</dd></div>
+                  <div data-stage2-relic-control="drones" hidden><dt>Drone Squadron</dt><dd>Passive</dd></div>
+                  <div><dt>Pause</dt><dd>P</dd></div>
+                </dl>
+              </section>
+            </div>
+            <button type="button" id="stageTwoResumeButton">Resume</button>
+          </div>
+        </div>
+
+        <div class="game-over-overlay" id="stageTwoGameOverOverlay" hidden>
+          <div class="game-over-panel">
+            <p id="stageTwoEndEyebrow">Artifact lost</p>
+            <h2 id="stageTwoEndTitle">Base Overrun</h2>
+            <strong id="stageTwoFinalWave">Wave 1</strong>
+            <div class="stage-two-end-actions">
+              <button type="button" id="stageTwoRestartButton">Restart</button>
+              <button type="button" id="stageTwoEndlessButton" hidden>Endless Mode</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage-two-relic-notification" id="stageTwoRelicNotification" role="status" aria-live="assertive" hidden>
+          <span>Relic weapon recovered</span>
+          <strong id="stageTwoRelicNotificationName"></strong>
+          <p id="stageTwoRelicNotificationControl"></p>
+        </div>
+
+        <div class="relic-path-overlay" id="stageTwoRelicPathOverlay" hidden>
+          <div class="relic-path-panel">
+            <p class="eyebrow">Relic recovered</p>
+            <h2 id="stageTwoRelicPathTitle">Choose an upgrade path</h2>
+            <div class="relic-path-options">
+              <button type="button" data-relic-choice="a">
+                <strong id="stageTwoRelicPathAName"></strong>
+                <span id="stageTwoRelicPathADescription"></span>
+              </button>
+              <button type="button" data-relic-choice="b">
+                <strong id="stageTwoRelicPathBName"></strong>
+                <span id="stageTwoRelicPathBDescription"></span>
+              </button>
+            </div>
+            <small>D-pad / LB / RB to select, A to confirm</small>
+          </div>
+        </div>
+
+        <aside class="panel stage-two-panel">
+          <div class="panel-section status-section">
+            <h2>Base Weapons</h2>
+            <div class="stats-grid">
+              <div><span>Damage</span><strong id="damageLevelStat">1</strong></div>
+              <div><span>Reload</span><strong id="reloadLevelStat">1</strong></div>
+              <div><span>Cooling</span><strong id="coolingLevelStat">1</strong></div>
+              <div><span>Turret Drive</span><strong id="driveLevelStat">1</strong></div>
+              <div><span>Targeting</span><strong id="targetingLevelStat">1</strong></div>
+              <div><span>Defense</span><strong id="defenseLevelStat">1</strong></div>
+            </div>
+            <div class="active-relics">
+              <h3>Active Relics</h3>
+              <div class="active-relic-list" id="stageTwoActiveRelics">
+                <p>No relics recovered</p>
+              </div>
+            </div>
+          </div>
+          <div class="stage-two-tech-tree" id="stageTwoUpgradeWindow" hidden>
+            <div class="panel-section base-upgrade-panel">
+              <h2>Upgrade Tree</h2>
+              <div class="tech-tree-branch">
+                <h3>Ballistics</h3>
+              <button class="upgrade" data-stage2-upgrade="damage">
+                <span>Cannon Damage</span>
+                <strong id="damageCost">8 debris</strong>
+              </button>
+              </div>
+              <div class="tech-tree-branch">
+                <h3>Weapon Cycling</h3>
+              <button class="upgrade" data-stage2-upgrade="reload">
+                <span>Reload Drive</span>
+                <strong id="reloadCost">10 debris</strong>
+              </button>
+              <button class="upgrade" data-stage2-upgrade="cooling">
+                <span>Cooling Banks</span>
+                <strong id="coolingCost">12 debris</strong>
+              </button>
+              </div>
+              <div class="tech-tree-branch platform-upgrade-branch">
+                <h3>Platform</h3>
+              <button class="upgrade" data-stage2-upgrade="drive">
+                <span>Turret Drive</span>
+                <strong id="driveCost">7 debris</strong>
+              </button>
+              <button class="upgrade" data-stage2-upgrade="targeting">
+                <span>Targeting Systems</span>
+                <strong id="targetingCost">8 debris</strong>
+              </button>
+              <button class="upgrade" data-stage2-upgrade="defense">
+                <span>Defense Systems</span>
+                <strong id="defenseCost">16 debris</strong>
+              </button>
+              <button class="upgrade" data-stage2-upgrade="repair">
+                <span>Patch Base</span>
+                <strong id="repairCost">6 debris</strong>
+              </button>
+              </div>
+            </div>
+            <div class="panel-section" id="stageTwoCannonRelicPanel" hidden>
+              <h2>Primary Weapon</h2>
+              <div class="tech-tree-branch mutation-branch">
+                <h3 id="primaryWeaponBranchName">Weapon Core</h3>
+                <button class="upgrade" id="primaryWeaponUpgradeButton" data-stage2-weapon-upgrade hidden disabled>
+                  <span id="primaryWeaponUpgradeName">Not recovered</span>
+                  <strong id="primaryWeaponUpgradeCost">Locked</strong>
+                </button>
+              </div>
+              <div class="tech-tree-branch mutation-branch" id="seekingModifierBranch" hidden>
+                <h3>Seeking Matrix</h3>
+                <button class="upgrade" data-stage2-relic-path="seeker" data-relic-path="a" hidden disabled>
+                  <span>Seeking Matrix</span>
+                  <strong>Not recovered</strong>
+                </button>
+                <button class="upgrade" data-stage2-relic-path="seeker" data-relic-path="b" hidden disabled>
+                  <span>Seeking Matrix</span>
+                  <strong>Not recovered</strong>
+                </button>
+              </div>
+            </div>
+            <div class="panel-section" id="stageTwoRelicPanel" hidden>
+              <h2>Relic Weapons</h2>
+              <div class="tech-tree-branch relic-tree-branch">
+              <button class="upgrade" id="homingWeaponButton" data-stage2-relic-path="homing" data-relic-path="a" hidden disabled>
+                <span>Homing Missile</span>
+                <strong id="homingWeaponStatus">Not recovered</strong>
+              </button>
+              <button class="upgrade" data-stage2-relic-path="homing" data-relic-path="b" hidden disabled><span>Homing Missile</span><strong>Not recovered</strong></button>
+              <button class="upgrade" id="flakWeaponButton" data-stage2-relic-path="flak" data-relic-path="a" hidden disabled>
+                <span>Flak Cannon</span>
+                <strong id="flakWeaponStatus">Not recovered</strong>
+              </button>
+              <button class="upgrade" data-stage2-relic-path="flak" data-relic-path="b" hidden disabled><span>Flak Cannon</span><strong>Not recovered</strong></button>
+              <button class="upgrade" id="empWeaponButton" data-stage2-relic-path="emp" data-relic-path="a" hidden disabled>
+                <span>EMP Pulse</span>
+                <strong id="empWeaponStatus">Not recovered</strong>
+              </button>
+              <button class="upgrade" data-stage2-relic-path="emp" data-relic-path="b" hidden disabled><span>EMP Pulse</span><strong>Not recovered</strong></button>
+              <button class="upgrade" id="railgunWeaponButton" data-stage2-relic-path="railgun" data-relic-path="a" hidden disabled>
+                <span>Minefield</span>
+                <strong id="railgunWeaponStatus">Not recovered</strong>
+              </button>
+              <button class="upgrade" data-stage2-relic-path="railgun" data-relic-path="b" hidden disabled><span>Minefield</span><strong>Not recovered</strong></button>
+              <button class="upgrade" id="gravityWeaponButton" data-stage2-relic-path="gravity" data-relic-path="a" hidden disabled>
+                <span>Gravity Well</span>
+                <strong id="gravityWeaponStatus">Not recovered</strong>
+              </button>
+              <button class="upgrade" data-stage2-relic-path="gravity" data-relic-path="b" hidden disabled><span>Gravity Well</span><strong>Not recovered</strong></button>
+              <button class="upgrade" id="dronesWeaponButton" data-stage2-relic-path="drones" data-relic-path="a" hidden disabled>
+                <span>Drone Squadron</span>
+                <strong id="dronesWeaponStatus">Not recovered</strong>
+              </button>
+              <button class="upgrade" data-stage2-relic-path="drones" data-relic-path="b" hidden disabled><span>Drone Squadron</span><strong>Not recovered</strong></button>
+              </div>
+            </div>
+          </div>
+          <p id="stageTwoMessageLog" hidden>The artifact signal is drawing ships toward the base.</p>
+        </aside>
+      </section>
+    </main>
+
+    <script src="stage2.js?v=relic-balance-homing-flak-1"></script>
+  </body>
+</html>

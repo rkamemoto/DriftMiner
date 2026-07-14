@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Drift Miner Block Style Samples</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      background: #0b1013;
+      color: #edf5f3;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #0b1013;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 34px 0 48px;
+    }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    h1,
+    h2,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    header p,
+    .option-copy,
+    .legend {
+      color: #9fb0b2;
+      line-height: 1.45;
+    }
+
+    .sheet {
+      display: grid;
+      gap: 14px;
+    }
+
+    .option {
+      border: 1px solid #2a3b40;
+      border-radius: 8px;
+      background: #121a1e;
+      overflow: hidden;
+    }
+
+    .option-head {
+      display: grid;
+      grid-template-columns: 52px 230px 1fr;
+      gap: 16px;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid #26363b;
+    }
+
+    .letter {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border: 1px solid #68d6c7;
+      border-radius: 6px;
+      color: #68d6c7;
+      font-weight: 800;
+    }
+
+    h2 {
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #0d1417;
+      image-rendering: pixelated;
+    }
+
+    .legend {
+      padding: 10px 18px 13px;
+      font-size: 12px;
+      border-top: 1px solid #1f2d31;
+    }
+
+    @media (max-width: 760px) {
+      main {
+        width: min(100% - 20px, 1180px);
+        padding-top: 20px;
+      }
+
+      header,
+      .option-head {
+        align-items: start;
+      }
+
+      header {
+        flex-direction: column;
+      }
+
+      .option-head {
+        grid-template-columns: 44px 1fr;
+      }
+
+      .option-copy {
+        grid-column: 2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Block Surface Samples</h1>
+        <p>Same palette and damage progression, with more character while intact.</p>
+      </div>
+      <p>Topsoil · Claystone · Basalt · Crystal Vein</p>
+    </header>
+
+    <section class="sheet">
+      <article class="option">
+        <div class="option-head">
+          <span class="letter">A</span>
+          <h2>Layered Strata</h2>
+          <p class="option-copy">Quiet horizontal bands and sparse mineral flecks. The cleanest, least busy option.</p>
+        </div>
+        <canvas data-style="strata" width="1120" height="180"></canvas>
+        <p class="legend">Each biome appears intact, lightly damaged, and heavily damaged.</p>
+      </article>
+
+      <article class="option">
+        <div class="option-head">
+          <span class="letter">B</span>
+          <h2>Fractured Stone</h2>
+          <p class="option-copy">Angular seams and embedded chips give every block a chunkier cave-wall silhouette.</p>
+        </div>
+        <canvas data-style="fracture" width="1120" height="180"></canvas>
+        <p class="legend">Cracks shown here are surface texture; the existing damage stippling remains distinct.</p>
+      </article>
+
+      <article class="option">
+        <div class="option-head">
+          <span class="letter">C</span>
+          <h2>Geological Mix</h2>
+          <p class="option-copy">Depth-specific texture: roots and grains above, sediment in clay, fractures in basalt, crystalline facets below.</p>
+        </div>
+        <canvas data-style="mixed" width="1120" height="180"></canvas>
+        <p class="legend">This option creates the strongest visual identity between depth layers.</p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const TILE = 32;
+    const SCALE = 3;
+    const DISPLAY = TILE * SCALE;
+    const biomes = [
+      { name: "Topsoil", color: "#6c5640" },
+      { name: "Claystone", color: "#845f48" },
+      { name: "Basalt", color: "#4b4e57" },
+      { name: "Crystal Vein", color: "#334d65" },
+    ];
+
+    function hash(x, y, seed) {
+      let value = Math.imul(x + seed * 17, 374761393) + Math.imul(y + seed * 29, 668265263);
+      value = (value ^ (value >>> 13)) * 1274126177;
+      return ((value ^ (value >>> 16)) >>> 0) / 4294967295;
+    }
+
+    function shade(hex, amount) {
+      const value = parseInt(hex.slice(1), 16);
+      const r = Math.max(0, Math.min(255, (value >> 16) + amount));
+      const g = Math.max(0, Math.min(255, ((value >> 8) & 255) + amount));
+      const b = Math.max(0, Math.min(255, (value & 255) + amount));
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function drawBase(ctx, x, y, biome) {
+      ctx.fillStyle = biome.color;
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.34)";
+      ctx.strokeRect(x + 0.5, y + 0.5, TILE - 1, TILE - 1);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.035)";
+      ctx.fillRect(x + 1, y + 1, TILE - 2, 1);
+    }
+
+    function drawStrata(ctx, x, y, biome, seed) {
+      ctx.fillStyle = shade(biome.color, -12);
+      for (const py of [7, 17, 26]) {
+        const bend = Math.floor(hash(py, seed, 2) * 3) - 1;
+        ctx.fillRect(x + 3, y + py, 10 + bend, 1);
+        ctx.fillRect(x + 16 + bend, y + py + 1, 13 - bend, 1);
+      }
+      ctx.fillStyle = shade(biome.color, 16);
+      for (let i = 0; i < 7; i++) {
+        const px = 3 + Math.floor(hash(i, seed, 4) * 26);
+        const py = 3 + Math.floor(hash(i, seed, 5) * 26);
+        ctx.fillRect(x + px, y + py, i % 3 === 0 ? 2 : 1, 1);
+      }
+    }
+
+    function drawFracture(ctx, x, y, biome, seed) {
+      ctx.strokeStyle = shade(biome.color, -20);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x + 4, y + 9);
+      ctx.lineTo(x + 12, y + 12);
+      ctx.lineTo(x + 15, y + 20);
+      ctx.lineTo(x + 26, y + 24);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x + 23, y + 3);
+      ctx.lineTo(x + 20, y + 10);
+      ctx.lineTo(x + 25, y + 15);
+      ctx.stroke();
+      ctx.fillStyle = shade(biome.color, 13);
+      for (let i = 0; i < 5; i++) {
+        const px = 4 + Math.floor(hash(i, seed, 7) * 23);
+        const py = 4 + Math.floor(hash(i, seed, 8) * 23);
+        ctx.fillRect(x + px, y + py, 2, 2);
+      }
+    }
+
+    function drawMixed(ctx, x, y, biome, biomeIndex, seed) {
+      if (biomeIndex === 0) {
+        drawStrata(ctx, x, y, biome, seed);
+        ctx.strokeStyle = shade(biome.color, 18);
+        ctx.beginPath();
+        ctx.moveTo(x + 6, y + 2);
+        ctx.lineTo(x + 8, y + 7);
+        ctx.lineTo(x + 6, y + 12);
+        ctx.moveTo(x + 25, y + 2);
+        ctx.lineTo(x + 23, y + 8);
+        ctx.stroke();
+      } else if (biomeIndex === 1) {
+        drawStrata(ctx, x, y, biome, seed);
+        ctx.fillStyle = shade(biome.color, 18);
+        ctx.fillRect(x + 7, y + 12, 3, 2);
+        ctx.fillRect(x + 23, y + 6, 2, 3);
+      } else if (biomeIndex === 2) {
+        drawFracture(ctx, x, y, biome, seed);
+        ctx.fillStyle = shade(biome.color, -26);
+        ctx.fillRect(x + 3, y + 25, 5, 3);
+        ctx.fillRect(x + 25, y + 4, 3, 4);
+      } else {
+        drawFracture(ctx, x, y, biome, seed);
+        ctx.fillStyle = "rgba(134, 240, 255, 0.22)";
+        ctx.beginPath();
+        ctx.moveTo(x + 7, y + 22);
+        ctx.lineTo(x + 11, y + 14);
+        ctx.lineTo(x + 14, y + 23);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillRect(x + 23, y + 6, 2, 8);
+      }
+    }
+
+    function drawDamage(ctx, x, y, stage) {
+      if (stage === null) return;
+      const spacing = [6, 4, 3, 2, 2][stage];
+      const pixelSize = [1, 1, 1, 1, 2][stage];
+      const alpha = [0.16, 0.2, 0.25, 0.3, 0.34][stage];
+
+      ctx.fillStyle = `rgba(5, 5, 5, ${alpha})`;
+      for (let py = 2; py < TILE - 2; py++) {
+        for (let px = 2; px < TILE - 2; px++) {
+          const chip = (px * 17 + py * 31 + px * py) % spacing === 0;
+          const checker = stage >= 3 && (px + py) % 3 === 0;
+          const heavy = stage >= 4 && (px * 3 + py * 5) % 5 === 0;
+          if (!chip && !checker && !heavy) continue;
+          ctx.fillRect(x + px, y + py, pixelSize, pixelSize);
+        }
+      }
+
+      ctx.fillStyle = `rgba(255, 238, 184, ${alpha * 0.55})`;
+      for (let py = 3; py < TILE - 3; py += spacing) {
+        for (let px = 3; px < TILE - 3; px += spacing) {
+          if ((px * 13 + py * 19) % 5 === 0) ctx.fillRect(x + px, y + py, 1, 1);
+        }
+      }
+    }
+
+    function render(canvas) {
+      const ctx = canvas.getContext("2d");
+      const style = canvas.dataset.style;
+      ctx.imageSmoothingEnabled = false;
+      ctx.fillStyle = "#0d1417";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const groupWidth = 270;
+      const startX = 22;
+      const tileY = 58;
+
+      biomes.forEach((biome, biomeIndex) => {
+        const groupX = startX + biomeIndex * groupWidth;
+        ctx.fillStyle = "#dce7e5";
+        ctx.font = "600 15px system-ui";
+        ctx.fillText(biome.name, groupX, 29);
+
+        [
+          { label: "Intact", stage: null },
+          { label: "Light", stage: 1 },
+          { label: "Heavy", stage: 4 },
+        ].forEach(({ label, stage }, stateIndex) => {
+          const displayX = groupX + stateIndex * 82;
+          const tileCanvas = document.createElement("canvas");
+          tileCanvas.width = TILE;
+          tileCanvas.height = TILE;
+          const tileCtx = tileCanvas.getContext("2d");
+          tileCtx.imageSmoothingEnabled = false;
+          drawBase(tileCtx, 0, 0, biome);
+          if (style === "strata") drawStrata(tileCtx, 0, 0, biome, biomeIndex + 1);
+          if (style === "fracture") drawFracture(tileCtx, 0, 0, biome, biomeIndex + 1);
+          if (style === "mixed") drawMixed(tileCtx, 0, 0, biome, biomeIndex, biomeIndex + 1);
+          drawDamage(tileCtx, 0, 0, stage);
+
+          ctx.drawImage(tileCanvas, displayX, tileY, DISPLAY, DISPLAY);
+          ctx.fillStyle = "#839497";
+          ctx.font = "12px system-ui";
+          ctx.fillText(label, displayX, tileY + DISPLAY + 18);
+        });
+      });
+    }
+
+    document.querySelectorAll("canvas").forEach(render);
+  </script>
+</body>
+</html>
