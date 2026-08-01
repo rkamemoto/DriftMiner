@@ -8,9 +8,15 @@ const generatedArt = {
   usePreview: true,
   background: new Image(),
   playerSheet: new Image(),
+  coughSheet: new Image(),
   ngSheet: new Image(),
   cart: new Image(),
+  alienToy: new Image(),
+  alienToyHugSheet: new Image(),
   helmet: new Image(),
+  maintenanceTag: new Image(),
+  sealedHelmet: new Image(),
+  maintenanceDrawer: new Image(),
   lever: new Image(),
   buttonSheet: new Image(),
   gasSheet: new Image(),
@@ -19,11 +25,39 @@ const generatedArt = {
   highlightLadder: new Image(),
   highlightLeak: new Image(),
   objectOuterHatch: new Image(),
+  outerHatchClosed: new Image(),
   objectLocker: new Image(),
   objectLadder: new Image(),
   objectLeak: new Image(),
   objectScanner: new Image(),
   objectInnerDoor: new Image(),
+  hallwayBackground: new Image(),
+  hallwayUtilityOpenBackground: new Image(),
+  hallwayBothOpenBackground: new Image(),
+  hallwayProps: new Image(),
+  hallwayPaperArt: new Image(),
+  hallwayRag: new Image(),
+  hallwayDirt: new Image(),
+  hallwayRope: new Image(),
+  utilityBackground: new Image(),
+  utilityBackgroundDoorOpen: new Image(),
+  utilityHose: new Image(),
+  utilityCleanRag: new Image(),
+  utilityToolkit: new Image(),
+  utilityToolkitOpen: new Image(),
+  utilityWrench: new Image(),
+  utilitySlimeBox: new Image(),
+  utilitySlimeReaction: new Image(),
+  utilityWire: new Image(),
+  utilityWirePull: new Image(),
+  utilityWirePullPlayer: new Image(),
+  utilityWirePullHands: new Image(),
+  utilityRoutedCable: new Image(),
+  utilityDoorOpenOverlay: new Image(),
+  utilityVentPaw: new Image(),
+  utilityVentPlayer: new Image(),
+  utilityDoorButton: new Image(),
+  utilityEmptyBox: new Image(),
   backgroundReady: false,
   playerReady: false,
   spritesReady: false
@@ -31,22 +65,37 @@ const generatedArt = {
 generatedArt.background.onload = () => generatedArt.backgroundReady = true;
 const updateStageFourPlayerReadiness = () => generatedArt.playerReady =
   generatedArt.playerSheet.complete && generatedArt.playerSheet.naturalWidth > 0 &&
+  generatedArt.coughSheet.complete && generatedArt.coughSheet.naturalWidth > 0 &&
   generatedArt.ngSheet.complete && generatedArt.ngSheet.naturalWidth > 0;
 generatedArt.playerSheet.onload = updateStageFourPlayerReadiness;
+generatedArt.coughSheet.onload = updateStageFourPlayerReadiness;
 generatedArt.ngSheet.onload = updateStageFourPlayerReadiness;
 const stageFourSpriteImages = [
-  generatedArt.cart, generatedArt.helmet, generatedArt.lever, generatedArt.buttonSheet, generatedArt.gasSheet,
+  generatedArt.cart, generatedArt.alienToy, generatedArt.alienToyHugSheet, generatedArt.helmet, generatedArt.maintenanceTag, generatedArt.sealedHelmet, generatedArt.maintenanceDrawer, generatedArt.lever, generatedArt.buttonSheet, generatedArt.gasSheet,
   generatedArt.highlightOuterHatch, generatedArt.highlightLocker, generatedArt.highlightLadder, generatedArt.highlightLeak,
-  generatedArt.objectOuterHatch, generatedArt.objectLocker, generatedArt.objectLadder,
-  generatedArt.objectLeak, generatedArt.objectScanner, generatedArt.objectInnerDoor
+  generatedArt.objectOuterHatch, generatedArt.outerHatchClosed, generatedArt.objectLocker, generatedArt.objectLadder,
+  generatedArt.objectLeak, generatedArt.objectScanner, generatedArt.objectInnerDoor,
+  generatedArt.hallwayBackground, generatedArt.hallwayUtilityOpenBackground, generatedArt.hallwayBothOpenBackground,
+  generatedArt.hallwayProps, generatedArt.hallwayPaperArt,
+  generatedArt.hallwayRag, generatedArt.hallwayDirt, generatedArt.hallwayRope,
+  generatedArt.utilityBackground, generatedArt.utilityBackgroundDoorOpen, generatedArt.utilityHose, generatedArt.utilityCleanRag,
+  generatedArt.utilityToolkit, generatedArt.utilityToolkitOpen, generatedArt.utilityWrench, generatedArt.utilitySlimeBox, generatedArt.utilitySlimeReaction,
+  generatedArt.utilityWire, generatedArt.utilityWirePull, generatedArt.utilityWirePullPlayer, generatedArt.utilityWirePullHands, generatedArt.utilityRoutedCable, generatedArt.utilityDoorOpenOverlay,
+  generatedArt.utilityVentPaw, generatedArt.utilityVentPlayer, generatedArt.utilityDoorButton, generatedArt.utilityEmptyBox
 ];
 const updateStageFourSpriteReadiness = () => generatedArt.spritesReady = stageFourSpriteImages.every(image => image.complete && image.naturalWidth > 0);
 stageFourSpriteImages.forEach(image => image.onload = updateStageFourSpriteReadiness);
-generatedArt.background.src = "assets/stage4/level1-airlock/airlock-background-sprites-v3.png?v=stage4-level1-folder-1";
+generatedArt.background.src = "assets/stage4/level1-airlock/airlock-background-toy-clean-v2.png?v=stage4-alien-toy-2";
 generatedArt.playerSheet.src = "assets/stage4/level1-airlock/player-sheet-cells-v8.png?v=stage4-all-direction-size-match-1";
+generatedArt.coughSheet.src = "assets/stage4/level1-airlock/player-cough-cells-v1.png?v=stage4-painted-cough-1";
 generatedArt.ngSheet.src = "assets/stage4/level1-airlock/player-ng-reaction-cells-v2.png?v=stage4-player-size-match-1";
 generatedArt.cart.src = "assets/stage4/level1-airlock/cart-sprite-v1.png?v=stage4-level1-folder-1";
+generatedArt.alienToy.src = "assets/stage4/level1-airlock/alien-toy-sprite-v1.png?v=stage4-alien-toy-1";
+generatedArt.alienToyHugSheet.src = "assets/stage4/level1-airlock/alien-toy-hug-sheet-v1.png?v=stage4-alien-toy-hug-1";
 generatedArt.helmet.src = "assets/stage4/level1-airlock/helmet-sprite-v1.png?v=stage4-level1-folder-1";
+generatedArt.maintenanceTag.src = "assets/stage4/level1-airlock/maintenance-tag-world-v1.png?v=stage4-item-sprites-1";
+generatedArt.sealedHelmet.src = "assets/stage4/level1-airlock/sealed-helmet-installed-world-v1.png?v=stage4-sealed-helmet-1";
+generatedArt.maintenanceDrawer.src = "assets/stage4/level1-airlock/maintenance-drawer-open-world-v1.png?v=stage4-tag-drop-1";
 generatedArt.lever.src = "assets/stage4/level1-airlock/lever-sheet-v1.png?v=stage4-lever-two-state-1";
 generatedArt.buttonSheet.src = "assets/stage4/level1-airlock/alien-button-sheet-v1.png?v=stage4-level1-folder-1";
 generatedArt.gasSheet.src = "assets/stage4/level1-airlock/leak-gas-sheet-v1.png?v=stage4-level1-folder-1";
@@ -55,11 +104,39 @@ generatedArt.highlightLocker.src = "assets/stage4/level1-airlock/hover-locker-so
 generatedArt.highlightLadder.src = "assets/stage4/level1-airlock/highlight-ladder-v4.png?v=stage4-ladder-outline-4";
 generatedArt.highlightLeak.src = "assets/stage4/level1-airlock/object-leak-v5.png?v=stage4-level1-folder-1";
 generatedArt.objectOuterHatch.src = "assets/stage4/level1-airlock/object-outer-hatch-v1.png?v=stage4-level1-folder-1";
-generatedArt.objectLocker.src = "assets/stage4/level1-airlock/locker-sprite-original-v1.png?v=stage4-locker-original-restored-1";
-generatedArt.objectLadder.src = "assets/stage4/level1-airlock/ladder-markup-source.png?v=stage4-level1-folder-1";
+generatedArt.outerHatchClosed.src = "assets/stage4/level1-airlock/outer-hatch-closed-v1.png?v=stage4-outer-hatch-close-1";
+generatedArt.objectLocker.src = "assets/stage4/level1-airlock/locker-sprite-full-v3.png?v=stage4-locker-clean-interior-2";
+generatedArt.objectLadder.src = "assets/stage4/level1-airlock/object-ladder-clean-v5.png?v=stage4-plush-overlay-fix-1";
 generatedArt.objectLeak.src = "assets/stage4/level1-airlock/object-leak-v2.png?v=stage4-level1-folder-1";
 generatedArt.objectScanner.src = "assets/stage4/level1-airlock/object-scanner-display-v5.png?v=stage4-level1-folder-1";
 generatedArt.objectInnerDoor.src = "assets/stage4/level1-airlock/object-inner-door-v3.png?v=stage4-level1-folder-1";
+generatedArt.hallwayBackground.src = "assets/stage4/level2-hallway/hallway-background-three-tone-buttons-v1.png?v=stage4-hallway-three-tones-1";
+generatedArt.hallwayUtilityOpenBackground.src = "assets/stage4/level2-hallway/hallway-background-utility-open-v1.png?v=stage4-hallway-open-doors-1";
+generatedArt.hallwayBothOpenBackground.src = "assets/stage4/level2-hallway/hallway-background-both-open-v1.png?v=stage4-hallway-open-doors-1";
+generatedArt.hallwayProps.src = "assets/stage4/level2-hallway/hallway-props-v1.png?v=stage4-hallway-1";
+generatedArt.hallwayPaperArt.src = "assets/stage4/level2-hallway/paper-art-v1.png?v=stage4-hallway-paper-1";
+generatedArt.hallwayRag.src = "assets/stage4/level2-hallway/rag-sprite-v1.png?v=stage4-hallway-items-1";
+generatedArt.hallwayDirt.src = "assets/stage4/level2-hallway/dirt-sprite-v1.png?v=stage4-hallway-items-1";
+generatedArt.hallwayRope.src = "assets/stage4/level2-hallway/makeshift-rag-rope-v1.png?v=stage4-rag-rope-1";
+generatedArt.utilityBackground.src = "assets/stage4/level3-utility-closet/utility-closet-background-v5.png?v=stage4-utility-button-sprite-1";
+generatedArt.utilityBackgroundDoorOpen.src = "assets/stage4/level3-utility-closet/utility-closet-background-door-open-v1.png?v=stage4-utility-door-open-art-1";
+generatedArt.utilityHose.src = "assets/stage4/level3-utility-closet/hose-sprite-v1.png?v=stage4-utility-props-1";
+generatedArt.utilityCleanRag.src = "assets/stage4/level3-utility-closet/clean-rag-sprite-v1.png?v=stage4-clean-rag-full-sprite-1";
+generatedArt.utilityToolkit.src = "assets/stage4/level3-utility-closet/toolbox-closed-in-room-v1.png?v=stage4-toolbox-in-room-1";
+generatedArt.utilityToolkitOpen.src = "assets/stage4/level3-utility-closet/toolbox-sheet-v2.png?v=stage4-toolbox-rendered-2";
+generatedArt.utilityWrench.src = "assets/stage4/level3-utility-closet/wrench-sprite-v1.png?v=stage4-utility-props-1";
+generatedArt.utilitySlimeBox.src = "assets/stage4/level3-utility-closet/slime-box-sprite-v1.png?v=stage4-utility-props-1";
+generatedArt.utilitySlimeReaction.src = "assets/stage4/level3-utility-closet/player-slime-reaction-v3.png?v=stage4-slime-painted-2";
+generatedArt.utilityWire.src = "assets/stage4/level3-utility-closet/stuck-cable-end-v3.png?v=stage4-cable-fade-1";
+generatedArt.utilityWirePull.src = "assets/stage4/level3-utility-closet/stuck-cable-pull-v2.png?v=stage4-cable-pull-2";
+generatedArt.utilityWirePullPlayer.src = "assets/stage4/level3-utility-closet/player-wire-pull-v1.png?v=stage4-wire-pull-1";
+generatedArt.utilityWirePullHands.src = "assets/stage4/level3-utility-closet/player-wire-hands-overlay-v1.png?v=stage4-wire-hands-overlay-1";
+generatedArt.utilityRoutedCable.src = "assets/stage4/level3-utility-closet/routed-cable-to-panel-v2.png?v=stage4-routed-cable-hose-tie-1";
+generatedArt.utilityDoorOpenOverlay.src = "assets/stage4/level3-utility-closet/utility-center-door-open-overlay-v2.png?v=stage4-utility-door-open-clean-1";
+generatedArt.utilityVentPaw.src = "assets/stage4/level3-utility-closet/alien-vent-paw-green-concept-v1.png?v=stage4-vent-paw-green-1";
+generatedArt.utilityVentPlayer.src = "assets/stage4/level3-utility-closet/player-vent-swipe-reaction-v1.png?v=stage4-vent-player-art-1";
+generatedArt.utilityDoorButton.src = "assets/stage4/level3-utility-closet/door-blue-button-sprite-v1.png?v=stage4-utility-button-sprite-1";
+generatedArt.utilityEmptyBox.src = "assets/stage4/level3-utility-closet/light-parts-box-sprite-v1.png?v=stage4-light-parts-crate-1";
 
 const ui = {
   inventory: document.querySelector("#s4Inventory"),
@@ -72,10 +149,16 @@ const ui = {
 };
 
 const items = {
-  helmet: { name: "Cracked Helmet", icon: "◖", description: "A damaged alien helmet. Big enough to cover the vent." },
-  sealant: { name: "Sealant Patch", icon: "▣", description: "Emergency hull sealant. Sticky, cold, and probably alive." },
-  patchedHelmet: { name: "Patched Helmet", icon: "◉", description: "A cracked helmet sealed with emergency patching gel." },
-  tag: { name: "Maintenance Tag", icon: "◆", description: "A twitchy access tag coughed up by the repair bot." }
+  helmet: { name: "Cracked Helmet", sprite: "assets/stage4/level1-airlock/inventory-helmet-v1.png", description: "A damaged alien helmet. Big enough to cover the vent." },
+  sealant: { name: "Sealant Patch", sprite: "assets/stage4/level1-airlock/inventory-sealant-v1.png", description: "Emergency hull sealant. Sticky, cold, and probably alive." },
+  patchedHelmet: { name: "Patched Helmet", sprite: "assets/stage4/level1-airlock/inventory-patched-helmet-v1.png", description: "A cracked helmet sealed with emergency patching gel." },
+  tag: { name: "Maintenance Tag", sprite: "assets/stage4/level1-airlock/inventory-maintenance-tag-v1.png", description: "A twitchy access tag coughed up by the repair bot." },
+  rag: { name: "Grimy Rag", sprite: "assets/stage4/level2-hallway/rag-sprite-v1.png", description: "A surprisingly soft rag with several mysterious stains." },
+  dirt: { name: "Alien Dirt", sprite: "assets/stage4/level2-hallway/dirt-sprite-v1.png", description: "Purple soil with tiny cyan mineral sparks." },
+  ragShreds: { name: "Rag Shreds", sprite: "assets/stage4/level2-hallway/rag-sprite-v1.png", description: "Tough fabric strips torn into useful lengths." },
+  hose: { name: "Maintenance Hose", sprite: "assets/stage4/level3-utility-closet/hose-sprite-v1.png", description: "A flexible alien hose with two incompatible-looking couplings." },
+  cleanRag: { name: "Clean Rag", sprite: "assets/stage4/level3-utility-closet/clean-rag-shelf-inplace-v3.png", description: "A surprisingly pristine maintenance cloth." },
+  wrench: { name: "Alien Wrench", sprite: "assets/stage4/level3-utility-closet/wrench-sprite-v1.png", description: "A heavy double-ended wrench from the utility toolkit." }
 };
 
 const art = {
@@ -109,26 +192,84 @@ const art = {
 let toastTimer = 0;
 let last = 0;
 let audioContext = null;
+let lastCoughCycle = -1;
+let lastCoughBeat = 0;
+let outerDoorCloseTimer = 0;
+const combineTwinkleSfx = new Audio("assets/stage4/audio/combine-twinkle-sample-v1.wav?v=stage4-combine-twinkle-1");
+combineTwinkleSfx.preload = "auto";
+const CART_LEFT_X = 350;
+const CART_RIGHT_X = 462;
+const OUTER_HATCH_CLOSE_MS = 900;
 const state = {
+  room: "airlock",
   inventory: [],
   selected: null,
   hover: null,
   lockerOpen: false,
   ventSealed: false,
+  leverPulled: false,
+  outerDoorClosed: false,
+  outerDoorCloseStart: 0,
   pressureEqualized: false,
   tagAvailable: false,
+  tagReleaseStart: 0,
   scannerSpoofed: false,
   complete: false,
+  innerDoorOpenStart: 0,
+  innerDoorRejectUntil: 0,
   // Future art pass: interactables should get two-state overlays/animations
   // so picked-up/opened objects differ from the baked background painting.
   reactionUntil: 0,
   decoyButtonBroken: false,
   decoyButtonSparkUntil: 0,
   onLadder: false,
-  cartLeft: true,
-  cartX: 462,
-  cartTargetX: 462,
+  cartLeft: false,
+  cartX: CART_RIGHT_X,
+  cartTargetX: CART_RIGHT_X,
   cartWobbleUntil: 0,
+  toyExamining: false,
+  toyInspectStart: 0,
+  toyInspectUntil: 0,
+  hallwayEffect: null,
+  hallwayEffectUntil: 0,
+  hallwayTonePulse: null,
+  hallwayTonePulseUntil: 0,
+  hallwayDoorToneProgress: 0,
+  hallDoorAOpen: false,
+  hallDoorAOpenStart: 0,
+  hallwayCleanerX: 780,
+  hallwayCleanerTargetX: 780,
+  hallwayRagCollected: false,
+  hallwayDirtCollected: false,
+  hallwayDirtSpilled: false,
+  hallwayDirtX: 600,
+  hallwayCleanerMode: "idle",
+  hallwayCleanerActionStart: 0,
+  hallwayRagShredsAvailable: false,
+  hallwayRagShredsCollected: false,
+  hallwayRagShredsX: 600,
+  hallwayRopeInstalled: false,
+  hallwayRopeTying: false,
+  hallwayRopeTieStart: 0,
+  hallwayVentClimbing: false,
+  utilityEntryAnimating: false,
+  utilityEntryStart: 0,
+  utilityHoseCollected: false,
+  utilityCleanRagCollected: false,
+  utilityToolkitOpen: false,
+  utilityWrenchCollected: false,
+  utilityDoorPanelOpen: false,
+  utilityCableRouted: false,
+  utilityPowerStart: 0,
+  utilityDoorOpen: false,
+  utilitySlimeBoxFallen: false,
+  utilitySlimed: false,
+  utilityAction: null,
+  hallwayPickup: null,
+  keypadOpen: false,
+  keypadEntry: "",
+  keypadUnlocked: false,
+  keypadFeedbackUntil: 0,
   comicEffects: [],
   player: { x: 160, y: 458, tx: 160, ty: 458, path: [], currentDone: null, facing: "down", forcedFacing: null },
   stars: Array.from({ length: 70 }, () => ({ x: Math.random() * 960, y: Math.random() * 640, r: Math.random() * 1.6 + .3, a: Math.random() * .45 + .25 }))
@@ -265,6 +406,15 @@ function playSfx(label) {
   }
 }
 
+function playCoughSfx(beat) {
+  // A bright consonant burst followed by a breathy throat release reads as a
+  // cough. Avoid pitched low tones here; they sound like tool impacts.
+  const second = beat === 2;
+  playNoise(.052, second ? .045 : .052, 0, second ? 2350 : 2100);
+  playNoise(second ? .125 : .145, second ? .048 : .055, .026, second ? 900 : 760);
+  playNoise(second ? .07 : .085, second ? .024 : .029, .082, second ? 1550 : 1380);
+}
+
 const NOPE_REACTION_MS = 950;
 
 function playerIsReacting() {
@@ -280,6 +430,50 @@ function popComic(text, x, y, color = "#fff3c5") {
   playSfx(text);
 }
 
+function playCombineTwinkle() {
+  combineTwinkleSfx.pause();
+  combineTwinkleSfx.currentTime = 0;
+  combineTwinkleSfx.volume = .72;
+  combineTwinkleSfx.play().catch(() => {});
+}
+
+function playHallwayTone(tone) {
+  const tones = {
+    low: { frequency: 293.66, id: "hallToneLeft" },
+    middle: { frequency: 440, id: "hallToneMiddle" },
+    high: { frequency: 659.25, id: "hallToneRight" }
+  };
+  const note = tones[tone];
+  if (!note) return;
+  state.player.facing = "up";
+  state.hallwayTonePulse = note.id;
+  state.hallwayTonePulseUntil = performance.now() + 820;
+  playTone(note.frequency, .64, "sine", .055);
+  playTone(note.frequency * 2, .46, "triangle", .016, .025);
+  registerHallwayDoorTone(tone);
+}
+
+const HALLWAY_DOOR_TONE_CODE = ["low", "low", "high", "middle"];
+
+function registerHallwayDoorTone(tone) {
+  if (!state.utilityCableRouted || state.hallDoorAOpen) return;
+  const expected = HALLWAY_DOOR_TONE_CODE[state.hallwayDoorToneProgress];
+  if (tone === expected) {
+    state.hallwayDoorToneProgress += 1;
+  } else {
+    // A wrong note clears the attempt, but a low tone can immediately begin a
+    // fresh sequence because the valid code itself starts on the left.
+    state.hallwayDoorToneProgress = tone === HALLWAY_DOOR_TONE_CODE[0] ? 1 : 0;
+    playSfx("kzzt");
+  }
+  if (state.hallwayDoorToneProgress < HALLWAY_DOOR_TONE_CODE.length) return;
+  state.hallwayDoorToneProgress = 0;
+  state.hallDoorAOpen = true;
+  state.hallDoorAOpenStart = performance.now();
+  playCombineTwinkle();
+  setLog("The repeated tones wake the battered crew door. It retracts into the wall.");
+}
+
 function tryCombine(a, b) {
   const pair = [a, b].sort().join("+");
   if (pair === "helmet+sealant") {
@@ -287,7 +481,7 @@ function tryCombine(a, b) {
     removeItem("sealant");
     state.inventory.push("patchedHelmet");
     state.selected = "patchedHelmet";
-    popComic("squish!", state.player.x + 10, state.player.y - 92, "#7cf5de");
+    playCombineTwinkle();
     setLog("You press the sealant over the helmet crack. It wriggles once, then hardens into a perfect airlock plug.");
     updateUI();
     return true;
@@ -348,28 +542,446 @@ function useSelectedOn(target) {
     return true;
   }
 
+  if (target === "utilityDoorButton" && selected === "wrench" && state.room === "utility") {
+    state.utilityDoorPanelOpen = true;
+    state.selected = null;
+    state.player.facing = "up";
+    playCombineTwinkle();
+    setLog("The wrench pops the blue door panel loose. Something inside is waiting for a pull.");
+    updateUI();
+    return true;
+  }
+
+  if (target === "utilityDoorButton" && state.room === "utility") {
+    reactNope();
+    setLog("The blue panel is screwed shut. It needs a tool before it can help.");
+    return true;
+  }
+
+  if (target === "utilityWire" && selected === "hose" && state.room === "utility") {
+    if (!state.utilityDoorPanelOpen) {
+      reactNope();
+      setLog("The hose gives you a better grip, but there is nowhere useful to route the cable yet.");
+      return true;
+    }
+    removeItem("hose");
+    state.selected = null;
+    beginUtilityAction("hoseWire", 2400);
+    playSfx("kzzt");
+    setLog("You hook the hose around the stuck cable and brace for a proper pull.");
+    updateUI();
+    return true;
+  }
+
   reactNope();
   setLog(`${items[selected].name} does not help with that.`);
   return false;
 }
 
 function hotspotList() {
+  if (state.keypadOpen) return keypadHotspotList();
+  if (state.room === "hallway") return hallwayHotspotList();
+  if (state.room === "utility") return [
+    { id: "utilityVent", label: "Vent Back to Hallway", x: 846, y: 48, w: 114, h: 176, action: returnToHallwayVent },
+    { id: "utilityHose", label: "Coiled Hose", x: 82, y: 238, w: 110, h: 72, visible: () => !state.utilityHoseCollected, action: () => beginUtilityPickup("hose") },
+    { id: "utilityCleanRag", label: "Clean Rag", x: 130, y: 166, w: 60, h: 40, visible: () => !state.utilityCleanRagCollected, action: () => beginUtilityPickup("cleanRag") },
+    { id: "utilityToolkit", label: state.utilityToolkitOpen ? "Open Toolkit" : "Toolkit", x: 780, y: 325, w: 125, h: 114, action: interactUtilityToolkit },
+    { id: "utilitySlimeBox", label: "Unsteady Box", x: 246, y: 66, w: 92, h: 70, visible: () => !state.utilitySlimeBoxFallen, action: triggerUtilitySlimeBox },
+    { id: "utilityWire", label: state.utilityCableRouted ? "Tied Hose" : "Stuck Cable", x: 608, y: 123, w: 67, h: 34, action: pullUtilityWire },
+    { id: "utilityDoorButton", label: state.utilityDoorOpen ? "Door Control" : state.utilityCableRouted ? "Powered Door Panel" : state.utilityDoorPanelOpen ? "Opened Door Panel" : "Blue Door Panel", x: 548, y: 79, w: 44, h: 52, action: interactUtilityDoorButton },
+    { id: "utilityCenterDoor", label: "Open Utility Door", x: 398, y: 118, w: 110, h: 122, visible: () => state.utilityDoorOpen, action: returnFromUtilityToHallway },
+    { id: "utilityEmptyBox", label: "Light Parts Box", x: 711, y: 103, w: 93, h: 96, action: shakeUtilityEmptyBox }
+  ].filter(h => !h.visible || h.visible());
   const g = generatedArt.usePreview && generatedArt.backgroundReady;
   return [
-    { id: "outerDoor", label: "Outer Hatch", x: g ? 32 : 34, y: g ? 150 : 270, w: g ? 112 : 122, h: g ? 205 : 245, action: () => setLog("The outer hatch is sealed behind you. No going back until the ship gives up its secret.") },
+    { id: "outerDoor", label: state.outerDoorClosed ? "Closed Outer Hatch" : "Outer Hatch", x: g ? 32 : 34, y: g ? 150 : 270, w: g ? 112 : 122, h: g ? 205 : 245, action: () => setLog(state.outerDoorClosed ? "The outer hatch is sealed tight." : "The open outer hatch waits for the pressure controls.") },
     { id: "locker", label: state.lockerOpen ? "Emergency Locker" : "Jammed Emergency Locker", x: g ? 268 : 170, y: g ? 215 : 300, w: g ? 96 : 126, h: g ? 168 : 194, action: openLocker },
     { id: "helmetSpot", label: "Cracked Helmet", x: g ? 230 : 318, y: g ? 398 : 404, w: g ? 128 : 118, h: g ? 88 : 92, visible: () => !hasItem("helmet") && !hasItem("patchedHelmet") && !state.ventSealed, action: collectHelmet },
     { id: "vent", label: state.ventSealed ? "Sealed Vent" : "Screaming Pressure Leak", x: g ? 370 : 506, y: g ? 48 : 112, w: g ? 205 : 124, h: g ? 94 : 92, action: inspectVent },
     { id: "lever", label: "Pressure Lever", x: g ? 560 : 675, y: g ? 250 : 395, w: g ? 94 : 82, h: g ? 126 : 116, action: pullLever },
     { id: "ladder", label: state.onLadder ? "Climb Down" : "Service Ladder", x: g ? 456 : 542, y: g ? 150 : 226, w: g ? 64 : 52, h: g ? 300 : 292, action: useLadder },
     { id: "decoyButton", label: state.decoyButtonBroken ? "Broken Alien Button" : "Suspicious Alien Button", x: g ? 615 : 704, y: g ? 397 : 300, w: g ? 126 : 58, h: g ? 84 : 70, action: pressDecoyButton },
-    { id: "cargoCart", label: "Loose Cargo Cart", x: state.cartX - 48, y: 412, w: 96, h: 58, action: pushCargoCart },
-    { id: "tag", label: "Maintenance Tag", x: 598, y: 463, w: 76, h: 55, visible: () => state.tagAvailable && !hasItem("tag") && !state.scannerSpoofed, action: () => addItem("tag") },
+    { id: "cargoCart", label: "Loose Cargo Cart", x: state.cartX - 90, y: 400, w: 180, h: 82, action: pushCargoCart },
+    { id: "alienToy", label: "Alien Plush", x: 389, y: 340, w: 49, h: 70, action: inspectAlienToy },
+    { id: "tag", label: "Maintenance Tag", x: 515, y: 407, w: 60, h: 64, visible: () => tagIsCollectible() && !hasItem("tag") && !state.scannerSpoofed, action: () => addItem("tag") },
     { id: "scanner", label: state.scannerSpoofed ? "Spoofed Scanner" : "Alien ID Scanner", x: g ? 689 : 772, y: g ? 246 : 238, w: g ? 64 : 70, h: g ? 80 : 120, action: inspectScanner },
     { id: "innerDoor", label: state.complete ? "Open Inner Hatch" : "Inner Airlock Hatch", x: g ? 829 : 842, y: g ? 182 : 178, w: g ? 120 : 86, h: g ? 235 : 292, action: openInnerDoor }
   ]
     .filter(h => !h.visible || h.visible())
     .filter(h => !state.onLadder || h.id === "vent" || h.id === "ladder");
+}
+
+function returnToHallwayVent() {
+  state.player.facing = "up";
+  beginUtilityAction("ventSwipe", 2350, { startX: state.player.x, startY: state.player.y });
+  playSfx("kzzt");
+}
+
+function beginUtilityAction(type, duration, extra = {}) {
+  if (state.utilityAction) return;
+  state.player.path = [];
+  state.player.currentDone = null;
+  state.player.tx = state.player.x;
+  state.player.ty = state.player.y;
+  state.utilityAction = { type, start: performance.now(), duration, ...extra };
+  state.hover = null;
+}
+
+function beginUtilityPickup(item) {
+  beginUtilityAction("pickup", 900, { item });
+  state.player.facing = item === "hose" || item === "cleanRag" ? "left" : "right";
+  playSfx("pop");
+}
+
+function interactUtilityToolkit() {
+  if (!state.utilityToolkitOpen) {
+    state.utilityToolkitOpen = true;
+    state.player.facing = "right";
+    playSfx("clank");
+    return;
+  }
+  if (!state.utilityWrenchCollected) {
+    beginUtilityPickup("wrench");
+    return;
+  }
+  reactNope();
+}
+
+function triggerUtilitySlimeBox() {
+  if (state.utilitySlimeBoxFallen) return;
+  state.utilitySlimeBoxFallen = true;
+  state.player.facing = "up";
+  beginUtilityAction("slime", 2700);
+  playSfx("clank");
+}
+
+function pullUtilityWire() {
+  if (state.selected) {
+    if (useSelectedOn("utilityWire")) return;
+  }
+  if (state.utilityCableRouted) {
+    playSfx("ding");
+    setLog("The tied hose holds the cable steady inside the opened blue panel.");
+    return;
+  }
+  state.player.facing = "right";
+  beginUtilityAction("wire", 1750);
+  playSfx("kzzt");
+}
+
+function interactUtilityDoorButton() {
+  if (state.selected) {
+    if (useSelectedOn("utilityDoorButton")) return;
+  }
+  if (state.utilityCableRouted && !state.utilityDoorOpen) {
+    state.player.facing = "up";
+    beginUtilityAction("utilityDoorOpen", 1200);
+    playSfx("ding");
+    setLog("The tied hose holds. The blue panel wakes up and the center door opens.");
+    return;
+  }
+  if (state.utilityDoorOpen) {
+    playSfx("ding");
+    setLog("The center utility door is open.");
+    return;
+  }
+  if (state.utilityDoorPanelOpen) {
+    playSfx("kzzt");
+    setLog("The opened blue panel hums faintly. It needs the cable rerouted into it.");
+    return;
+  }
+  reactNope();
+  setLog("The blue panel will not budge by hand.");
+}
+
+function shakeUtilityEmptyBox() {
+  state.player.facing = "down";
+  beginUtilityAction("emptyBox", 1900);
+  playSfx("clank");
+}
+
+function hallwayHotspotList() {
+  return [
+    { id: "hallToneLeft", label: "Low Tone Button", x: 240, y: 298, w: 36, h: 38, action: () => playHallwayTone("low") },
+    { id: "hallToneMiddle", label: "Middle Tone Button", x: 397, y: 268, w: 42, h: 43, action: () => playHallwayTone("middle") },
+    { id: "hallToneRight", label: "High Tone Button", x: 777, y: 224, w: 42, h: 43, action: () => playHallwayTone("high") },
+    { id: "hallLeftDoor", label: "Airlock Door", x: 0, y: 118, w: 105, h: 330, action: returnToAirlock },
+    { id: "hallDoorA", label: state.hallDoorAOpen ? "Open Crew Door" : "Battered Crew Door", x: 264, y: 176, w: 126, h: 246, action: () => state.hallDoorAOpen ? playSfx("ding") : inspectHallwayProp("doorA") },
+    { id: "hallDoorB", label: state.utilityDoorOpen ? "Open Utility Door" : "Pristine Utility Door", x: 608, y: 176, w: 126, h: 246, action: () => state.utilityDoorOpen ? enterUtilityFromHallwayDoor() : inspectHallwayProp("doorB") },
+    { id: "hallKeypad", label: "Door Keypad", x: 842, y: 274, w: 42, h: 72, action: openHallwayKeypad },
+    { id: "hallRightDoor", label: state.keypadUnlocked ? "Unlocked Corridor Door" : "Secured Corridor Door", x: 852, y: 116, w: 108, h: 334, action: () => inspectHallwayProp("rightDoor") },
+    { id: "hallTrash", label: "Alien Trash Can", x: 171, y: 340, w: 92, h: 150, action: () => state.hallwayRagCollected ? inspectHallwayProp("trash") : beginHallwayPickup("rag") },
+    { id: "hallPaper", label: "Crooked Paper Art", x: 136, y: 184, w: 108, h: 140, action: () => inspectHallwayProp("paper") },
+    { id: "hallCleaner", label: "Round Cleaning Gadget", x: state.hallwayCleanerX - 48, y: 362, w: 96, h: 118, action: interactHallwayCleaner },
+    { id: "hallRagShreds", label: "Rag Shreds", x: state.hallwayRagShredsX - 42, y: 444, w: 84, h: 34, visible: () => state.hallwayRagShredsAvailable && !state.hallwayRagShredsCollected, action: () => beginHallwayPickup("ragShreds") },
+    { id: "hallMirror", label: "Alien Mirror", x: 438, y: 164, w: 112, h: 206, action: () => inspectHallwayProp("mirror") },
+    { id: "hallVase", label: "Table Vase", x: 528, y: 288, w: 62, h: 84, action: () => state.hallwayDirtCollected ? inspectHallwayProp("vase") : beginHallwayPickup("dirt") },
+    { id: "hallVent", label: state.hallwayRopeInstalled ? "Makeshift Rope" : "High Wall Vent", x: 684, y: 28, w: 112, h: state.hallwayRopeInstalled ? 450 : 128, action: interactHallwayVent }
+  ].filter(h => !h.visible || h.visible());
+}
+
+const HALLWAY_KEYPAD_CODE = "314";
+
+function keypadHotspotList() {
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "clear", "0", "enter"];
+  const startX = 338;
+  const startY = 214;
+  const w = 78;
+  const h = 62;
+  const gapX = 22;
+  const gapY = 16;
+  const hotspots = keys.map((key, index) => {
+    const col = index % 3;
+    const row = Math.floor(index / 3);
+    return {
+      id: `keypad-${key}`,
+      label: key === "clear" ? "Clear" : key === "enter" ? "Enter" : key,
+      x: startX + col * (w + gapX),
+      y: startY + row * (h + gapY),
+      w,
+      h,
+      action: () => pressKeypadKey(key)
+    };
+  });
+  hotspots.push({ id: "keypad-close", label: "Close", x: 614, y: 128, w: 32, h: 32, action: closeHallwayKeypad });
+  return hotspots;
+}
+
+function openHallwayKeypad() {
+  state.keypadOpen = true;
+  state.keypadEntry = "";
+  state.hover = null;
+  state.player.facing = "right";
+  playSfx("boop");
+}
+
+function closeHallwayKeypad() {
+  state.keypadOpen = false;
+  state.keypadEntry = "";
+  state.hover = null;
+}
+
+function pressKeypadKey(key) {
+  if (key === "clear") {
+    state.keypadEntry = "";
+    playSfx("kzzt");
+    return;
+  }
+  if (key === "enter") {
+    if (state.keypadEntry === HALLWAY_KEYPAD_CODE) {
+      state.keypadUnlocked = true;
+      playCombineTwinkle();
+      state.keypadFeedbackUntil = performance.now() + 850;
+      setTimeout(closeHallwayKeypad, 700);
+    } else {
+      state.keypadEntry = "";
+      state.keypadFeedbackUntil = performance.now() + 600;
+      playSfx("nope");
+    }
+    return;
+  }
+  if (state.keypadEntry.length < 3) {
+    state.keypadEntry += key;
+    playSfx("boop");
+  }
+}
+
+function switchToHallway() {
+  state.room = "hallway";
+  state.onLadder = false;
+  state.hover = null;
+  state.player.path = [];
+  state.player.currentDone = null;
+  state.player.forcedFacing = null;
+  state.player.x = 72;
+  state.player.y = 472;
+  state.player.tx = 72;
+  state.player.ty = 472;
+  state.player.facing = "right";
+  setLog("The airlock opens into a long crew corridor.");
+  updateUI();
+}
+
+function enterHallway() {
+  setPlayerPath([{ x: 930, y: 448, facing: "right", done: switchToHallway }]);
+}
+
+function returnToAirlock() {
+  setPlayerPath([{
+    x: 28,
+    y: 472,
+    facing: "left",
+    done: () => {
+      state.room = "airlock";
+      state.hover = null;
+      state.player.x = 884;
+      state.player.y = 448;
+      state.player.tx = 884;
+      state.player.ty = 448;
+      state.player.facing = "left";
+      updateUI();
+    }
+  }]);
+}
+
+function spillHallwayDirt(x) {
+  removeItem("dirt");
+  state.selected = null;
+  state.hallwayDirtSpilled = true;
+  state.hallwayDirtX = Math.max(320, Math.min(690, x));
+  state.hallwayCleanerMode = "approaching";
+  state.hallwayCleanerTargetX = state.hallwayDirtX;
+  playSfx("squish");
+  setLog("The dirt scatters across the deck. The cleaning machine notices immediately.");
+  updateUI();
+}
+
+function interactHallwayCleaner() {
+  if (state.selected === "rag") {
+    if (state.hallwayCleanerMode !== "wiping") {
+      reactNope();
+      setLog("The cleaner zips away from the rag. It needs to be distracted first.");
+      return;
+    }
+    removeItem("rag");
+    state.selected = null;
+    state.hallwayCleanerMode = "jamming";
+    state.hallwayCleanerActionStart = performance.now();
+    playSfx("clank");
+    setTimeout(() => playSfx("squish"), 260);
+    setLog("The rag catches in the spinning brushes. The cleaner shudders and tears it apart.");
+    updateUI();
+    return;
+  }
+  if (state.hallwayCleanerMode === "wiping" || state.hallwayCleanerMode === "approaching" || state.hallwayCleanerMode === "jamming") {
+    reactNope();
+    return;
+  }
+  inspectHallwayProp("cleaner");
+}
+
+function interactHallwayVent() {
+  if (state.selected === "ragShreds" && !state.hallwayRopeInstalled) {
+    removeItem("ragShreds");
+    state.selected = null;
+    state.hallwayRopeTying = true;
+    state.hallwayRopeTieStart = performance.now();
+    state.player.facing = "down";
+    state.player.forcedFacing = "down";
+    state.player.path = [];
+    state.player.currentDone = null;
+    state.player.tx = state.player.x;
+    state.player.ty = state.player.y;
+    playSfx("squish");
+    setLog("You begin knotting the torn strips together.");
+    updateUI();
+    return;
+  }
+  if (state.hallwayRopeInstalled) {
+    state.hallwayVentClimbing = true;
+    state.player.forcedFacing = "up";
+    setPlayerPath([
+      { x: 738, y: 472, facing: "up" },
+      { x: 738, y: 128, facing: "up", done: switchToUtilityCloset }
+    ]);
+    playSfx("clank");
+    return;
+  }
+  reactNope();
+}
+
+function switchToUtilityCloset() {
+  state.room = "utility";
+  state.hallwayVentClimbing = false;
+  state.utilityEntryAnimating = true;
+  state.utilityEntryStart = performance.now();
+  state.hover = null;
+  Object.assign(state.player, { x: 902, y: 172, tx: 902, ty: 172, facing: "down", forcedFacing: "down", currentDone: null, path: [] });
+  setLog("You squeeze through the vent and drop into the utility closet.");
+  updateUI();
+}
+
+function enterUtilityFromHallwayDoor() {
+  if (!state.utilityDoorOpen) {
+    reactNope();
+    return;
+  }
+  state.room = "utility";
+  state.hover = null;
+  state.utilityEntryAnimating = false;
+  Object.assign(state.player, {
+    x: 456,
+    y: 372,
+    tx: 456,
+    ty: 372,
+    facing: "up",
+    forcedFacing: null,
+    currentDone: null,
+    path: []
+  });
+  playSfx("ding");
+  updateUI();
+}
+
+function returnFromUtilityToHallway() {
+  setPlayerPath([
+    {
+      x: 456,
+      y: 238,
+      facing: "up",
+      done: () => {
+        state.room = "hallway";
+        state.hover = null;
+        Object.assign(state.player, {
+          x: 670,
+          y: 472,
+          tx: 670,
+          ty: 472,
+          facing: "down",
+          forcedFacing: null,
+          currentDone: null,
+          path: []
+        });
+        setLog("You step back through the utility door into the crew hallway.");
+        updateUI();
+      }
+    }
+  ]);
+}
+
+function inspectHallwayProp(id) {
+  state.hallwayEffect = id;
+  state.hallwayEffectUntil = performance.now() + (id === "cleaner" ? 900 : 650);
+  if (id === "cleaner") {
+    state.hallwayCleanerTargetX = state.hallwayCleanerX > 740 ? 710 : 780;
+    playSfx("boop");
+    return;
+  }
+  if (id === "mirror") state.player.facing = "up";
+  if (id === "trash") playSfx("clank");
+  else if (id === "paper" || id === "vase") playSfx("squish");
+  else if (id === "mirror") playSfx("ding");
+  else if (id === "hallVent") reactNope();
+  else reactNope();
+}
+
+function beginHallwayPickup(id) {
+  if (state.hallwayPickup) return;
+  // Floor pickups beside bulky props should keep the side-facing pose chosen
+  // by the approach path. This prevents the trash can or cleaner from hiding
+  // the astronaut at the moment the interaction begins.
+  if (id !== "rag" && id !== "ragShreds") state.player.facing = "down";
+  state.player.path = [];
+  state.player.currentDone = null;
+  state.player.tx = state.player.x;
+  state.player.ty = state.player.y;
+  state.hallwayPickup = {
+    id,
+    start: performance.now(),
+    duration: 1050,
+    from: id === "rag" ? { x: 214, y: 357 } : id === "ragShreds" ? { x: state.hallwayRagShredsX, y: 456 } : { x: 560, y: 284 }
+  };
+  playSfx(id === "rag" || id === "ragShreds" ? "squish" : "clank");
 }
 
 function pressDecoyButton() {
@@ -420,11 +1032,39 @@ function useLadder() {
 }
 
 function pushCargoCart() {
+  state.player.facing = state.player.x < state.cartX ? "right" : "left";
   state.cartLeft = !state.cartLeft;
-  state.cartTargetX = state.cartLeft ? 462 : 586;
+  state.cartTargetX = state.cartLeft ? CART_LEFT_X : CART_RIGHT_X;
   state.cartWobbleUntil = performance.now() + 650;
   popComic("clank!", state.cartTargetX, 414, "#f2c45b");
   setLog("The cargo cart rattles along its track and stops with a hollow clank.");
+}
+
+function inspectAlienToy() {
+  if (state.toyExamining) return;
+  // Keep the pickup strictly arrival-driven even if another input path calls
+  // the action directly. The plush must remain on the floor until the
+  // astronaut has actually walked into reach.
+  const toyHotspot = hotspotList().find(hotspot => hotspot.id === "alienToy");
+  const approach = generatedApproachPoint(toyHotspot);
+  if (Math.hypot(state.player.x - approach.x, state.player.y - approach.y) > 4) {
+    movePlayerNear(toyHotspot, inspectAlienToy);
+    return;
+  }
+  const now = performance.now();
+  state.player.facing = state.player.x < 413 ? "right" : "left";
+  state.player.path = [];
+  state.player.currentDone = null;
+  state.player.tx = state.player.x;
+  state.player.ty = state.player.y;
+  state.toyExamining = true;
+  state.toyInspectStart = now;
+  state.toyInspectUntil = now + 2300;
+  state.hover = null;
+  playSfx("squish");
+  setTimeout(() => {
+    if (state.toyExamining) playSfx("ding");
+  }, 920);
 }
 
 function openLocker() {
@@ -464,7 +1104,7 @@ function inspectVent() {
 }
 
 function pullLever() {
-  if (state.pressureEqualized) {
+  if (state.pressureEqualized || state.leverPulled) {
     reactNope();
     setLog("The pressure needle is steady. The lever refuses to do anything dramatic twice.");
     return;
@@ -474,11 +1114,22 @@ function pullLever() {
     setLog("You pull the lever. The room screams louder. You shove it back before your boots leave the floor.");
     return;
   }
-  state.pressureEqualized = true;
-  state.tagAvailable = true;
-  popComic("whoomp!", 712, 345, "#6df2d6");
-  setLog("Pressure rolls through the chamber. A tiny maintenance bot tumbles from a wall socket and coughs up an access tag.");
-  updateUI();
+  state.leverPulled = true;
+  state.outerDoorCloseStart = performance.now();
+  playSfx("whoosh");
+  clearTimeout(outerDoorCloseTimer);
+  outerDoorCloseTimer = setTimeout(() => {
+    outerDoorCloseTimer = 0;
+    state.outerDoorClosed = true;
+    state.pressureEqualized = true;
+    state.tagAvailable = true;
+    state.tagReleaseStart = performance.now();
+    playSfx("clank");
+    setTimeout(() => playSfx("pop"), 1080);
+    setLog("The outer hatch seals. Pressure returns, and the maintenance drawer releases its tag.");
+    updateUI();
+  }, OUTER_HATCH_CLOSE_MS);
+  setLog("The lever drops and the outer hatch begins to close.");
 }
 
 function inspectScanner() {
@@ -488,22 +1139,25 @@ function inspectScanner() {
 
 function openInnerDoor() {
   if (state.complete) {
-    setLog("Beyond the hatch, the ship descends into a quiet cargo spine. That will be the next room.");
+    enterHallway();
     return;
   }
   if (!state.scannerSpoofed) {
+    state.innerDoorRejectUntil = performance.now() + 420;
     reactNope();
     setLog("The inner hatch stays locked. A scanner beside it blinks in judgment.");
     return;
   }
   state.complete = true;
-  popComic("WHOOSH!", 848, 172, "#7cf5de");
+  state.innerDoorOpenStart = performance.now();
+  playSfx("whoosh");
   setLog("The inner hatch exhales open. The ship accepts your lie and invites you deeper.");
   updateUI();
 }
 
 function updateUI() {
   ui.inventory.innerHTML = "";
+  let selectedButton = null;
   if (!state.inventory.length) {
     const empty = document.createElement("p");
     empty.className = "s4-empty";
@@ -515,7 +1169,8 @@ function updateUI() {
     button.type = "button";
     button.className = "s4-item";
     button.classList.toggle("is-selected", state.selected === id);
-    button.innerHTML = `<span>${items[id].icon}</span><strong>${items[id].name}</strong><small>${items[id].description}</small>`;
+    if (state.selected === id) selectedButton = button;
+    button.innerHTML = `<span class="s4-item-art"><img src="${items[id].sprite}?v=stage4-item-sprites-1" alt=""></span><strong>${items[id].name}</strong><small>${items[id].description}</small>`;
     button.addEventListener("click", () => {
       if (state.selected && state.selected !== id) {
         tryCombine(state.selected, id);
@@ -527,8 +1182,17 @@ function updateUI() {
     });
     ui.inventory.append(button);
   }
+  if (selectedButton) requestAnimationFrame(() => selectedButton.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }));
   ui.clear.hidden = !state.selected;
-  if (ui.objective) ui.objective.textContent = state.complete ? "Airlock cleared. Next: the cargo spine." : "Get through the inner airlock door.";
+  const roomLevel = document.querySelector("#s4RoomLevel");
+  const roomName = document.querySelector("#s4RoomName");
+  if (roomLevel) roomLevel.textContent = state.room === "utility" ? "Level 3" : state.room === "hallway" ? "Level 2" : "Level 1";
+  if (roomName) roomName.textContent = state.room === "utility" ? "Utility Closet" : state.room === "hallway" ? "Crew Hallway" : "Breached Airlock";
+  document.querySelector("#s4DebugAirlock")?.classList.toggle("is-active", state.room === "airlock");
+  document.querySelector("#s4DebugHallway")?.classList.toggle("is-active", state.room === "hallway");
+  document.querySelector("#s4DebugUtility")?.classList.toggle("is-active", state.room === "utility");
+  canvas.setAttribute("aria-label", state.room === "utility" ? "Alien ship utility closet" : state.room === "hallway" ? "Alien ship crew hallway" : "Alien airlock point and click puzzle");
+  if (ui.objective) ui.objective.textContent = state.room === "utility" ? "Explore the utility closet." : state.room === "hallway" ? "Explore the crew hallway." : state.complete ? "Airlock cleared. Enter the open hatch." : "Get through the inner airlock door.";
   if (ui.steps) {
     ui.steps.innerHTML = "";
     for (const [label, done] of steps) {
@@ -579,7 +1243,7 @@ function positionControllerCursor() {
   cursor.style.transform = `translate(${controller.screenX}px,${controller.screenY}px) translate(-50%,-50%)`;
   const r = getCanvasContentRect();
   controller.onCanvas = controller.screenX >= r.left && controller.screenX <= r.right && controller.screenY >= r.top && controller.screenY <= r.bottom;
-  if (controller.onCanvas) {
+  if (controller.onCanvas && !state.toyExamining) {
     const p = screenToCanvasPoint(controller.screenX, controller.screenY);
     controller.x = p.x;
     controller.y = p.y;
@@ -603,8 +1267,18 @@ function movePlayerToPoint(point) {
   state.onLadder = false;
   state.player.path = [];
   state.player.currentDone = null;
-  state.player.tx = Math.max(72, Math.min(890, point.x));
-  state.player.ty = isGeneratedMode() ? Math.max(414, Math.min(474, point.y)) : Math.max(520, Math.min(570, point.y));
+  if (state.room === "hallway") {
+    state.player.tx = Math.max(42, Math.min(918, point.x));
+    // Room 2 is intentionally a side-scrolling corridor. Free movement only
+    // changes X; interaction paths may step slightly off this line.
+    state.player.ty = 472;
+  } else if (state.room === "utility") {
+    state.player.tx = point.x;
+    state.player.ty = point.y;
+  } else {
+    state.player.tx = Math.max(72, Math.min(890, point.x));
+    state.player.ty = isGeneratedMode() ? Math.max(414, Math.min(474, point.y)) : Math.max(520, Math.min(570, point.y));
+  }
   return true;
 }
 
@@ -621,13 +1295,22 @@ function setPlayerPath(points) {
 function activatePoint(point) {
   // The shrug is a complete player reaction, not an overlay on movement.
   // Ignore new destinations and interactions until its final frame finishes.
-  if (playerIsReacting()) return;
+  if (playerIsReacting() || state.toyExamining || state.hallwayPickup || state.hallwayRopeTying || state.hallwayVentClimbing || state.utilityEntryAnimating || state.utilityAction) return;
   const hit = hitTest(point);
+  if (state.keypadOpen) {
+    if (hit) hit.action();
+    return;
+  }
   if (state.onLadder && (!hit || (hit.id !== "vent" && hit.id !== "ladder"))) {
     reactNope();
     return;
   }
   if (!hit) {
+    if (state.room === "hallway" && state.selected === "dirt" && isGroundTile(point)) {
+      const dirtX = point.x;
+      if (movePlayerToPoint(point)) state.player.currentDone = () => spillHallwayDirt(dirtX);
+      return;
+    }
     if (movePlayerToPoint(point)) setLog(state.selected ? `${items[state.selected].name} stays ready while you move.` : "You move across the alien deck.");
     return;
   }
@@ -652,6 +1335,7 @@ function autoScrollViewport(dt) {
 }
 
 function cycleInventory(delta) {
+  if (state.hallwayRopeTying || state.hallwayVentClimbing || state.utilityEntryAnimating || state.utilityAction) return;
   if (!state.inventory.length) {
     reactNope();
     setLog("No inventory items yet.");
@@ -665,7 +1349,7 @@ function cycleInventory(delta) {
 
 function controllerClick() {
   const target = document.elementFromPoint(controller.screenX, controller.screenY);
-  const button = target?.closest?.(".s4-item, #s4ClearItem, .stage-link");
+  const button = target?.closest?.(".s4-item, #s4ClearItem, .s4-debug-button, .stage-link");
   if (button && !button.disabled && !button.hidden) {
     button.click();
     return;
@@ -708,6 +1392,11 @@ function updateController(dt) {
 
   if (edge(0)) controllerClick();
   if (edge(1)) {
+    if (state.keypadOpen) {
+      closeHallwayKeypad();
+      controller.buttons = pad.buttons.map((_, i) => held(i));
+      return;
+    }
     state.selected = null;
     setLog("Item put away.");
     updateUI();
@@ -825,6 +1514,22 @@ const tracedHotspots = {
   innerDoor: {
     hit: point => pointInPolygon(point, [[837,183],[921,183],[948,208],[949,390],[933,413],[846,413],[829,390],[829,208]]),
     draw: () => tracePolygon([[837,183],[921,183],[948,208],[949,390],[933,413],[846,413],[829,390],[829,208]])
+  },
+  hallToneLeft: {
+    hit: point => pointInEllipse(point, 258, 317, 18, 19, 0),
+    draw: () => ctx.ellipse(258, 317, 18, 19, 0, 0, Math.PI * 2)
+  },
+  hallToneMiddle: {
+    hit: point => pointInEllipse(point, 418, 289, 21, 22, 0),
+    draw: () => ctx.ellipse(418, 289, 21, 22, 0, 0, Math.PI * 2)
+  },
+  hallToneRight: {
+    hit: point => pointInEllipse(point, 798, 245, 21, 22, 0),
+    draw: () => ctx.ellipse(798, 245, 21, 22, 0, 0, Math.PI * 2)
+  },
+  utilityCenterDoor: {
+    hit: point => pointInPolygon(point, [[408, 88], [490, 88], [508, 110], [508, 232], [494, 248], [404, 248], [389, 232], [389, 112]]),
+    draw: () => tracePolygon([[408, 88], [490, 88], [508, 110], [508, 232], [494, 248], [404, 248], [389, 232], [389, 112]])
   }
 };
 
@@ -858,13 +1563,17 @@ function generatedShapeHit(hotspot, point) {
     case "decoyButton":
       return pointInEllipse(point, 626, 444, 48, 21, -.12);
     case "cargoCart":
-      return pointInRect(point, state.cartX - 50, 410, 100, 62);
+      return pointInRect(point, state.cartX - 90, 400, 180, 82);
+    case "alienToy":
+      return pointInEllipse(point, 413, 375, 26, 38, 0);
     case "tag":
-      return pointInEllipse(point, 636, 488, 42, 30);
+      return pointInEllipse(point, 545, 439, 30, 32, -.18);
     case "scanner":
       return pointInPolygon(point, [[721,246],[740,253],[753,274],[751,305],[735,326],[708,326],[691,307],[689,277],[700,254]]);
     case "innerDoor":
       return pointInPolygon(point, [[837,183],[921,183],[948,208],[949,390],[933,413],[846,413],[829,390],[829,208]]);
+    case "hallKeypad":
+      return pointInEllipse(point, 862, 309, 19, 29, 0);
     default:
       return pointInRect(point, hotspot.x, hotspot.y, hotspot.w, hotspot.h);
   }
@@ -878,6 +1587,10 @@ function hitTest(point) {
 
 function isGroundTile(point) {
   if (isGeneratedMode()) {
+    if (state.room === "hallway") return point.x >= 32 && point.x <= 928 && point.y >= 414 && point.y <= 522;
+    if (state.room === "utility") return pointInPolygon(point, [
+      [360, 188], [600, 188], [708, 585], [250, 585]
+    ]);
     // The character's position is anchored at the boots.  This polygon follows
     // only the painted golden deck surface; the dark machinery below the front
     // lip and the open space beyond either end are deliberately excluded.
@@ -918,21 +1631,80 @@ function movePlayerNear(hotspot, onArrival = null) {
   }
   state.onLadder = false;
   state.player.path = [];
-  state.player.currentDone = onArrival;
   const target = generatedArt.usePreview && generatedArt.backgroundReady ? generatedApproachPoint(hotspot) : { x: Math.max(90, Math.min(850, hotspot.x + hotspot.w / 2)), y: 535 };
+  state.player.currentDone = () => {
+    if (target.facing) state.player.facing = target.facing;
+    if (onArrival) onArrival();
+  };
   state.player.tx = target.x;
   state.player.ty = target.y;
 }
 
+function nearestHallwaySideApproach(centerX, clearance, y = 472) {
+  const leftX = Math.max(42, centerX - clearance);
+  const rightX = Math.min(918, centerX + clearance);
+  const useLeft = Math.abs(state.player.x - leftX) <= Math.abs(state.player.x - rightX);
+  return useLeft
+    ? { x: leftX, y, facing: "right" }
+    : { x: rightX, y, facing: "left" };
+}
+
 function generatedApproachPoint(hotspot) {
+  if (state.room === "utility") {
+    const utilityPoints = {
+      utilityVent: { x: 650, y: 500 },
+      utilityHose: { x: 294, y: 372 },
+      utilityCleanRag: { x: 315, y: 372 },
+      utilityToolkit: { x: 650, y: 470 },
+      utilitySlimeBox: { x: 350, y: 340 },
+      utilityWire: { x: 570, y: 372 },
+      utilityDoorButton: { x: 570, y: 372 },
+      utilityCenterDoor: { x: 456, y: 372 },
+      utilityEmptyBox: { x: 642, y: 450 }
+    };
+    return utilityPoints[hotspot.id] || { x: hotspot.x + hotspot.w / 2, y: hotspot.y + hotspot.h / 2 };
+  }
+  if (state.room === "hallway") {
+    // Bulky floor props are always approached from their nearest clear side.
+    // Wall controls and doorways retain their intentionally centered targets.
+    if (hotspot.id === "hallTrash") return nearestHallwaySideApproach(217, 112);
+    if (hotspot.id === "hallCleaner") return nearestHallwaySideApproach(state.hallwayCleanerX, 106);
+    if (hotspot.id === "hallRagShreds") return nearestHallwaySideApproach(state.hallwayRagShredsX, 76);
+    const hallwayPoints = {
+      hallLeftDoor: { x: 80, y: 472 },
+      hallDoorA: { x: 326, y: 472 },
+      hallDoorB: { x: 670, y: 472 },
+      hallRightDoor: { x: 882, y: 472 },
+      hallKeypad: { x: 834, y: 472 },
+      hallPaper: { x: 190, y: 472 },
+      hallMirror: { x: 492, y: 472 },
+      hallVase: { x: 558, y: 472 },
+      hallToneLeft: { x: 258, y: 472 },
+      hallToneMiddle: { x: 418, y: 472 },
+      hallToneRight: { x: 798, y: 472 },
+      hallVent: { x: 738, y: 472 }
+    };
+    return hallwayPoints[hotspot.id] || { x: hotspot.x + hotspot.w / 2, y: 472 };
+  }
+  if (hotspot.id === "cargoCart") {
+    // Stand at the nearer end of the cart and low on the deck so the
+    // astronaut's forward hand meets the cart instead of its body overlapping
+    // the middle of the sprite.
+    const nextCartX = state.cartLeft ? CART_RIGHT_X : CART_LEFT_X;
+    const pushingFromLeft = nextCartX > state.cartX;
+    return { x: state.cartX + (pushingFromLeft ? -112 : 112), y: 470 };
+  }
+  if (hotspot.id === "alienToy") {
+    const approachFromLeft = state.player.x <= 413;
+    return { x: approachFromLeft ? 350 : 476, y: 456 };
+  }
   const points = {
     outerDoor: { x: 150, y: 452 },
     locker: { x: 320, y: 448 },
     helmetSpot: { x: 288, y: 456 },
     lever: { x: 610, y: 448 },
     decoyButton: { x: 670, y: 456 },
-    cargoCart: { x: state.cartX, y: 456 },
-    tag: { x: 620, y: 456 },
+    tag: { x: 545, y: 456 },
     scanner: { x: 725, y: 448 },
     innerDoor: { x: 850, y: 448 }
   };
@@ -1451,24 +2223,906 @@ function drawCrackedHelmetPickup(time) {
 }
 
 function drawGeneratedAirlock(time) {
+  if (state.room === "hallway") {
+    drawGeneratedHallway(time);
+    return;
+  }
+  if (state.room === "utility") {
+    drawGeneratedUtilityCloset(time);
+    return;
+  }
   ctx.drawImage(generatedArt.background, 0, 0, 960, 640);
+  drawAirlockPowerSignal();
 
   drawGeneratedObjectSprites(time);
-  if (state.hover) drawGeneratedSpriteHighlight(state.hover.id);
+  if (state.hover && state.hover.id !== "cargoCart") drawGeneratedSpriteHighlight(state.hover.id);
   drawGeneratedGasSprites(time);
 
-  drawPlayer(time);
+  // Depth-sort the movable cart against the astronaut's boot position. On the
+  // back half of the deck the astronaut passes behind it; on the front half
+  // the astronaut correctly covers it.
+  const cartInFront = state.player.y < 464;
+  if (!cartInFront) {
+    drawGeneratedCart(time);
+    if (state.hover?.id === "cargoCart") drawGeneratedSpriteHighlight("cargoCart");
+  }
+  if (state.toyExamining) drawAlienToyHugAnimation(time);
+  else drawPlayer(time);
+  if (cartInFront) {
+    drawGeneratedCart(time);
+    if (state.hover?.id === "cargoCart") drawGeneratedSpriteHighlight("cargoCart");
+  }
   drawHover();
+}
+
+function drawGeneratedUtilityCloset(time) {
+  ctx.drawImage(generatedArt.utilityBackground, 0, 0, 960, 640);
+  drawUtilityDoorOpenBackground();
+  drawUtilityProps(time);
+  if (state.hover) drawGeneratedSpriteHighlight(state.hover.id);
+  if (!["slime", "wire", "hoseWire", "ventSwipe"].includes(state.utilityAction?.type)) {
+    ctx.save();
+    drawPlayer(time);
+    ctx.restore();
+  }
+  drawUtilityActionOverlay(time);
+  drawHover();
+}
+
+function drawUtilityDoorOpenBackground() {
+  if (!generatedArt.utilityBackgroundDoorOpen.complete || !generatedArt.utilityBackgroundDoorOpen.naturalWidth) return;
+  const openingAction = state.utilityAction?.type === "utilityDoorOpen" ? state.utilityAction : null;
+  if (!state.utilityDoorOpen && !openingAction) return;
+  let alpha = 1;
+  if (openingAction) {
+    const elapsed = performance.now() - openingAction.start;
+    const t = Math.min(1, elapsed / openingAction.duration);
+    alpha = t * t * (3 - 2 * t);
+  }
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(generatedArt.utilityBackgroundDoorOpen, 0, 0, 960, 640);
+  ctx.restore();
+}
+
+const utilityPropRects = {
+  utilityHose: [82, 238, 110, 72],
+  utilityCleanRag: [130, 166, 60, 40],
+  utilityToolkit: [780, 325, 125, 114],
+  utilitySlimeBox: [246, 66, 92, 70],
+  utilityWire: [608, 123, 67, 34],
+  utilityDoorButton: [546, 78, 47, 82],
+  utilityEmptyBox: [711, 103, 93, 96]
+};
+
+function utilityWirePullPose(time) {
+  const isHosePull = state.utilityAction?.type === "hoseWire";
+  const elapsed = state.utilityAction?.type === "wire" || isHosePull ? performance.now() - state.utilityAction.start : 0;
+  const t = Math.min(1, elapsed / (isHosePull ? 2400 : 1750));
+  const frame = t < .24 ? 0 : t < .58 ? 1 : 2;
+  const recoil = frame === 2 ? Math.sin(time * 28) * 1.5 : 0;
+  const drawX = state.player.x - 88 + recoil;
+  const drawY = state.player.y - 275;
+  const handOffsets = [
+    { x: 123, y: 142 },
+    { x: 114, y: 162 },
+    { x: 104, y: 142 }
+  ];
+  return {
+    frame,
+    recoil,
+    drawX,
+    drawY,
+    handX: drawX + handOffsets[frame].x,
+    handY: drawY + handOffsets[frame].y
+  };
+}
+
+function drawUtilityProp(id, time) {
+  const rect = utilityPropRects[id];
+  if (!rect) return;
+  const [x, y, w, h] = rect;
+  ctx.save();
+  if (id === "utilityHose") ctx.drawImage(generatedArt.utilityHose, x, y, w, h);
+  if (id === "utilityCleanRag") {
+    // Use the complete transparent cloth sprite. The previous 40x14 in-place
+    // crop physically omitted its folded edges and looked visibly cut off.
+    ctx.translate(x + w / 2, y + h / 2);
+    ctx.rotate(-.45);
+    ctx.drawImage(generatedArt.utilityCleanRag, -30, -20, 60, 40);
+  }
+  if (id === "utilityToolkit") {
+    if (state.utilityToolkitOpen) {
+      ctx.drawImage(generatedArt.utilityToolkitOpen, 837, 178, 556, 616, 780, 312, 125, 132);
+    } else {
+      ctx.drawImage(generatedArt.utilityToolkit, 780, 325, 125, 114);
+    }
+  }
+  if (id === "utilitySlimeBox") ctx.drawImage(generatedArt.utilitySlimeBox, x, y, w, h);
+  if (id === "utilityDoorButton") {
+    ctx.drawImage(generatedArt.utilityDoorButton, x, y, w, h);
+    if (state.utilityDoorPanelOpen) {
+      ctx.save();
+      ctx.globalAlpha = .72 + Math.sin(time * 8) * .12;
+      ctx.fillStyle = "rgba(92, 245, 255, .28)";
+      ctx.beginPath();
+      ctx.arc(571, 101, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+  if (id === "utilityWire") {
+    if (state.utilityAction?.type === "wire" || state.utilityAction?.type === "hoseWire") {
+      // The cable drops from the shelf recess toward the astronaut's hands, so
+      // the action reads as pulling it down instead of dragging it across air.
+      const [wireX, wireY, wireW, wireH] = utilityPropRects.utilityWire;
+      const anchorX = wireX + wireW - 6;
+      const anchorY = wireY + wireH * .5;
+      const pose = utilityWirePullPose(time);
+      const plugX = pose.handX;
+      const plugY = pose.handY;
+      const dx = anchorX - plugX;
+      const dy = anchorY - plugY;
+      const length = Math.hypot(dx, dy);
+      ctx.save();
+      ctx.translate(plugX, plugY);
+      ctx.rotate(Math.atan2(dy, dx));
+      const cableStart = pose.frame === 2 ? 10 : 12;
+      const cableLength = Math.max(4, length - cableStart);
+      ctx.drawImage(generatedArt.utilityWirePull, 145, 0, 238, 116, cableStart, -8, cableLength, 16);
+      if (state.utilityAction?.type === "hoseWire") {
+        ctx.globalAlpha = .84;
+        ctx.drawImage(generatedArt.utilityHose, cableStart + 4, -15, Math.max(32, cableLength * .52), 30);
+      }
+      ctx.restore();
+    } else if (state.utilityCableRouted) {
+      drawUtilityRoutedCable(time);
+    } else {
+      ctx.drawImage(generatedArt.utilityWire, x, y, w, h);
+    }
+  }
+  if (id === "utilityEmptyBox") ctx.drawImage(generatedArt.utilityEmptyBox, x, y, w, h);
+  ctx.restore();
+}
+
+function drawUtilityRoutedCable(time) {
+  ctx.drawImage(generatedArt.utilityRoutedCable, 0, 0, 960, 640);
+  ctx.save();
+  ctx.fillStyle = `rgba(92, 245, 255, ${.18 + Math.sin(time * 8) * .06})`;
+  ctx.beginPath();
+  ctx.arc(571, 101, 18, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawUtilityWireHandConnector(time) {
+  const [wireX, wireY, wireW, wireH] = utilityPropRects.utilityWire;
+  const anchorX = wireX + wireW - 6;
+  const anchorY = wireY + wireH * .5;
+  const pose = utilityWirePullPose(time);
+  const dx = anchorX - pose.handX;
+  const dy = anchorY - pose.handY;
+  const connectorW = 52;
+  const connectorH = 33;
+  ctx.save();
+  ctx.translate(pose.handX, pose.handY);
+  ctx.rotate(Math.atan2(dy, dx));
+  ctx.drawImage(generatedArt.utilityWirePull, 0, 0, 150, 116, -connectorW * .5, -connectorH * .5, connectorW, connectorH);
+  ctx.restore();
+}
+
+function drawUtilityWireHandsOverlay(time) {
+  const handsSheet = generatedArt.utilityWirePullHands;
+  if (!handsSheet.complete || !handsSheet.naturalWidth) return;
+  const pose = utilityWirePullPose(time);
+  const frameWidth = handsSheet.naturalWidth / 3;
+  ctx.drawImage(
+    handsSheet,
+    pose.frame * frameWidth,
+    0,
+    frameWidth,
+    handsSheet.naturalHeight,
+    pose.drawX,
+    pose.drawY,
+    176,
+    233
+  );
+}
+
+function drawUtilityProps(time) {
+  if (!state.utilityHoseCollected && state.utilityAction?.item !== "hose") drawUtilityProp("utilityHose", time);
+  if (!state.utilityCleanRagCollected && state.utilityAction?.item !== "cleanRag") drawUtilityProp("utilityCleanRag", time);
+  drawUtilityProp("utilityToolkit", time);
+  if (!state.utilitySlimeBoxFallen) drawUtilityProp("utilitySlimeBox", time);
+  drawUtilityProp("utilityWire", time);
+  drawUtilityProp("utilityDoorButton", time);
+  if (state.utilityAction?.type !== "emptyBox") drawUtilityProp("utilityEmptyBox", time);
+  if (state.utilitySlimeBoxFallen && state.utilityAction?.type !== "slime") {
+    ctx.save();
+    ctx.translate(395, 294);
+    ctx.rotate(.48);
+    ctx.drawImage(generatedArt.utilitySlimeBox, -48, -35, 96, 70);
+    ctx.restore();
+  }
+}
+
+function drawUtilityPickupSprite(item, x, y, scale = 1) {
+  const image = item === "hose" ? generatedArt.utilityHose : item === "cleanRag" ? generatedArt.utilityCleanRag : generatedArt.utilityWrench;
+  const size = item === "hose" ? [86, 62] : item === "cleanRag" ? [70, 34] : [86, 48];
+  ctx.drawImage(image, x - size[0] * scale / 2, y - size[1] * scale / 2, size[0] * scale, size[1] * scale);
+}
+
+function drawUtilityPlayerFrame(image, columns, col, row, x, y, angle = 0) {
+  if (!image.complete || !image.naturalWidth) return;
+  const sw = image.naturalWidth / columns;
+  const sh = image.naturalHeight / (image === generatedArt.playerSheet ? 4 : 1);
+  const sx = col * sw + 2;
+  const sy = row * sh + 2;
+  const dw = 176;
+  const dh = 270;
+  const footAnchor = dh * .448;
+  ctx.save();
+  ctx.translate(x, y - footAnchor);
+  ctx.rotate(angle);
+  ctx.drawImage(image, sx, sy, sw - 4, sh - 4, -dw / 2, -dh / 2, dw, dh);
+  ctx.restore();
+}
+
+function drawUtilityVentPlayerFrame(frame, x, y, scale = 1, angle = 0) {
+  const image = generatedArt.utilityVentPlayer;
+  if (!image.complete || !image.naturalWidth) return;
+  const columns = 4;
+  const sw = image.naturalWidth / columns;
+  const sh = image.naturalHeight;
+  // This generated sheet is tightly cropped compared with the regular player
+  // sheet. Draw it smaller so the visible astronaut matches the normal sprite.
+  const dw = 158 * scale;
+  const dh = 238 * scale;
+  const footAnchor = dh * .43;
+  ctx.save();
+  ctx.translate(x, y - footAnchor);
+  ctx.rotate(angle);
+  ctx.drawImage(image, frame * sw, 0, sw, sh, -dw / 2, -dh / 2, dw, dh);
+  ctx.restore();
+}
+
+function drawUtilityVentPawArt(x, y, width, height, angle = 0, alpha = 1) {
+  if (!generatedArt.utilityVentPaw.complete || !generatedArt.utilityVentPaw.naturalWidth) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(x + width / 2, y + height / 2);
+  ctx.rotate(angle);
+  ctx.drawImage(generatedArt.utilityVentPaw, -width / 2, -height / 2, width, height);
+  ctx.restore();
+}
+
+function drawUtilityVentSwipeAction(time, action, t) {
+  const startX = action.startX ?? state.player.x;
+  const startY = action.startY ?? state.player.y;
+  const firstClimbT = Math.min(1, t / .26);
+  const firstClimbEase = firstClimbT * firstClimbT * (3 - 2 * firstClimbT);
+  const secondClimbT = Math.max(0, Math.min(1, (t - .26) / .30));
+  const secondClimbEase = secondClimbT * secondClimbT * (3 - 2 * secondClimbT);
+  // Climb toward the actual right shelf: first contact is the shelf front edge,
+  // then the reach continues up toward the vent opening.
+  const climbX = startX + (706 - startX) * firstClimbEase + (784 - 706) * secondClimbEase;
+  const climbY = startY + (438 - startY) * firstClimbEase + (365 - 438) * secondClimbEase;
+  const fallT = Math.max(0, Math.min(1, (t - .62) / .28));
+  const fallEase = fallT * fallT * (3 - 2 * fallT);
+  const fallX = 784 + (650 - 784) * fallEase;
+  const fallY = 365 + (500 - 365) * fallEase - Math.sin(fallT * Math.PI) * 30;
+  const pawT = Math.max(0, Math.min(1, (t - .40) / .20));
+  const retreatT = Math.max(0, Math.min(1, (t - .78) / .22));
+
+  ctx.save();
+  ctx.fillStyle = "rgba(0, 0, 0, .52)";
+  ctx.beginPath();
+  ctx.ellipse(902, 147, 54, 82, .08, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  if (t >= .40) {
+    let pawX = 850 - pawT * 64 + retreatT * 52;
+    let pawY = 102 + pawT * 20 - retreatT * 8;
+    let pawW = 104 + pawT * 70 - retreatT * 42;
+    let pawH = 68 + pawT * 40 - retreatT * 22;
+    let pawAngle = -.04;
+    if (t > .56 && t < .78) {
+      pawX = 762 + Math.sin(time / 55) * 8;
+      pawY = 128 + Math.cos(time / 70) * 5;
+      pawW = 176;
+      pawH = 106;
+      pawAngle = -.10;
+      drawUtilityVentPawArt(pawX + 26, pawY - 8, pawW * .90, pawH * .90, pawAngle, .24);
+      drawUtilityVentPawArt(pawX + 12, pawY - 3, pawW * .95, pawH * .95, pawAngle, .34);
+    }
+    drawUtilityVentPawArt(pawX, pawY, pawW, pawH, pawAngle, 1);
+  }
+
+  if (t < .26) {
+    drawUtilityVentPlayerFrame(0, climbX, climbY);
+  } else if (t < .60) {
+    drawUtilityVentPlayerFrame(1, climbX, climbY);
+  } else if (t < .90) {
+    drawUtilityVentPlayerFrame(2, fallX, fallY, 1, -.07 * fallT);
+  } else {
+    drawUtilityVentPlayerFrame(3, 650, 500);
+  }
+}
+
+function drawUtilityActionOverlay(time) {
+  const action = state.utilityAction;
+  if (!action) return;
+  const elapsed = performance.now() - action.start;
+  const t = Math.min(1, elapsed / action.duration);
+  const p = state.player;
+
+  if (action.type === "pickup") {
+    const origins = { hose: [137, 274], cleanRag: [160, 186], wrench: [801, 336] };
+    const [ox, oy] = origins[action.item];
+    const eased = 1 - Math.pow(1 - t, 3);
+    drawUtilityPickupSprite(action.item, ox + (p.x - ox) * eased, oy + (p.y - 72 - oy) * eased, 1 - eased * .3);
+  } else if (action.type === "slime") {
+    const reactionImage = generatedArt.utilitySlimeReaction;
+    const frameWidth = reactionImage.naturalWidth / 4;
+    const frame = t < .27 ? 0 : t < .48 ? 1 : t < .79 ? 2 : 3;
+    ctx.drawImage(
+      reactionImage,
+      frame * frameWidth + 2,
+      2,
+      frameWidth - 4,
+      reactionImage.naturalHeight - 4,
+      p.x - 76,
+      p.y - 204,
+      152,
+      233
+    );
+
+    const fall = Math.max(0, Math.min(1, (t - .23) / .24));
+    const settle = Math.max(0, Math.min(1, (t - .48) / .2));
+    const headX = p.x;
+    const headY = p.y - 153;
+    const bx = 292 + (headX - 292) * fall + (395 - headX) * settle;
+    const by = 101 + (headY - 101) * fall * fall + (294 - headY) * settle * settle;
+    if (t < .68) {
+      ctx.save();
+      ctx.translate(bx, by);
+      ctx.rotate(fall * 1.7 + settle * 1.2);
+      ctx.drawImage(generatedArt.utilitySlimeBox, -48, -35, 96, 70);
+      ctx.restore();
+    }
+  } else if (action.type === "wire" || action.type === "hoseWire") {
+    const pullSheet = generatedArt.utilityWirePullPlayer;
+    const frameWidth = pullSheet.naturalWidth / 3;
+    const pose = utilityWirePullPose(time);
+    ctx.drawImage(
+      pullSheet,
+      pose.frame * frameWidth + 2,
+      2,
+      frameWidth - 4,
+      pullSheet.naturalHeight - 4,
+      pose.drawX,
+      pose.drawY,
+      176,
+      233
+    );
+    if (action.type === "hoseWire") {
+      ctx.save();
+      ctx.translate(pose.handX - 16, pose.handY + 8);
+      ctx.rotate(-.18 + Math.sin(time * 18) * .04);
+      ctx.drawImage(generatedArt.utilityHose, -42, -18, 84, 36);
+      ctx.restore();
+    }
+    drawUtilityWireHandConnector(time);
+    drawUtilityWireHandsOverlay(time);
+  } else if (action.type === "emptyBox") {
+    const boxX = p.x;
+    const boxY = p.y - 175;
+    ctx.save();
+    ctx.translate(boxX + Math.sin(time * 24) * 3, boxY + Math.sin(time * 18) * 2);
+    ctx.rotate(Math.PI + Math.sin(time * 22) * .2);
+    ctx.drawImage(generatedArt.utilityEmptyBox, -42, -44, 84, 88);
+    ctx.restore();
+    ctx.fillStyle = "rgba(202,190,165,.72)";
+    for (let i = 0; i < 9; i++) {
+      const phase = (t * 1.8 + i * .13) % 1;
+      ctx.beginPath();
+      ctx.arc(boxX - 24 + (i % 5) * 12, boxY + 36 + phase * 72, 2 + (i % 3), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (action.type === "ventSwipe") {
+    drawUtilityVentSwipeAction(time, action, t);
+  }
+}
+
+function updateUtilityAction() {
+  const action = state.utilityAction;
+  if (!action || performance.now() - action.start < action.duration) return;
+
+  state.utilityAction = null;
+  if (action.type === "pickup") {
+    if (action.item === "hose") state.utilityHoseCollected = true;
+    if (action.item === "cleanRag") state.utilityCleanRagCollected = true;
+    if (action.item === "wrench") {
+      state.utilityWrenchCollected = true;
+      state.utilityToolkitOpen = false;
+    }
+    addItem(action.item);
+  } else if (action.type === "slime") {
+    state.utilitySlimed = false;
+    playSfx("squish");
+  } else if (action.type === "wire") {
+    playSfx("clank");
+  } else if (action.type === "hoseWire") {
+    state.utilityCableRouted = true;
+    state.utilityPowerStart = performance.now();
+    Object.assign(state.player, { x: 570, y: 372, tx: 570, ty: 372, facing: "right", forcedFacing: null, currentDone: null, path: [] });
+    playSfx("ding");
+  } else if (action.type === "utilityDoorOpen") {
+    state.utilityDoorOpen = true;
+    Object.assign(state.player, { x: 570, y: 372, tx: 570, ty: 372, facing: "up", forcedFacing: null, currentDone: null, path: [] });
+    playSfx("clank");
+  } else if (action.type === "emptyBox") {
+    playSfx("pop");
+  } else if (action.type === "ventSwipe") {
+    Object.assign(state.player, { x: 650, y: 500, tx: 650, ty: 500, facing: "down", forcedFacing: null, currentDone: null, path: [] });
+    playSfx("pop");
+  }
+  updateUI();
+}
+
+const hallwayPropCrops = {
+  hallTrash: { source: [195, 37, 251, 403], target: [171, 330, 94, 151] },
+  // Its brushes now rest on the painted deck, above the front lip and piping.
+  hallCleaner: { source: [1203, 116, 243, 302], target: [0, 362, 95, 118] },
+  hallMirror: { source: [199, 472, 224, 434], target: [438, 164, 112, 217] },
+  hallVase: { source: [704, 587, 183, 250], target: [530, 290, 60, 82] },
+  hallVent: { source: [1158, 541, 311, 354], target: [684, 28, 112, 128] }
+};
+
+function drawHallwayProp(id, time) {
+  const active = state.hallwayEffect === id.replace("hall", "").replace(/^./, c => c.toLowerCase()) && performance.now() < state.hallwayEffectUntil;
+  ctx.save();
+
+  if (id === "hallPaper") {
+    const wobble = state.hallwayEffect === "paper" && performance.now() < state.hallwayEffectUntil ? Math.sin(time * 20) * .025 : 0;
+    ctx.translate(189, 254);
+    ctx.rotate(wobble);
+    ctx.drawImage(generatedArt.hallwayPaperArt, 295, 147, 704, 912, -54, -70, 108, 140);
+    ctx.restore();
+    return;
+  }
+
+  const crop = hallwayPropCrops[id];
+  if (!crop) {
+    ctx.restore();
+    return;
+  }
+  const [sx, sy, sw, sh] = crop.source;
+  let [x, y, w, h] = crop.target;
+  if (id === "hallCleaner") {
+    const working = state.hallwayCleanerMode === "wiping" || state.hallwayCleanerMode === "jamming";
+    const shake = working ? Math.sin(time * (state.hallwayCleanerMode === "jamming" ? 42 : 24)) * (state.hallwayCleanerMode === "jamming" ? 5 : 2) : 0;
+    x = state.hallwayCleanerX - w / 2 + shake;
+  }
+  const effectName = {
+    hallTrash: "trash",
+    hallCleaner: "cleaner",
+    hallMirror: "mirror",
+    hallVase: "vase",
+    hallVent: "hallVent"
+  }[id];
+  const reacting = state.hallwayEffect === effectName && performance.now() < state.hallwayEffectUntil;
+  const rotation = reacting && (id === "hallTrash" || id === "hallVase" || id === "hallVent") ? Math.sin(time * 28) * .035 : 0;
+  const scale = reacting && id === "hallMirror" ? 1 + Math.sin(time * 14) * .025 : 1;
+  ctx.translate(x + w / 2, y + h / 2);
+  ctx.rotate(rotation);
+  ctx.scale(scale, scale);
+  ctx.drawImage(generatedArt.hallwayProps, sx, sy, sw, sh, -w / 2, -h / 2, w, h);
+  ctx.restore();
+}
+
+function drawGeneratedHallway(time) {
+  ctx.drawImage(generatedArt.hallwayBackground, 0, 0, 960, 640);
+  drawHallwayOpenDoorStates();
+  drawHallwayPowerSignal();
+  drawHallwayLooseItems();
+  // Wall-mounted and tabletop props sit behind the astronaut.
+  for (const id of ["hallPaper", "hallMirror", "hallVase", "hallVent"]) drawHallwayProp(id, time);
+  drawHallwayTonePulse();
+  if (state.hallwayRopeInstalled) drawHallwayRope(time);
+  const foregroundPropIds = new Set(["hallTrash", "hallCleaner"]);
+  const hoveringForegroundProp = state.hover && foregroundPropIds.has(state.hover.id);
+  if (state.hover && !hoveringForegroundProp) drawGeneratedSpriteHighlight(state.hover.id);
+  drawPlayer(time);
+  // These objects occupy the near edge of the deck. Repainting them after the
+  // astronaut makes movement read as passing behind them instead of through
+  // their artwork.
+  drawHallwayProp("hallTrash", time);
+  drawHallwayProp("hallCleaner", time);
+  if (hoveringForegroundProp) drawGeneratedSpriteHighlight(state.hover.id);
+  if (state.hallwayRopeTying) drawHallwayRopeTyingAnimation(time);
+  drawHallwayPickup();
+  if (state.keypadOpen) drawHallwayKeypad();
+  else drawHover();
+}
+
+function drawHallwayBackgroundRegion(image, x, y, w, h, alpha = 1) {
+  if (!image.complete || !image.naturalWidth || alpha <= 0) return;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(image, 0, 0, 960, 640);
+  ctx.restore();
+}
+
+function drawHallwayOpenDoorStates() {
+  // Repaint only the generated doorway regions, preserving the original
+  // hallway painting pixel-for-pixel everywhere else.
+  if (state.utilityDoorOpen) {
+    drawHallwayBackgroundRegion(generatedArt.hallwayUtilityOpenBackground, 598, 164, 148, 266);
+  }
+  if (state.hallDoorAOpen) {
+    const elapsed = performance.now() - state.hallDoorAOpenStart;
+    const progress = Math.min(1, Math.max(0, elapsed / 850));
+    const alpha = progress * progress * (3 - 2 * progress);
+    drawHallwayBackgroundRegion(generatedArt.hallwayBothOpenBackground, 254, 164, 148, 266, alpha);
+  }
+}
+
+function activeUtilityPowerSignal(now = performance.now()) {
+  if (!state.utilityCableRouted) return null;
+  const cycleMs = 3600;
+  const elapsed = Math.max(0, now - (state.utilityPowerStart || now)) % cycleMs;
+  const pulses = [
+    { group: "left", start: 0, end: 300 },
+    { group: "left", start: 520, end: 820 },
+    { group: "right", start: 1160, end: 1510 },
+    { group: "middle", start: 1850, end: 2200 }
+  ];
+  const pulse = pulses.find(candidate => elapsed >= candidate.start && elapsed < candidate.end);
+  if (!pulse) return null;
+  const progress = (elapsed - pulse.start) / (pulse.end - pulse.start);
+  return { group: pulse.group, alpha: .42 + Math.sin(progress * Math.PI) * .58 };
+}
+
+function drawGreenPowerLight(x, y, radiusX, radiusY, alpha) {
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.shadowColor = `rgba(91,255,136,${alpha})`;
+  ctx.shadowBlur = Math.max(radiusX, radiusY) * 1.7;
+  const glow = ctx.createRadialGradient(x, y, 1, x, y, Math.max(radiusX, radiusY) * 1.55);
+  glow.addColorStop(0, `rgba(210,255,202,${alpha})`);
+  glow.addColorStop(.32, `rgba(77,255,119,${alpha * .96})`);
+  glow.addColorStop(1, "rgba(34,185,84,0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.ellipse(x, y, radiusX * 1.55, radiusY * 1.55, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = `rgba(116,255,139,${alpha * .78})`;
+  ctx.beginPath();
+  ctx.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawHallwayPowerSignal() {
+  const signal = activeUtilityPowerSignal();
+  if (!signal) return;
+  // Only the three indicator fixtures below the floor participate in the
+  // power-code sequence. The cyan wall controls remain visually unchanged.
+  const fixtures = {
+    left: [[241, 576, 13, 13]],
+    middle: [[486, 578, 14, 14]],
+    right: [[712, 578, 22, 12]]
+  };
+  for (const fixture of fixtures[signal.group]) {
+    drawGreenPowerLight(...fixture, signal.alpha);
+  }
+}
+
+function drawAirlockPowerSignal() {
+  const signal = activeUtilityPowerSignal();
+  if (!signal) return;
+  // Match the Airlock's three under-floor fixtures to the same repeating code.
+  // No wall, scanner, hatch, or deck-lip lights are altered.
+  const fixtures = {
+    left: [[213, 580, 11, 11]],
+    middle: [[525, 585, 13, 11]],
+    right: [[753, 581, 17, 11]]
+  };
+  for (const fixture of fixtures[signal.group]) {
+    drawGreenPowerLight(...fixture, signal.alpha);
+  }
+}
+
+function drawHallwayTonePulse() {
+  if (!state.hallwayTonePulse || performance.now() >= state.hallwayTonePulseUntil) return;
+  const positions = {
+    hallToneLeft: [258, 317, 14],
+    hallToneMiddle: [418, 289, 17],
+    hallToneRight: [798, 245, 16]
+  };
+  const position = positions[state.hallwayTonePulse];
+  if (!position) return;
+  const [x, y, radius] = position;
+  const remaining = Math.max(0, state.hallwayTonePulseUntil - performance.now());
+  const progress = 1 - remaining / 820;
+  ctx.save();
+  ctx.strokeStyle = `rgba(112,255,244,${.9 * (1 - progress)})`;
+  ctx.lineWidth = 4 - progress * 2;
+  ctx.shadowBlur = 18;
+  ctx.shadowColor = "rgba(66,255,241,.95)";
+  ctx.beginPath();
+  ctx.arc(x, y, radius + progress * 22, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawHallwayLooseItems() {
+  const pickingRag = state.hallwayPickup?.id === "rag";
+  const pickingDirt = state.hallwayPickup?.id === "dirt";
+  if (!state.hallwayRagCollected && !pickingRag) {
+    ctx.drawImage(generatedArt.hallwayRag, 192, 334, 46, 32);
+  }
+  if (!state.hallwayDirtCollected && !pickingDirt) {
+    ctx.drawImage(generatedArt.hallwayDirt, 546, 273, 28, 17);
+  }
+  if (state.hallwayDirtSpilled) {
+    ctx.drawImage(generatedArt.hallwayDirt, state.hallwayDirtX - 29, 449, 58, 30);
+  }
+  if (state.hallwayRagShredsAvailable && !state.hallwayRagShredsCollected && state.hallwayPickup?.id !== "ragShreds") {
+    drawHallwayRagShreds(state.hallwayRagShredsX, 460);
+  }
+}
+
+function drawHallwayRagShreds(x, y) {
+  ctx.save();
+  for (const [dx, dy, angle, w, h] of [[-22, 2, -.35, 34, 18], [8, -3, .22, 38, 19], [25, 6, -.12, 29, 16]]) {
+    ctx.save();
+    ctx.translate(x + dx, y + dy);
+    ctx.rotate(angle);
+    ctx.drawImage(generatedArt.hallwayRag, -w / 2, -h / 2, w, h);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function drawHallwayRope(time) {
+  ctx.save();
+  // Paint the small loop first, then repaint the vent face over its middle.
+  // The knot and hanging length are painted last, creating a real wrap around
+  // one of the horizontal slats rather than a rope floating over the vent.
+  ctx.drawImage(generatedArt.hallwayRope, 390, 24, 220, 230, 717, 55, 42, 52);
+  drawHallwayProp("hallVent", time);
+  ctx.drawImage(generatedArt.hallwayRope, 390, 188, 220, 210, 713, 84, 50, 48);
+
+  const anchorX = 738;
+  const anchorY = 119;
+  const sway = Math.sin(time * 1.8) * .009;
+  ctx.translate(anchorX, anchorY);
+  ctx.rotate(sway);
+  ctx.drawImage(generatedArt.hallwayRope, 390, 286, 220, 1228, -25, -2, 50, 364);
+  ctx.restore();
+}
+
+function drawHallwayRopeTyingAnimation(time) {
+  const elapsed = Math.min(1500, performance.now() - state.hallwayRopeTieStart);
+  const progress = elapsed / 1500;
+  const knotCycle = Math.sin(progress * Math.PI * 6);
+  const handY = state.player.y - 64;
+  const handSpread = 24 - Math.abs(knotCycle) * 12;
+
+  ctx.save();
+  ctx.translate(state.player.x, handY);
+  for (const side of [-1, 1]) {
+    ctx.save();
+    ctx.translate(side * handSpread, side * knotCycle * 3);
+    ctx.rotate(side * (.42 - progress * .18) + knotCycle * .12);
+    ctx.drawImage(generatedArt.hallwayRag, -22, -12, 44, 24);
+    ctx.restore();
+  }
+  if (progress > .62) {
+    const reveal = (progress - .62) / .38;
+    ctx.globalAlpha = reveal;
+    ctx.drawImage(generatedArt.hallwayRope, 390, 24, 220, 1490, -13, -42, 26, 96);
+  }
+  ctx.restore();
+}
+
+function drawHallwayPickup() {
+  const pickup = state.hallwayPickup;
+  if (!pickup) return;
+  const elapsed = performance.now() - pickup.start;
+  const lift = Math.min(1, elapsed / 620);
+  const eased = 1 - Math.pow(1 - lift, 3);
+  const holdBob = lift >= 1 ? Math.sin(elapsed * .012) * 2 : 0;
+  const target = { x: state.player.x, y: state.player.y - 76 + holdBob };
+  const x = pickup.from.x + (target.x - pickup.from.x) * eased;
+  const y = pickup.from.y + (target.y - pickup.from.y) * eased - Math.sin(eased * Math.PI) * 24;
+  const image = pickup.id === "rag" || pickup.id === "ragShreds" ? generatedArt.hallwayRag : generatedArt.hallwayDirt;
+  const w = pickup.id === "rag" ? 64 : pickup.id === "ragShreds" ? 54 : 58;
+  const h = pickup.id === "rag" ? 44 : pickup.id === "ragShreds" ? 30 : 34;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate((1 - eased) * -.18);
+  ctx.drawImage(image, -w / 2, -h / 2, w, h);
+  ctx.restore();
+}
+
+function drawHallwayKeypad() {
+  ctx.save();
+  ctx.fillStyle = "rgba(8, 8, 18, .78)";
+  ctx.fillRect(0, 0, 960, 640);
+  const panel = ctx.createLinearGradient(0, 104, 0, 548);
+  panel.addColorStop(0, "#4d3158");
+  panel.addColorStop(.55, "#241c38");
+  panel.addColorStop(1, "#10192b");
+  ctx.fillStyle = panel;
+  ctx.strokeStyle = "#b779c8";
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.roundRect(292, 102, 376, 448, 28);
+  ctx.fill();
+  ctx.stroke();
+
+  const feedback = performance.now() < state.keypadFeedbackUntil;
+  ctx.fillStyle = feedback ? (state.keypadUnlocked ? "#5ff0d4" : "#ff6aa8") : "#071a24";
+  ctx.strokeStyle = "#5bded8";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(334, 142, 292, 54, 14);
+  ctx.fill();
+  ctx.stroke();
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = i < state.keypadEntry.length ? "#ff75c5" : "rgba(91,222,216,.22)";
+    ctx.beginPath();
+    ctx.arc(430 + i * 50, 169, 11, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const keyHotspots = keypadHotspotList();
+  for (const key of keyHotspots) {
+    const hovered = state.hover?.id === key.id;
+    ctx.fillStyle = hovered ? "#6c4776" : "#2c2744";
+    ctx.strokeStyle = hovered ? "#ffd365" : "#6cded4";
+    ctx.lineWidth = hovered ? 4 : 2;
+    ctx.beginPath();
+    ctx.roundRect(key.x, key.y, key.w, key.h, key.id === "keypad-close" ? 16 : 14);
+    ctx.fill();
+    ctx.stroke();
+    let symbol = key.label;
+    if (key.id === "keypad-clear") symbol = "↺";
+    if (key.id === "keypad-enter") symbol = "✓";
+    if (key.id === "keypad-close") symbol = "×";
+    ctx.fillStyle = "#fff0c7";
+    ctx.font = key.id === "keypad-close" ? "700 25px sans-serif" : "800 28px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(symbol, key.x + key.w / 2, key.y + key.h / 2 + 1);
+  }
+  ctx.restore();
 }
 
 function drawGeneratedLeverSprite() {
   const frameWidth = generatedArt.lever.naturalWidth / 2;
-  const frame = state.pressureEqualized ? 1 : 0;
+  const frame = state.leverPulled ? 1 : 0;
   ctx.drawImage(
     generatedArt.lever,
     frame * frameWidth, 0, frameWidth, generatedArt.lever.naturalHeight,
     521, 230, 152, 152
   );
+}
+
+const TAG_DRAWER_OPEN_MS = 360;
+const TAG_DROP_DELAY_MS = 300;
+const TAG_DROP_DURATION_MS = 820;
+
+function tagDropElapsed(now = performance.now()) {
+  if (!state.tagReleaseStart) return Number.POSITIVE_INFINITY;
+  return Math.max(0, now - state.tagReleaseStart);
+}
+
+function tagIsCollectible(now = performance.now()) {
+  return state.tagAvailable && tagDropElapsed(now) >= TAG_DROP_DELAY_MS + TAG_DROP_DURATION_MS;
+}
+
+function drawGeneratedMaintenanceDrawer(now = performance.now()) {
+  if (!state.pressureEqualized) return;
+  const progress = Math.min(1, tagDropElapsed(now) / TAG_DRAWER_OPEN_MS);
+  const eased = 1 - Math.pow(1 - progress, 3);
+  ctx.save();
+  // The drawer grows down and outward from the lower face of the lever console.
+  ctx.translate(581, 349);
+  ctx.scale(.72 + eased * .28, .16 + eased * .84);
+  ctx.drawImage(generatedArt.maintenanceDrawer, -55, -8, 110, 78);
+  ctx.restore();
+}
+
+function drawGeneratedMaintenanceTag(time = performance.now() / 1000) {
+  if (!state.tagAvailable || hasItem("tag") || state.scannerSpoofed) return;
+  const elapsed = tagDropElapsed();
+  if (elapsed < TAG_DROP_DELAY_MS) return;
+  const drop = Math.min(1, (elapsed - TAG_DROP_DELAY_MS) / TAG_DROP_DURATION_MS);
+  const eased = drop * drop * (3 - 2 * drop);
+  const x = 581 + (545 - 581) * eased;
+  const y = 371 + (439 - 371) * (drop * drop);
+  const bounce = drop < 1 ? Math.sin(drop * Math.PI) * 12 : 0;
+  const rotation = drop < 1
+    ? -.12 + drop * (Math.PI * 4 - .06)
+    : -.18 + Math.sin(time * 4.2) * .025;
+  ctx.save();
+  ctx.translate(x, y - bounce);
+  ctx.rotate(rotation);
+  ctx.drawImage(generatedArt.maintenanceTag, -34, -34, 68, 68);
+  ctx.restore();
+}
+
+function drawGeneratedSealedHelmet() {
+  if (!state.ventSealed) return;
+  // The transparent padding lets the helmet's upper rim tuck beneath the
+  // painted ceiling opening while its repaired dome hangs into the room.
+  ctx.drawImage(generatedArt.sealedHelmet, 365, -5, 240, 240);
+}
+
+function innerDoorOpenProgress() {
+  if (!state.complete || !state.innerDoorOpenStart) return 0;
+  const linear = Math.min(1, (performance.now() - state.innerDoorOpenStart) / 900);
+  return 1 - Math.pow(1 - linear, 3);
+}
+
+function drawGeneratedInnerDoor(highlighted = false) {
+  const x = 829.375;
+  const y = 182.5;
+  const w = 119.375;
+  const h = 233.75;
+  const progress = innerDoorOpenProgress();
+  if (progress >= 1) return;
+
+  const rejecting = performance.now() < state.innerDoorRejectUntil;
+  const shake = rejecting ? Math.sin(performance.now() * .09) * 4 : 0;
+  ctx.save();
+  // Keep the rising door inside its painted frame so it reveals the dark
+  // passage in the clean background instead of floating over the wall.
+  ctx.beginPath();
+  ctx.rect(x - 4, y - 4, w + 8, h + 8);
+  ctx.clip();
+  if (highlighted) {
+    ctx.globalAlpha = .96;
+    ctx.filter = "drop-shadow(3px 0 #ffd365) drop-shadow(-3px 0 #ffd365) drop-shadow(0 3px #ffd365) drop-shadow(0 -3px #ffd365)";
+  }
+  ctx.drawImage(generatedArt.objectInnerDoor, x + shake, y - progress * (h + 8), w, h);
+  ctx.restore();
+}
+
+function outerHatchCloseProgress() {
+  if (!state.outerDoorCloseStart) return 0;
+  const linear = Math.min(1, (performance.now() - state.outerDoorCloseStart) / OUTER_HATCH_CLOSE_MS);
+  return 1 - Math.pow(1 - linear, 3);
+}
+
+function drawGeneratedClosedOuterHatch(highlighted = false) {
+  const progress = outerHatchCloseProgress();
+  if (progress <= 0) return;
+  const targetX = 14;
+  const x = targetX - (1 - progress) * 225;
+  const y = 134;
+  const w = 176;
+  const h = 268;
+  ctx.save();
+  // The door slides in from outside and remains clipped to the existing oval
+  // hatch area. Source coordinates remove the transparent generation padding.
+  ctx.beginPath();
+  ctx.ellipse(102, 268, 96, 142, 0, 0, Math.PI * 2);
+  ctx.clip();
+  if (highlighted) {
+    ctx.globalAlpha = .96;
+    ctx.filter = "drop-shadow(3px 0 #ffd365) drop-shadow(-3px 0 #ffd365) drop-shadow(0 3px #ffd365) drop-shadow(0 -3px #ffd365)";
+  }
+  ctx.drawImage(generatedArt.outerHatchClosed, 79, 137, 858, 1200, x, y, w, h);
+  ctx.restore();
 }
 
 function drawGeneratedObjectSprites(time) {
@@ -1477,11 +3131,21 @@ function drawGeneratedObjectSprites(time) {
   // Structural interactables are genuine sprites too. These same image
   // objects are re-drawn by drawGeneratedSpriteHighlight() on hover.
   ctx.drawImage(generatedArt.objectOuterHatch, 0, 123.75, 204.375, 281.875);
-  ctx.drawImage(generatedArt.objectLocker, 263.125, 218.125, 119.375, 187.5);
+  drawGeneratedClosedOuterHatch();
+  // Full original locker crop: source painting bounds (360, 240)-(625, 690)
+  // scaled from the 1536x1024 artwork to the 960x640 game canvas.
+  ctx.drawImage(generatedArt.objectLocker, 225, 150, 165.625, 281.25);
+  // The approved locker cutout contains the exact inner rim/left edge that the
+  // broad housing extraction trims. Composite it normally as a precision
+  // detail layer so idle and highlighted locker silhouettes match perfectly.
+  ctx.drawImage(generatedArt.highlightLocker, 263.125, 218.125, 119.375, 187.5);
   ctx.drawImage(generatedArt.objectLadder, 400, 62.5, 168.75, 393.75);
   ctx.drawImage(generatedArt.objectLeak, 368.75, 46.875, 208.75, 97.5);
+  drawGeneratedSealedHelmet();
   ctx.drawImage(generatedArt.objectScanner, 696.25, 248.125, 51.25, 78.125);
-  ctx.drawImage(generatedArt.objectInnerDoor, 829.375, 182.5, 119.375, 233.75);
+  drawGeneratedInnerDoor();
+
+  if (!state.toyExamining) drawGeneratedAlienToy(time, false);
 
   // Helmet pickup: it is an independent layer and vanishes as soon as it is
   // collected, combined, or installed over the leak.
@@ -1491,6 +3155,8 @@ function drawGeneratedObjectSprites(time) {
 
   // Two painted states: raised before pressure is restored, pulled down after.
   drawGeneratedLeverSprite();
+  drawGeneratedMaintenanceDrawer();
+  drawGeneratedMaintenanceTag(time);
 
   // Two-state alien button sheet: intact is the left cell, broken/sprung is
   // the right cell. Both share the same floor anchor.
@@ -1502,14 +3168,101 @@ function drawGeneratedObjectSprites(time) {
     615, 397, 126, 84
   );
 
+}
+
+function toyLiftAmount(now = performance.now()) {
+  const elapsed = now - state.toyInspectStart;
+  if (elapsed <= 320) {
+    const t = Math.max(0, elapsed / 320);
+    return 1 - Math.pow(1 - t, 3);
+  }
+  if (elapsed < 1460) return 1;
+  const t = Math.min(1, Math.max(0, (elapsed - 1460) / 440));
+  return 1 - (t * t * (3 - 2 * t));
+}
+
+function drawGeneratedAlienToy(time, examining = false) {
+  if (!generatedArt.spritesReady) return;
+  const groundX = 413;
+  const groundY = 375;
+  let x = groundX;
+  let y = groundY;
+  let scale = 1;
+  let rotation = 0;
+
+  if (examining) {
+    const lift = toyLiftAmount();
+    const side = state.player.facing === "left" ? -1 : 1;
+    // Hold the plush beside the astronaut's torso, below the helmet viewport,
+    // so the examination pose never covers the character's facial reaction.
+    const heldX = state.player.x + side * 52;
+    const heldY = state.player.y - 72;
+    x += (heldX - groundX) * lift;
+    y += (heldY - groundY) * lift;
+    scale += lift * .08;
+    rotation = side * lift * (.035 + Math.sin(time * 4.5) * .018);
+  }
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rotation);
+  ctx.scale(scale, scale);
+  ctx.drawImage(generatedArt.alienToy, -25, -35, 50, 70);
+  ctx.restore();
+}
+
+function drawAlienToyHugAnimation(time) {
+  if (!generatedArt.alienToyHugSheet.complete || !generatedArt.alienToyHugSheet.naturalWidth) {
+    drawPlayer(time);
+    drawGeneratedAlienToy(time, true);
+    return;
+  }
+  const elapsed = Math.max(0, performance.now() - state.toyInspectStart);
+  let frame = 0;
+  if (elapsed >= 1900) frame = 0;
+  else if (elapsed >= 1500) frame = 1;
+  else if (elapsed >= 900) frame = 2;
+  else if (elapsed >= 400) frame = 1;
+
+  const image = generatedArt.alienToyHugSheet;
+  const sw = image.naturalWidth / 3;
+  const sh = image.naturalHeight;
+  // Match the normal standing sprite's visible height:
+  // standing = 254/420 of its 270px draw box (~163px);
+  // hug frames = ~526/724 of their cell, requiring a 225px draw box.
+  const drawSize = 225;
+  // Frame one includes the plush on the floor to the astronaut's right.
+  // Offset only that composition so the astronaut's boots remain centered on
+  // the same world position used by the held frames.
+  const frameOffsetX = frame === 0 ? -40 : 0;
+  const sourceBootY = frame === 0 ? .815 : frame === 1 ? .83 : .834;
+  const drawX = state.player.x - drawSize / 2 + frameOffsetX;
+  const drawY = state.player.y - drawSize * sourceBootY;
+
+  ctx.save();
+  ctx.drawImage(
+    image,
+    frame * sw,
+    0,
+    sw,
+    sh,
+    drawX,
+    drawY,
+    drawSize,
+    drawSize
+  );
+  ctx.restore();
+}
+
+function drawGeneratedCart(time) {
+  if (!generatedArt.spritesReady) return;
   // The cart is a movable sprite, never part of the room painting.
   const cartWobble = performance.now() < state.cartWobbleUntil ? Math.sin(time * 42) * .045 : 0;
   ctx.save();
-  ctx.translate(state.cartX, 443);
+  ctx.translate(state.cartX, 451);
   ctx.rotate(cartWobble);
   ctx.drawImage(generatedArt.cart, -94, -64, 188, 125);
   ctx.restore();
-
 }
 
 function drawGeneratedGasSprites(time) {
@@ -1895,13 +3648,13 @@ function drawAirlock(time) {
 
   ctx.save();
   const cartWobble = performance.now() < state.cartWobbleUntil ? Math.sin(time * 42) * .08 : 0;
-  ctx.translate(state.cartX, 442 + Math.abs(cartWobble) * 4);
+  ctx.translate(state.cartX, 450 + Math.abs(cartWobble) * 4);
   ctx.rotate(cartWobble);
   ctx.fillStyle = "rgba(18,13,29,.45)";
   ctx.beginPath();
   ctx.ellipse(0, 24, 54, 10, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = panelGradient(state.cartX - 48, 418, 96, 38, "#264f6d", "#14243a");
+  ctx.fillStyle = panelGradient(state.cartX - 48, 426, 96, 38, "#264f6d", "#14243a");
   ctx.strokeStyle = art.ink;
   ctx.lineWidth = 5;
   ctx.beginPath();
@@ -2028,28 +3781,55 @@ function drawGeneratedPlayerSprite(time) {
   }
 
   const walking = Math.hypot(p.tx - p.x, p.ty - p.y) > 3;
+  const ladderPose = state.onLadder || p.forcedFacing === "up";
   const coughCycle = time % 4.2;
-  const coughing = !state.ventSealed && !walking && coughCycle > 3.35;
-  const coughT = coughing ? Math.min(1, (coughCycle - 3.35) / .85) : 0;
-  const coughPulse = coughing ? Math.sin(coughT * Math.PI) : 0;
+  const coughing = !state.ventSealed && !walking && !state.toyExamining && coughCycle > 3.2;
+  const coughT = coughing ? Math.min(1, (coughCycle - 3.2) / 1) : 0;
+  // Two compact jolts read as a cough without making the character bounce.
+  const coughPulse = coughing ? Math.pow(Math.sin(coughT * Math.PI * 2), 2) : 0;
+  const coughCycleId = Math.floor(time / 4.2);
+  if (coughCycleId !== lastCoughCycle) {
+    lastCoughCycle = coughCycleId;
+    lastCoughBeat = 0;
+  }
+  const coughBeat = coughing ? (coughT >= .58 ? 2 : coughT >= .08 ? 1 : 0) : 0;
+  if (coughBeat > lastCoughBeat) {
+    lastCoughBeat = coughBeat;
+    playCoughSfx(coughBeat);
+  }
+  const coughFacing = p.facing === "left" ? "left" : "right";
+  const coughDirection = ladderPose ? 0 : coughFacing === "left" ? -1 : 1;
   const rowMap = { down: 0, right: 1, up: 2, left: 3 };
-  const row = rowMap[p.facing] ?? 0;
+  const visualFacing = ladderPose ? "up" : coughing ? coughFacing : p.facing;
+  const row = rowMap[visualFacing] ?? 0;
   const col = walking ? (Math.floor(time * 4.6) % 2 ? 1 : 2) : 0;
-  const img = generatedArt.playerSheet;
-  const sw = img.naturalWidth / 3;
-  const sh = img.naturalHeight / 4;
-  const sx = col * sw;
-  const sy = row * sh;
+  const useCoughSprite = coughing && !ladderPose;
+  const img = useCoughSprite ? generatedArt.coughSheet : generatedArt.playerSheet;
+  const sw = img.naturalWidth / (useCoughSprite ? 2 : 3);
+  const sh = img.naturalHeight / (useCoughSprite ? 1 : 4);
+  const sx = (useCoughSprite ? (coughFacing === "left" ? 0 : 1) : col) * sw;
+  const sy = useCoughSprite ? 0 : row * sh;
   const inset = 2;
-  const bob = walking ? Math.sin(time * 9.2) * .6 : Math.sin(time * 4) * .35;
-  const lean = coughing ? .08 * coughPulse : 0;
+  // The boots stay locked to the painted deck. The sprite frames supply the
+  // walking motion; translating the whole body vertically made the astronaut
+  // look as though it was hovering.
+  const bob = 0;
+  const lean = coughing && !ladderPose && !useCoughSprite ? coughDirection * .045 * coughPulse : 0;
   ctx.save();
-  ctx.translate(p.x + coughPulse * 5, p.y - footAnchor + bob);
+  ctx.translate(p.x + coughDirection * coughPulse * 2.5, p.y + bob);
   ctx.rotate(lean);
-  ctx.drawImage(img, sx + inset, sy + inset, sw - inset * 2, sh - inset * 2, -dw / 2, -dh / 2, dw, dh);
-  if (coughing) {
-    ctx.globalAlpha = .65 * coughPulse;
-    drawGasCloud(42 + coughPulse * 10, -34 - coughPulse * 4, .18 + coughPulse * .12, time, .72);
+  ctx.scale(1 + coughPulse * .012, 1 - coughPulse * .018);
+  ctx.drawImage(img, sx + inset, sy + inset, sw - inset * 2, sh - inset * 2, -dw / 2, -footAnchor - dh / 2, dw, dh);
+  if (coughing && !ladderPose) {
+    // Keep the puff at the profile mouth, then let it drift outward and up.
+    ctx.globalAlpha = .72 * coughPulse;
+    drawGasCloud(
+      coughDirection * (52 + coughPulse * 18),
+      -footAnchor + 20 - coughPulse * 4,
+      .09 + coughPulse * .075,
+      time,
+      .68
+    );
   }
   ctx.restore();
 }
@@ -2290,7 +4070,8 @@ function drawGeneratedSpriteHighlight(id) {
   ctx.filter = "drop-shadow(3px 0 #ffd365) drop-shadow(-3px 0 #ffd365) drop-shadow(0 3px #ffd365) drop-shadow(0 -3px #ffd365)";
   switch (id) {
     case "outerDoor":
-      ctx.drawImage(generatedArt.highlightOuterHatch, 0, 123.75, 204.375, 281.875);
+      if (state.outerDoorCloseStart) drawGeneratedClosedOuterHatch(true);
+      else ctx.drawImage(generatedArt.highlightOuterHatch, 0, 123.75, 204.375, 281.875);
       break;
     case "locker":
       ctx.drawImage(generatedArt.highlightLocker, 263.125, 218.125, 119.375, 187.5);
@@ -2299,13 +4080,14 @@ function drawGeneratedSpriteHighlight(id) {
       ctx.drawImage(generatedArt.highlightLadder, 400, 62.5, 168.75, 393.75);
       break;
     case "vent":
-      ctx.drawImage(generatedArt.highlightLeak, 384.375, 43.75, 197.5, 90);
+      if (state.ventSealed) drawGeneratedSealedHelmet();
+      else ctx.drawImage(generatedArt.highlightLeak, 384.375, 43.75, 197.5, 90);
       break;
     case "scanner":
       ctx.drawImage(generatedArt.objectScanner, 696.25, 248.125, 51.25, 78.125);
       break;
     case "innerDoor":
-      ctx.drawImage(generatedArt.objectInnerDoor, 829.375, 182.5, 119.375, 233.75);
+      drawGeneratedInnerDoor(true);
       break;
     case "helmetSpot":
       ctx.drawImage(generatedArt.helmet, 212, 368, 162, 108);
@@ -2320,8 +4102,45 @@ function drawGeneratedSpriteHighlight(id) {
       break;
     }
     case "cargoCart":
-      ctx.translate(state.cartX, 443);
+      ctx.translate(state.cartX, 451);
       ctx.drawImage(generatedArt.cart, -94, -64, 188, 125);
+      break;
+    case "alienToy":
+      // The controller cursor can remain parked over the pickup position while
+      // the toy is being examined. Never redraw its floor-state highlight
+      // behind the held sprite during that animation.
+      if (!state.toyExamining) drawGeneratedAlienToy(performance.now() / 1000, false);
+      break;
+    case "tag":
+      drawGeneratedMaintenanceTag();
+      break;
+    case "hallTrash":
+    case "hallPaper":
+    case "hallCleaner":
+    case "hallMirror":
+    case "hallVase":
+    case "hallVent":
+      drawHallwayProp(id, performance.now() / 1000);
+      if (id === "hallVent" && state.hallwayRopeInstalled) drawHallwayRope(performance.now() / 1000);
+      break;
+    case "hallRagShreds":
+      drawHallwayRagShreds(state.hallwayRagShredsX, 460);
+      break;
+    case "utilityHose":
+    case "utilityCleanRag":
+    case "utilityToolkit":
+    case "utilitySlimeBox":
+    case "utilityWire":
+    case "utilityDoorButton":
+    case "utilityCenterDoor":
+    case "utilityEmptyBox":
+      if (id === "utilityDoorButton") {
+        ctx.drawImage(generatedArt.utilityDoorButton, 3, 2, 70, 84, 548, 79, 44, 52);
+      } else if (id === "utilityCenterDoor") {
+        drawUtilityDoorOpenBackground();
+      } else {
+        drawUtilityProp(id, performance.now() / 1000);
+      }
       break;
     default:
       ctx.restore();
@@ -2333,7 +4152,9 @@ function drawGeneratedSpriteHighlight(id) {
 
 const generatedSpriteHighlightIds = new Set([
   "outerDoor", "locker", "ladder", "vent", "scanner", "innerDoor",
-  "helmetSpot", "lever", "decoyButton", "cargoCart"
+  "helmetSpot", "lever", "decoyButton", "cargoCart", "alienToy", "tag",
+  "hallTrash", "hallPaper", "hallCleaner", "hallMirror", "hallVase", "hallVent", "hallRagShreds",
+  "utilityHose", "utilityCleanRag", "utilityToolkit", "utilitySlimeBox", "utilityWire", "utilityDoorButton", "utilityCenterDoor", "utilityEmptyBox"
 ]);
 
 function drawHover() {
@@ -2355,6 +4176,9 @@ function drawHover() {
         tracedHotspots[h.id].draw();
       } else {
         switch (h.id) {
+          case "hallKeypad":
+            ctx.ellipse(862, 309, 19, 29, 0, 0, Math.PI * 2);
+            break;
           case "tag":
             ctx.ellipse(636, 488, 42, 30, 0, 0, Math.PI * 2);
             break;
@@ -2368,6 +4192,7 @@ function drawHover() {
     ctx.fillStyle = "rgba(43,37,53,.88)";
     ctx.strokeStyle = "rgba(255,211,101,.75)";
     ctx.lineWidth = 1.5;
+    ctx.font = "700 13px sans-serif";
     const labelWidth = Math.max(112, ctx.measureText(h.label).width + 28);
     const x = Math.min(930 - labelWidth, Math.max(20, h.x + h.w / 2 - labelWidth / 2));
     const y = Math.max(18, h.y - 38);
@@ -2376,7 +4201,6 @@ function drawHover() {
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "#fff3c5";
-    ctx.font = "700 13px sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(h.label, x + labelWidth / 2, y + 18);
     ctx.restore();
@@ -2390,6 +4214,7 @@ function drawHover() {
   ctx.fillStyle = "rgba(4,9,18,.88)";
   ctx.strokeStyle = "rgba(242,196,91,.8)";
   ctx.lineWidth = 1;
+  ctx.font = "700 13px sans-serif";
   const labelWidth = Math.max(112, ctx.measureText(h.label).width + 28);
   const x = Math.min(930 - labelWidth, Math.max(20, h.x + h.w / 2 - labelWidth / 2));
   const y = Math.max(18, h.y - 38);
@@ -2398,15 +4223,119 @@ function drawHover() {
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = "#fff3c5";
-  ctx.font = "700 13px sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(h.label, x + labelWidth / 2, y + 18);
   ctx.restore();
 }
 
+function resolveCartCollision(fromY, targetY, nextX, nextY) {
+  // Use the cart's wheel-level footprint, expanded by the astronaut's boots.
+  // The upper and lower edges remain valid routes behind/in front of the cart.
+  const left = state.cartX - 98;
+  const right = state.cartX + 98;
+  const backEdge = 456;
+  const frontEdge = 474;
+  if (nextX <= left || nextX >= right || nextY <= backEdge || nextY >= frontEdge) {
+    return { x: nextX, y: nextY };
+  }
+  const useBackEdge = fromY <= (backEdge + frontEdge) / 2 || targetY <= (backEdge + frontEdge) / 2;
+  return { x: nextX, y: useBackEdge ? backEdge : frontEdge };
+}
+
+function updateUtilityEntryAnimation() {
+  const elapsed = performance.now() - state.utilityEntryStart;
+  const p = state.player;
+  if (elapsed < 650) {
+    // Drop straight from the elevated wall grate to the open shelf top.
+    const t = Math.min(1, elapsed / 650);
+    const eased = t * t;
+    p.x = 902 + (730 - 902) * eased;
+    p.y = 172 + (326 - 172) * eased;
+    p.facing = "down";
+  } else if (elapsed < 900) {
+    p.x = 730;
+    p.y = 326;
+    p.facing = "left";
+  } else if (elapsed < 1650) {
+    // Leap from the shelf edge into the clear central aisle.
+    const t = Math.min(1, (elapsed - 900) / 750);
+    const eased = t * t * (3 - 2 * t);
+    p.x = 730 + (666 - 730) * eased;
+    p.y = 326 + (500 - 326) * eased - Math.sin(t * Math.PI) * 72;
+    p.facing = "left";
+  } else {
+    state.utilityEntryAnimating = false;
+    state.utilityEntryStart = 0;
+    Object.assign(p, { x: 666, y: 500, tx: 666, ty: 500, facing: "left", forcedFacing: null, currentDone: null, path: [] });
+  }
+  p.tx = p.x;
+  p.ty = p.y;
+}
+
 function update(dt) {
+  if (state.utilityEntryAnimating) {
+    updateUtilityEntryAnimation();
+    return;
+  }
+  if (state.utilityAction) {
+    updateUtilityAction();
+    return;
+  }
+  if (state.hallwayRopeTying && performance.now() - state.hallwayRopeTieStart >= 1500) {
+    state.hallwayRopeTying = false;
+    state.hallwayRopeInstalled = true;
+    state.player.forcedFacing = null;
+    playCombineTwinkle();
+    setLog("The final knot holds. The completed rag rope hangs from the vent.");
+    updateUI();
+  }
+  const cleanerDx = state.hallwayCleanerTargetX - state.hallwayCleanerX;
+  if (Math.abs(cleanerDx) > .5) state.hallwayCleanerX += Math.sign(cleanerDx) * Math.min(Math.abs(cleanerDx), 150 * dt);
+  if (state.hallwayCleanerMode === "approaching" && Math.abs(cleanerDx) <= 1) {
+    state.hallwayCleanerMode = "wiping";
+    state.hallwayCleanerActionStart = performance.now();
+    playSfx("squish");
+  } else if (state.hallwayCleanerMode === "wiping" && performance.now() - state.hallwayCleanerActionStart >= 3000) {
+    state.hallwayDirtSpilled = false;
+    state.hallwayDirtCollected = false;
+    state.hallwayCleanerMode = "returning";
+    state.hallwayCleanerTargetX = 780;
+    playSfx("ding");
+    setLog("The cleaner finishes the spill and returns to its post. More dirt is available in the vase.");
+  } else if (state.hallwayCleanerMode === "jamming" && performance.now() - state.hallwayCleanerActionStart > 1250) {
+    state.hallwayDirtSpilled = false;
+    state.hallwayCleanerMode = "stuck";
+    state.hallwayRagShredsAvailable = true;
+    state.hallwayRagShredsX = state.hallwayCleanerX;
+    playSfx("pop");
+  } else if (state.hallwayCleanerMode === "returning" && Math.abs(state.hallwayCleanerX - 780) <= 1) {
+    state.hallwayCleanerMode = "idle";
+  }
+  if (state.hallwayPickup) {
+    const pickup = state.hallwayPickup;
+    if (performance.now() - pickup.start >= pickup.duration) {
+      state.hallwayPickup = null;
+      if (pickup.id === "rag") state.hallwayRagCollected = true;
+      if (pickup.id === "dirt") state.hallwayDirtCollected = true;
+      if (pickup.id === "ragShreds") {
+        state.hallwayRagShredsCollected = true;
+        state.hallwayRagShredsAvailable = false;
+      }
+      addItem(pickup.id);
+    }
+    return;
+  }
   const cartDx = state.cartTargetX - state.cartX;
   if (Math.abs(cartDx) > .5) state.cartX += Math.sign(cartDx) * Math.min(Math.abs(cartDx), 360 * dt);
+  if (state.toyExamining) {
+    if (performance.now() >= state.toyInspectUntil) {
+      state.toyExamining = false;
+      state.toyInspectStart = 0;
+      state.toyInspectUntil = 0;
+      playSfx("squish");
+    }
+    return;
+  }
   // Freeze any existing walk/climb path during the shrug. The queued path may
   // resume only after the reaction's full duration has elapsed.
   if (playerIsReacting()) return;
@@ -2419,8 +4348,13 @@ function update(dt) {
     else if (Math.abs(dx) > Math.abs(dy)) p.facing = dx >= 0 ? "right" : "left";
     else if (Math.abs(dy) > 0.5) p.facing = dy >= 0 ? "down" : "up";
     const step = Math.min(distance, 285 * dt);
-    p.x += dx / distance * step;
-    p.y += dy / distance * step;
+    const nextX = p.x + dx / distance * step;
+    const nextY = p.y + dy / distance * step;
+    const resolved = isGeneratedMode() && state.room === "airlock"
+      ? resolveCartCollision(p.y, p.ty, nextX, nextY)
+      : { x: nextX, y: nextY };
+    p.x = resolved.x;
+    p.y = resolved.y;
   } else {
     p.x = p.tx;
     p.y = p.ty;
@@ -2470,6 +4404,111 @@ ui.clear.addEventListener("click", () => {
   setLog("Item put away.");
   updateUI();
 });
+
+ui.inventory.addEventListener("wheel", event => {
+  if (ui.inventory.scrollWidth <= ui.inventory.clientWidth) return;
+  event.preventDefault();
+  ui.inventory.scrollLeft += Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+}, { passive: false });
+
+function resetDebugState(room) {
+  clearTimeout(outerDoorCloseTimer);
+  outerDoorCloseTimer = 0;
+  const hallway = room === "hallway";
+  const utility = room === "utility";
+  const progressed = hallway || utility;
+  const now = performance.now();
+
+  state.room = room;
+  state.inventory = utility ? ["tag"] : hallway ? ["helmet", "sealant", "tag"] : [];
+  state.selected = null;
+  state.hover = null;
+  state.lockerOpen = progressed;
+  state.ventSealed = progressed;
+  state.leverPulled = progressed;
+  state.outerDoorClosed = progressed;
+  state.outerDoorCloseStart = progressed ? now - OUTER_HATCH_CLOSE_MS : 0;
+  state.pressureEqualized = progressed;
+  state.tagAvailable = progressed;
+  state.tagReleaseStart = 0;
+  state.scannerSpoofed = progressed;
+  state.complete = progressed;
+  state.innerDoorOpenStart = progressed ? now - 1000 : 0;
+  state.innerDoorRejectUntil = 0;
+  state.reactionUntil = 0;
+  state.decoyButtonBroken = false;
+  state.decoyButtonSparkUntil = 0;
+  state.onLadder = false;
+  state.cartLeft = false;
+  state.cartX = CART_RIGHT_X;
+  state.cartTargetX = CART_RIGHT_X;
+  state.cartWobbleUntil = 0;
+  state.toyExamining = false;
+  state.toyInspectStart = 0;
+  state.toyInspectUntil = 0;
+  state.hallwayEffect = null;
+  state.hallwayEffectUntil = 0;
+  state.hallwayTonePulse = null;
+  state.hallwayTonePulseUntil = 0;
+  state.hallwayDoorToneProgress = 0;
+  state.hallDoorAOpen = false;
+  state.hallDoorAOpenStart = 0;
+  state.hallwayCleanerX = 780;
+  state.hallwayCleanerTargetX = 780;
+  state.hallwayRagCollected = utility;
+  state.hallwayDirtCollected = utility;
+  state.hallwayDirtSpilled = false;
+  state.hallwayDirtX = 600;
+  state.hallwayCleanerMode = utility ? "stuck" : "idle";
+  state.hallwayCleanerActionStart = 0;
+  state.hallwayRagShredsAvailable = false;
+  state.hallwayRagShredsCollected = utility;
+  state.hallwayRagShredsX = 600;
+  state.hallwayRopeInstalled = utility;
+  state.hallwayRopeTying = false;
+  state.hallwayRopeTieStart = 0;
+  state.hallwayVentClimbing = false;
+  state.utilityEntryAnimating = false;
+  state.utilityEntryStart = 0;
+  state.hallwayPickup = null;
+  state.utilityHoseCollected = false;
+  state.utilityCleanRagCollected = false;
+  state.utilityToolkitOpen = false;
+  state.utilityWrenchCollected = false;
+  state.utilityDoorPanelOpen = false;
+  state.utilityCableRouted = false;
+  state.utilityPowerStart = 0;
+  state.utilityDoorOpen = false;
+  state.utilitySlimeBoxFallen = false;
+  state.utilitySlimed = false;
+  state.utilityAction = null;
+  state.keypadOpen = false;
+  state.keypadEntry = "";
+  state.keypadUnlocked = false;
+  state.keypadFeedbackUntil = 0;
+  state.comicEffects = [];
+
+  Object.assign(state.player, utility
+    ? { x: 666, y: 500, tx: 666, ty: 500, facing: "left" }
+    : hallway
+      ? { x: 72, y: 472, tx: 72, ty: 472, facing: "right" }
+      : { x: 160, y: 458, tx: 160, ty: 458, facing: "down" });
+  state.player.path = [];
+  state.player.currentDone = null;
+  state.player.forcedFacing = null;
+  controller.inventoryIndex = 0;
+
+  setLog(utility
+    ? "Debug: Utility Closet loaded after the completed corridor route."
+    : hallway
+      ? "Debug: Crew Hallway loaded with every Room 1 inventory item."
+      : "Debug: Breached Airlock reset to its fresh starting state.");
+  updateUI();
+}
+
+document.querySelector("#s4DebugAirlock")?.addEventListener("click", () => resetDebugState("airlock"));
+document.querySelector("#s4DebugHallway")?.addEventListener("click", () => resetDebugState("hallway"));
+document.querySelector("#s4DebugUtility")?.addEventListener("click", () => resetDebugState("utility"));
 
 updateUI();
 requestAnimationFrame(loop);

@@ -33,9 +33,34 @@ draw.polygon([
 alpha = ImageChops.multiply(alpha, silhouette)
 alpha = alpha.filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.GaussianBlur(.55))
 
+# The cleaned room already retains the shelves and their contents. Remove the
+# entire open cavity from the sprite so tiny source/cleanup differences cannot
+# stack into pale "ghost" artifacts when the layers are recomposited.
+interior = Image.new("L", source.size, 0)
+interior_draw = ImageDraw.Draw(interior)
+interior_draw.polygon([
+    (91, 132), (181, 132), (194, 151), (194, 405),
+    (67, 405), (67, 169), (78, 146),
+], fill=255)
+interior = interior.filter(ImageFilter.GaussianBlur(.7))
+alpha = ImageChops.subtract(alpha, interior)
+
+# The helmet is its own collectible sprite and must not remain baked into the
+# locker after pickup. Remove its overlap at the bottom-left of this crop.
+helmet_overlap = Image.new("L", source.size, 0)
+helmet_draw = ImageDraw.Draw(helmet_overlap)
+# The helmet's tall rear fin reaches farther right than its dome. Trace the
+# complete overlap rather than using only a dome-shaped ellipse.
+helmet_draw.polygon([
+    (0, 385), (32, 370), (78, 365), (119, 375),
+    (153, 401), (178, 450), (0, 450),
+], fill=255)
+helmet_overlap = helmet_overlap.filter(ImageFilter.GaussianBlur(.8))
+alpha = ImageChops.subtract(alpha, helmet_overlap)
+
 sprite = source.copy()
 sprite.putalpha(alpha)
-destination = ASSETS / "locker-sprite-full-v2.png"
+destination = ASSETS / "locker-sprite-full-v3.png"
 sprite.save(destination, optimize=True)
 
 # Verification: the recovered sprite recomposited over the cleaned painting.
@@ -50,7 +75,7 @@ preview.paste(right, (left.width, 44))
 labels = ImageDraw.Draw(preview)
 labels.text((12, 14), "ORIGINAL", fill="#ffe29b")
 labels.text((left.width + 12, 14), "RECOVERED SPRITE COMPOSITE", fill="#ffe29b")
-preview_destination = ASSETS / "locker-full-recovery-comparison-v2.png"
+preview_destination = ASSETS / "locker-full-recovery-comparison-v3.png"
 preview.save(preview_destination, optimize=True)
 
 print(destination)
