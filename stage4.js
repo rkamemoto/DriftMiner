@@ -10,6 +10,7 @@ const generatedArt = {
   playerSheet: new Image(),
   coughSheet: new Image(),
   ngSheet: new Image(),
+  disgustSheet: new Image(),
   cart: new Image(),
   alienToy: new Image(),
   alienToyHugSheet: new Image(),
@@ -58,6 +59,28 @@ const generatedArt = {
   utilityVentPlayer: new Image(),
   utilityDoorButton: new Image(),
   utilityEmptyBox: new Image(),
+  bathroomBackground: new Image(),
+  bathroomClosedBackground: new Image(),
+  bathroomDoorLeft: new Image(),
+  bathroomDoorRight: new Image(),
+  bathroomExitHighlightMask: new Image(),
+  bathroomTrashHighlightMask: new Image(),
+  bathroomBowl: new Image(),
+  bathroomMud: new Image(),
+  bathroomFaucetLeft: new Image(),
+  bathroomFaucetMiddle: new Image(),
+  bathroomFaucetRight: new Image(),
+  bathroomFaucetWaterLeft: new Image(),
+  bathroomFaucetWaterMiddle: new Image(),
+  bathroomFaucetWaterRight: new Image(),
+  bathroomSecretPanelSheet: new Image(),
+  bathroomSecretPanelTransitionFrame3: new Image(),
+  bathroomSecretPanelOpenReference: new Image(),
+  bathroomSecretCrawlspace: new Image(),
+  bathroomSecretPanel: new Image(),
+  bathroomSecretPanelForeground: new Image(),
+  bathroomSecretPanelHighlight: new Image(),
+  bathroomSteamMirrorSheet: new Image(),
   backgroundReady: false,
   playerReady: false,
   spritesReady: false
@@ -66,10 +89,12 @@ generatedArt.background.onload = () => generatedArt.backgroundReady = true;
 const updateStageFourPlayerReadiness = () => generatedArt.playerReady =
   generatedArt.playerSheet.complete && generatedArt.playerSheet.naturalWidth > 0 &&
   generatedArt.coughSheet.complete && generatedArt.coughSheet.naturalWidth > 0 &&
-  generatedArt.ngSheet.complete && generatedArt.ngSheet.naturalWidth > 0;
+  generatedArt.ngSheet.complete && generatedArt.ngSheet.naturalWidth > 0 &&
+  generatedArt.disgustSheet.complete && generatedArt.disgustSheet.naturalWidth > 0;
 generatedArt.playerSheet.onload = updateStageFourPlayerReadiness;
 generatedArt.coughSheet.onload = updateStageFourPlayerReadiness;
 generatedArt.ngSheet.onload = updateStageFourPlayerReadiness;
+generatedArt.disgustSheet.onload = updateStageFourPlayerReadiness;
 const stageFourSpriteImages = [
   generatedArt.cart, generatedArt.alienToy, generatedArt.alienToyHugSheet, generatedArt.helmet, generatedArt.maintenanceTag, generatedArt.sealedHelmet, generatedArt.maintenanceDrawer, generatedArt.lever, generatedArt.buttonSheet, generatedArt.gasSheet,
   generatedArt.highlightOuterHatch, generatedArt.highlightLocker, generatedArt.highlightLadder, generatedArt.highlightLeak,
@@ -81,7 +106,14 @@ const stageFourSpriteImages = [
   generatedArt.utilityBackground, generatedArt.utilityBackgroundDoorOpen, generatedArt.utilityHose, generatedArt.utilityCleanRag,
   generatedArt.utilityToolkit, generatedArt.utilityToolkitOpen, generatedArt.utilityWrench, generatedArt.utilitySlimeBox, generatedArt.utilitySlimeReaction,
   generatedArt.utilityWire, generatedArt.utilityWirePull, generatedArt.utilityWirePullPlayer, generatedArt.utilityWirePullHands, generatedArt.utilityRoutedCable, generatedArt.utilityDoorOpenOverlay,
-  generatedArt.utilityVentPaw, generatedArt.utilityVentPlayer, generatedArt.utilityDoorButton, generatedArt.utilityEmptyBox
+  generatedArt.utilityVentPaw, generatedArt.utilityVentPlayer, generatedArt.utilityDoorButton, generatedArt.utilityEmptyBox,
+  generatedArt.bathroomBackground, generatedArt.bathroomClosedBackground, generatedArt.bathroomDoorLeft, generatedArt.bathroomDoorRight,
+  generatedArt.bathroomExitHighlightMask, generatedArt.bathroomTrashHighlightMask, generatedArt.bathroomBowl, generatedArt.bathroomMud,
+  generatedArt.bathroomFaucetLeft, generatedArt.bathroomFaucetMiddle, generatedArt.bathroomFaucetRight,
+  generatedArt.bathroomFaucetWaterLeft, generatedArt.bathroomFaucetWaterMiddle, generatedArt.bathroomFaucetWaterRight,
+  generatedArt.bathroomSecretPanelSheet, generatedArt.bathroomSecretPanelTransitionFrame3, generatedArt.bathroomSecretPanelOpenReference,
+  generatedArt.bathroomSecretCrawlspace, generatedArt.bathroomSecretPanel, generatedArt.bathroomSecretPanelForeground, generatedArt.bathroomSecretPanelHighlight,
+  generatedArt.bathroomSteamMirrorSheet
 ];
 const updateStageFourSpriteReadiness = () => generatedArt.spritesReady = stageFourSpriteImages.every(image => image.complete && image.naturalWidth > 0);
 stageFourSpriteImages.forEach(image => image.onload = updateStageFourSpriteReadiness);
@@ -89,6 +121,7 @@ generatedArt.background.src = "assets/stage4/level1-airlock/airlock-background-t
 generatedArt.playerSheet.src = "assets/stage4/level1-airlock/player-sheet-cells-v8.png?v=stage4-all-direction-size-match-1";
 generatedArt.coughSheet.src = "assets/stage4/level1-airlock/player-cough-cells-v1.png?v=stage4-painted-cough-1";
 generatedArt.ngSheet.src = "assets/stage4/level1-airlock/player-ng-reaction-cells-v2.png?v=stage4-player-size-match-1";
+generatedArt.disgustSheet.src = "assets/stage4/level4-bathroom/player-disgust-gag-sheet-v1.png?v=stage4-disgust-gag-1";
 generatedArt.cart.src = "assets/stage4/level1-airlock/cart-sprite-v1.png?v=stage4-level1-folder-1";
 generatedArt.alienToy.src = "assets/stage4/level1-airlock/alien-toy-sprite-v1.png?v=stage4-alien-toy-1";
 generatedArt.alienToyHugSheet.src = "assets/stage4/level1-airlock/alien-toy-hug-sheet-v1.png?v=stage4-alien-toy-hug-1";
@@ -137,6 +170,28 @@ generatedArt.utilityVentPaw.src = "assets/stage4/level3-utility-closet/alien-ven
 generatedArt.utilityVentPlayer.src = "assets/stage4/level3-utility-closet/player-vent-swipe-reaction-v1.png?v=stage4-vent-player-art-1";
 generatedArt.utilityDoorButton.src = "assets/stage4/level3-utility-closet/door-blue-button-sprite-v1.png?v=stage4-utility-button-sprite-1";
 generatedArt.utilityEmptyBox.src = "assets/stage4/level3-utility-closet/light-parts-box-sprite-v1.png?v=stage4-light-parts-crate-1";
+generatedArt.bathroomBackground.src = "assets/stage4/level4-bathroom/bathroom-background-open-clean-v3.png?v=stage4-bathroom-filthy-toilet-1";
+generatedArt.bathroomClosedBackground.src = "assets/stage4/level4-bathroom/bathroom-background-faucets-clean-v1.png?v=stage4-original-faucet-sprites-1";
+generatedArt.bathroomDoorLeft.src = "assets/stage4/level4-bathroom/stall-door-left-v1.png?v=stage4-bathroom-1";
+generatedArt.bathroomDoorRight.src = "assets/stage4/level4-bathroom/stall-door-right-v1.png?v=stage4-bathroom-1";
+generatedArt.bathroomExitHighlightMask.src = "assets/stage4/level4-bathroom/bathroom-exit-highlight-mask-v1.png?v=stage4-bathroom-alpha-highlights-1";
+generatedArt.bathroomTrashHighlightMask.src = "assets/stage4/level4-bathroom/bathroom-trash-highlight-mask-v1.png?v=stage4-bathroom-alpha-highlights-1";
+generatedArt.bathroomBowl.src = "assets/stage4/level4-bathroom/alien-bowl-shelf-mask-v1.png?v=stage4-real-shelf-bowl-mask-1";
+generatedArt.bathroomMud.src = "assets/stage4/level4-bathroom/muddy-filth-v1.png?v=stage4-bathroom-1";
+generatedArt.bathroomFaucetLeft.src = "assets/stage4/level4-bathroom/faucet-left-original-sprite-v2.png?v=stage4-original-faucet-sprites-1";
+generatedArt.bathroomFaucetMiddle.src = "assets/stage4/level4-bathroom/faucet-middle-original-sprite-v2.png?v=stage4-original-faucet-sprites-1";
+generatedArt.bathroomFaucetRight.src = "assets/stage4/level4-bathroom/faucet-right-original-sprite-v3.png?v=stage4-right-faucet-outline-1";
+generatedArt.bathroomFaucetWaterLeft.src = "assets/stage4/level4-bathroom/faucet-water-left-art-v1.png?v=stage4-rendered-faucet-water-1";
+generatedArt.bathroomFaucetWaterMiddle.src = "assets/stage4/level4-bathroom/faucet-water-middle-art-v1.png?v=stage4-rendered-faucet-water-1";
+generatedArt.bathroomFaucetWaterRight.src = "assets/stage4/level4-bathroom/faucet-water-right-art-v1.png?v=stage4-rendered-faucet-water-1";
+generatedArt.bathroomSecretPanelSheet.src = "assets/stage4/level4-bathroom/bathroom-secret-panel-animation-artgen-clean-v1.png?v=stage4-secret-panel-transition-trash-clean-1";
+generatedArt.bathroomSecretPanelTransitionFrame3.src = "assets/stage4/level4-bathroom/bathroom-secret-panel-transition-frame3-artgen-v1.png?v=stage4-secret-panel-artgen-frame3-1";
+generatedArt.bathroomSecretPanelOpenReference.src = "assets/stage4/level4-bathroom/bathroom-secret-panel-open-user-reference-v1.png?v=stage4-secret-panel-user-reference-3";
+generatedArt.bathroomSecretCrawlspace.src = "assets/stage4/level4-bathroom/bathroom-secret-crawlspace-frameless-v4.png?v=stage4-secret-panel-flat-seams-2";
+generatedArt.bathroomSecretPanel.src = "assets/stage4/level4-bathroom/bathroom-secret-panel-flat-v5.png?v=stage4-secret-panel-flat-seams-2";
+generatedArt.bathroomSecretPanelForeground.src = "assets/stage4/level4-bathroom/bathroom-secret-panel-trash-foreground-v2.png?v=stage4-secret-panel-flat-seams-2";
+generatedArt.bathroomSecretPanelHighlight.src = "assets/stage4/level4-bathroom/bathroom-secret-panel-highlight-v1.png?v=stage4-secret-panel-1";
+generatedArt.bathroomSteamMirrorSheet.src = "assets/stage4/level4-bathroom/bathroom-steam-mirror-sheet-v1.png?v=stage4-steam-code-1";
 
 const ui = {
   inventory: document.querySelector("#s4Inventory"),
@@ -158,7 +213,8 @@ const items = {
   ragShreds: { name: "Rag Shreds", sprite: "assets/stage4/level2-hallway/rag-sprite-v1.png", description: "Tough fabric strips torn into useful lengths." },
   hose: { name: "Maintenance Hose", sprite: "assets/stage4/level3-utility-closet/hose-sprite-v1.png", description: "A flexible alien hose with two incompatible-looking couplings." },
   cleanRag: { name: "Clean Rag", sprite: "assets/stage4/level3-utility-closet/clean-rag-shelf-inplace-v3.png", description: "A surprisingly pristine maintenance cloth." },
-  wrench: { name: "Alien Wrench", sprite: "assets/stage4/level3-utility-closet/wrench-sprite-v1.png", description: "A heavy double-ended wrench from the utility toolkit." }
+  wrench: { name: "Alien Wrench", sprite: "assets/stage4/level3-utility-closet/wrench-sprite-v1.png", description: "A heavy double-ended wrench from the utility toolkit." },
+  bowl: { name: "Alien Bowl", sprite: "assets/stage4/level4-bathroom/alien-bowl-shelf-mask-v1.png", description: "A shallow bowl recovered from the alien washroom shelf." }
 };
 
 const art = {
@@ -220,6 +276,7 @@ const state = {
   // Future art pass: interactables should get two-state overlays/animations
   // so picked-up/opened objects differ from the baked background painting.
   reactionUntil: 0,
+  reactionKind: null,
   decoyButtonBroken: false,
   decoyButtonSparkUntil: 0,
   onLadder: false,
@@ -265,6 +322,15 @@ const state = {
   utilitySlimeBoxFallen: false,
   utilitySlimed: false,
   utilityAction: null,
+  bathroomLeftDoorOpen: false,
+  bathroomRightDoorOpen: false,
+  bathroomBowlCollected: false,
+  bathroomFaucets: [false, false, false],
+  bathroomSecretPanelOpen: false,
+  bathroomSecretPanelStart: 0,
+  bathroomAllFaucetsStart: 0,
+  bathroomSteamRevealStart: 0,
+  bathroomMirrorCodeRevealed: false,
   hallwayPickup: null,
   keypadOpen: false,
   keypadEntry: "",
@@ -403,6 +469,10 @@ function playSfx(label) {
   } else if (kind === "whoosh") {
     playNoise(.28, .045, 0, 1800);
     playTone(260, .16, "sine", .025, 0, 520);
+  } else if (kind === "water") {
+    playNoise(.34, .032, 0, 1850);
+    playNoise(.2, .018, .08, 3600);
+    playTone(720, .08, "sine", .012, .04, 980);
   }
 }
 
@@ -416,14 +486,21 @@ function playCoughSfx(beat) {
 }
 
 const NOPE_REACTION_MS = 950;
+const DISGUST_REACTION_MS = 1320;
 
 function playerIsReacting() {
   return performance.now() < state.reactionUntil;
 }
 
 function reactNope() {
+  state.reactionKind = "nope";
   state.reactionUntil = performance.now() + NOPE_REACTION_MS;
   playSfx("NOPE!");
+}
+
+function reactDisgust() {
+  state.reactionKind = "disgust";
+  state.reactionUntil = performance.now() + DISGUST_REACTION_MS;
 }
 
 function popComic(text, x, y, color = "#fff3c5") {
@@ -580,6 +657,7 @@ function useSelectedOn(target) {
 
 function hotspotList() {
   if (state.keypadOpen) return keypadHotspotList();
+  if (state.room === "bathroom") return bathroomHotspotList();
   if (state.room === "hallway") return hallwayHotspotList();
   if (state.room === "utility") return [
     { id: "utilityVent", label: "Vent Back to Hallway", x: 846, y: 48, w: 114, h: 176, action: returnToHallwayVent },
@@ -706,7 +784,7 @@ function hallwayHotspotList() {
     { id: "hallToneMiddle", label: "Middle Tone Button", x: 397, y: 268, w: 42, h: 43, action: () => playHallwayTone("middle") },
     { id: "hallToneRight", label: "High Tone Button", x: 777, y: 224, w: 42, h: 43, action: () => playHallwayTone("high") },
     { id: "hallLeftDoor", label: "Airlock Door", x: 0, y: 118, w: 105, h: 330, action: returnToAirlock },
-    { id: "hallDoorA", label: state.hallDoorAOpen ? "Open Crew Door" : "Battered Crew Door", x: 264, y: 176, w: 126, h: 246, action: () => state.hallDoorAOpen ? playSfx("ding") : inspectHallwayProp("doorA") },
+    { id: "hallDoorA", label: state.hallDoorAOpen ? "Open Washroom Door" : "Battered Crew Door", x: 264, y: 176, w: 126, h: 246, action: () => state.hallDoorAOpen ? enterBathroomFromHallway() : inspectHallwayProp("doorA") },
     { id: "hallDoorB", label: state.utilityDoorOpen ? "Open Utility Door" : "Pristine Utility Door", x: 608, y: 176, w: 126, h: 246, action: () => state.utilityDoorOpen ? enterUtilityFromHallwayDoor() : inspectHallwayProp("doorB") },
     { id: "hallKeypad", label: "Door Keypad", x: 842, y: 274, w: 42, h: 72, action: openHallwayKeypad },
     { id: "hallRightDoor", label: state.keypadUnlocked ? "Unlocked Corridor Door" : "Secured Corridor Door", x: 852, y: 116, w: 108, h: 334, action: () => inspectHallwayProp("rightDoor") },
@@ -718,6 +796,79 @@ function hallwayHotspotList() {
     { id: "hallVase", label: "Table Vase", x: 528, y: 288, w: 62, h: 84, action: () => state.hallwayDirtCollected ? inspectHallwayProp("vase") : beginHallwayPickup("dirt") },
     { id: "hallVent", label: state.hallwayRopeInstalled ? "Makeshift Rope" : "High Wall Vent", x: 684, y: 28, w: 112, h: state.hallwayRopeInstalled ? 450 : 128, action: interactHallwayVent }
   ].filter(h => !h.visible || h.visible());
+}
+
+function bathroomHotspotList() {
+  return [
+    { id: "bathroomExit", label: "Crew Hallway", x: 0, y: 155, w: 132, h: 300, action: returnFromBathroomToHallway },
+    { id: "bathroomFaucetLeft", label: state.bathroomFaucets[0] ? "Turn Off Left Faucet" : "Turn On Left Faucet", x: 241, y: 190, w: 34, h: 47, action: () => toggleBathroomFaucet(0) },
+    { id: "bathroomFaucetMiddle", label: state.bathroomFaucets[1] ? "Turn Off Middle Faucet" : "Turn On Middle Faucet", x: 333, y: 188, w: 34, h: 47, action: () => toggleBathroomFaucet(1) },
+    { id: "bathroomFaucetRight", label: state.bathroomFaucets[2] ? "Turn Off Right Faucet" : "Turn On Right Faucet", x: 426, y: 185, w: 34, h: 47, action: () => toggleBathroomFaucet(2) },
+    { id: "bathroomBowl", label: "Alien Bowl", x: 709, y: 105, w: 61, h: 43, visible: () => state.bathroomLeftDoorOpen && !state.bathroomBowlCollected, action: collectBathroomBowl },
+    { id: "bathroomMud", label: "Unknown Filth", x: 818, y: 292, w: 140, h: 82, visible: () => state.bathroomRightDoorOpen, action: reactDisgust },
+    { id: "bathroomLeftStall", label: state.bathroomLeftDoorOpen ? "Open Left Stall" : "Left Stall", x: 661, y: 23, w: 160, h: 322, action: () => toggleBathroomStall("left") },
+    { id: "bathroomRightStall", label: state.bathroomRightDoorOpen ? "Open Right Stall" : "Right Stall", x: 824, y: 35, w: 136, h: 325, action: () => toggleBathroomStall("right") },
+    { id: "bathroomTrash", label: "Purple Trash Can", x: 534, y: 205, w: 80, h: 104, action: reactNope }
+  ].filter(h => !h.visible || h.visible());
+}
+
+function enterBathroomFromHallway() {
+  state.room = "bathroom";
+  state.hover = null;
+  Object.assign(state.player, { x: 105, y: 480, tx: 105, ty: 480, facing: "right", forcedFacing: null, currentDone: null, path: [] });
+  playSfx("ding");
+  updateUI();
+}
+
+function returnFromBathroomToHallway() {
+  state.room = "hallway";
+  state.hover = null;
+  Object.assign(state.player, { x: 326, y: 472, tx: 326, ty: 472, facing: "down", forcedFacing: null, currentDone: null, path: [] });
+  playSfx("ding");
+  updateUI();
+}
+
+function toggleBathroomStall(side) {
+  const key = side === "left" ? "bathroomLeftDoorOpen" : "bathroomRightDoorOpen";
+  state[key] = !state[key];
+  playSfx(state[key] ? "ding" : "clank");
+}
+
+function toggleBathroomFaucet(index) {
+  state.bathroomFaucets[index] = !state.bathroomFaucets[index];
+  playSfx(state.bathroomFaucets[index] ? "water" : "boop");
+  const allOn = state.bathroomFaucets.every(Boolean);
+  if (allOn && !state.bathroomMirrorCodeRevealed && !state.bathroomAllFaucetsStart) {
+    state.bathroomAllFaucetsStart = performance.now();
+  } else if (!allOn && !state.bathroomMirrorCodeRevealed) {
+    // The three-second heat-up must be uninterrupted.
+    state.bathroomAllFaucetsStart = 0;
+    state.bathroomSteamRevealStart = 0;
+  }
+}
+
+function collectBathroomBowl() {
+  if (state.bathroomBowlCollected) return;
+  state.bathroomBowlCollected = true;
+  state.player.facing = "down";
+  addItem("bowl");
+  playSfx("pop");
+}
+
+const BATHROOM_SECRET_PANEL_MS = 1600;
+
+function openBathroomSecretPanel() {
+  if (state.bathroomSecretPanelOpen || state.bathroomSecretPanelStart) return;
+  state.bathroomSecretPanelStart = performance.now();
+  state.hover = null;
+  state.player.forcedFacing = "up";
+  state.player.path = [];
+  state.player.tx = state.player.x;
+  state.player.ty = state.player.y;
+  playSfx("clank");
+  window.setTimeout(() => {
+    if (state.bathroomSecretPanelStart) playSfx("whoosh");
+  }, 280);
 }
 
 const HALLWAY_KEYPAD_CODE = "314";
@@ -1186,13 +1337,14 @@ function updateUI() {
   ui.clear.hidden = !state.selected;
   const roomLevel = document.querySelector("#s4RoomLevel");
   const roomName = document.querySelector("#s4RoomName");
-  if (roomLevel) roomLevel.textContent = state.room === "utility" ? "Level 3" : state.room === "hallway" ? "Level 2" : "Level 1";
-  if (roomName) roomName.textContent = state.room === "utility" ? "Utility Closet" : state.room === "hallway" ? "Crew Hallway" : "Breached Airlock";
+  if (roomLevel) roomLevel.textContent = state.room === "bathroom" ? "Level 4" : state.room === "utility" ? "Level 3" : state.room === "hallway" ? "Level 2" : "Level 1";
+  if (roomName) roomName.textContent = state.room === "bathroom" ? "Alien Washroom" : state.room === "utility" ? "Utility Closet" : state.room === "hallway" ? "Crew Hallway" : "Breached Airlock";
   document.querySelector("#s4DebugAirlock")?.classList.toggle("is-active", state.room === "airlock");
   document.querySelector("#s4DebugHallway")?.classList.toggle("is-active", state.room === "hallway");
   document.querySelector("#s4DebugUtility")?.classList.toggle("is-active", state.room === "utility");
-  canvas.setAttribute("aria-label", state.room === "utility" ? "Alien ship utility closet" : state.room === "hallway" ? "Alien ship crew hallway" : "Alien airlock point and click puzzle");
-  if (ui.objective) ui.objective.textContent = state.room === "utility" ? "Explore the utility closet." : state.room === "hallway" ? "Explore the crew hallway." : state.complete ? "Airlock cleared. Enter the open hatch." : "Get through the inner airlock door.";
+  document.querySelector("#s4DebugBathroom")?.classList.toggle("is-active", state.room === "bathroom");
+  canvas.setAttribute("aria-label", state.room === "bathroom" ? "Alien ship washroom" : state.room === "utility" ? "Alien ship utility closet" : state.room === "hallway" ? "Alien ship crew hallway" : "Alien airlock point and click puzzle");
+  if (ui.objective) ui.objective.textContent = state.room === "bathroom" ? "Explore the alien washroom." : state.room === "utility" ? "Explore the utility closet." : state.room === "hallway" ? "Explore the crew hallway." : state.complete ? "Airlock cleared. Enter the open hatch." : "Get through the inner airlock door.";
   if (ui.steps) {
     ui.steps.innerHTML = "";
     for (const [label, done] of steps) {
@@ -1267,11 +1419,11 @@ function movePlayerToPoint(point) {
   state.onLadder = false;
   state.player.path = [];
   state.player.currentDone = null;
-  if (state.room === "hallway") {
+  if (state.room === "hallway" || state.room === "bathroom") {
     state.player.tx = Math.max(42, Math.min(918, point.x));
     // Room 2 is intentionally a side-scrolling corridor. Free movement only
     // changes X; interaction paths may step slightly off this line.
-    state.player.ty = 472;
+    state.player.ty = state.room === "bathroom" ? Math.max(390, Math.min(555, point.y)) : 472;
   } else if (state.room === "utility") {
     state.player.tx = point.x;
     state.player.ty = point.y;
@@ -1295,7 +1447,7 @@ function setPlayerPath(points) {
 function activatePoint(point) {
   // The shrug is a complete player reaction, not an overlay on movement.
   // Ignore new destinations and interactions until its final frame finishes.
-  if (playerIsReacting() || state.toyExamining || state.hallwayPickup || state.hallwayRopeTying || state.hallwayVentClimbing || state.utilityEntryAnimating || state.utilityAction) return;
+  if (playerIsReacting() || state.toyExamining || state.hallwayPickup || state.hallwayRopeTying || state.hallwayVentClimbing || state.utilityEntryAnimating || state.utilityAction || state.bathroomSecretPanelStart) return;
   const hit = hitTest(point);
   if (state.keypadOpen) {
     if (hit) hit.action();
@@ -1335,7 +1487,7 @@ function autoScrollViewport(dt) {
 }
 
 function cycleInventory(delta) {
-  if (state.hallwayRopeTying || state.hallwayVentClimbing || state.utilityEntryAnimating || state.utilityAction) return;
+  if (state.hallwayRopeTying || state.hallwayVentClimbing || state.utilityEntryAnimating || state.utilityAction || state.bathroomSecretPanelStart) return;
   if (!state.inventory.length) {
     reactNope();
     setLog("No inventory items yet.");
@@ -1530,8 +1682,48 @@ const tracedHotspots = {
   utilityCenterDoor: {
     hit: point => pointInPolygon(point, [[408, 88], [490, 88], [508, 110], [508, 232], [494, 248], [404, 248], [389, 232], [389, 112]]),
     draw: () => tracePolygon([[408, 88], [490, 88], [508, 110], [508, 232], [494, 248], [404, 248], [389, 232], [389, 112]])
+  },
+  bathroomLeftStall: {
+    hit: point => pointInPolygon(point, [[694,43],[799,43],[814,53],[820,72],[820,323],[814,341],[801,351],[690,344],[679,334],[674,315],[674,69],[680,52]]),
+    draw: () => tracePolygon([[694,43],[799,43],[814,53],[820,72],[820,323],[814,341],[801,351],[690,344],[679,334],[674,315],[674,69],[680,52]])
+  },
+  bathroomRightStall: {
+    hit: point => pointInPolygon(point, [[852,49],[943,49],[955,59],[960,77],[960,351],[954,366],[943,376],[851,365],[841,355],[836,337],[836,70],[842,57]]),
+    draw: () => tracePolygon([[852,49],[943,49],[955,59],[960,77],[960,351],[954,366],[943,376],[851,365],[841,355],[836,337],[836,70],[842,57]])
+  },
+  bathroomBowl: {
+    hit: point => pointInPolygon(point, [[711,114],[720,107],[740,104],[759,108],[769,115],[768,124],[763,128],[759,141],[752,147],[729,147],[719,141],[715,127],[709,122]]),
+    draw: traceBathroomBowl
+  },
+  bathroomFaucetLeft: {
+    hit: point => pointInPolygon(point, [[249,192],[263,192],[264,207],[273,210],[273,219],[261,218],[259,233],[250,233],[250,216],[242,213],[243,203],[249,205]]),
+    draw: () => tracePolygon([[249,192],[263,192],[264,207],[273,210],[273,219],[261,218],[259,233],[250,233],[250,216],[242,213],[243,203],[249,205]])
+  },
+  bathroomFaucetMiddle: {
+    hit: point => pointInPolygon(point, [[341,190],[356,190],[357,205],[365,208],[365,217],[354,216],[352,231],[343,231],[343,214],[335,211],[336,201],[342,203]]),
+    draw: () => tracePolygon([[341,190],[356,190],[357,205],[365,208],[365,217],[354,216],[352,231],[343,231],[343,214],[335,211],[336,201],[342,203]])
+  },
+  bathroomFaucetRight: {
+    hit: point => pointInPolygon(point, [[434,187],[449,187],[450,202],[458,205],[458,214],[447,213],[445,228],[436,228],[436,211],[428,208],[429,198],[435,200]]),
+    draw: () => tracePolygon([[434,187],[449,187],[450,202],[458,205],[458,214],[447,213],[445,228],[436,228],[436,211],[428,208],[429,198],[435,200]])
   }
 };
+
+function traceBathroomBowl() {
+  // Trace the painted bowl's outer silhouette: wide oval rim, tapered body,
+  // and narrow foot. This deliberately excludes the shelf behind it.
+  ctx.moveTo(740, 105);
+  ctx.bezierCurveTo(755, 105, 767, 109, 769, 116);
+  ctx.bezierCurveTo(770, 121, 767, 125, 763, 127);
+  ctx.lineTo(759, 140);
+  ctx.bezierCurveTo(757, 145, 752, 147, 744, 147);
+  ctx.lineTo(732, 147);
+  ctx.bezierCurveTo(724, 147, 720, 144, 718, 140);
+  ctx.lineTo(714, 127);
+  ctx.bezierCurveTo(710, 125, 708, 121, 710, 116);
+  ctx.bezierCurveTo(712, 109, 724, 105, 740, 105);
+  ctx.closePath();
+}
 
 function tracePolyline(vertices) {
   ctx.moveTo(vertices[0][0], vertices[0][1]);
@@ -1588,6 +1780,7 @@ function hitTest(point) {
 function isGroundTile(point) {
   if (isGeneratedMode()) {
     if (state.room === "hallway") return point.x >= 32 && point.x <= 928 && point.y >= 414 && point.y <= 522;
+    if (state.room === "bathroom") return pointInPolygon(point, [[48,390],[912,362],[940,390],[930,570],[52,570],[28,520]]);
     if (state.room === "utility") return pointInPolygon(point, [
       [360, 188], [600, 188], [708, 585], [250, 585]
     ]);
@@ -1650,6 +1843,20 @@ function nearestHallwaySideApproach(centerX, clearance, y = 472) {
 }
 
 function generatedApproachPoint(hotspot) {
+  if (state.room === "bathroom") {
+    const bathroomPoints = {
+      bathroomExit: { x: 92, y: 472, facing: "left" },
+      bathroomLeftStall: { x: 742, y: 405, facing: "up" },
+      bathroomRightStall: { x: 876, y: 405, facing: "up" },
+      bathroomBowl: { x: 780, y: 405, facing: "up" },
+      bathroomMud: { x: 862, y: 405, facing: "up" },
+      bathroomTrash: { x: 570, y: 390, facing: "up" },
+      bathroomFaucetLeft: { x: 205, y: 390, facing: "right" },
+      bathroomFaucetMiddle: { x: 400, y: 390, facing: "left" },
+      bathroomFaucetRight: { x: 500, y: 390, facing: "left" }
+    };
+    return bathroomPoints[hotspot.id] || { x: hotspot.x + hotspot.w / 2, y: 430 };
+  }
   if (state.room === "utility") {
     const utilityPoints = {
       utilityVent: { x: 650, y: 500 },
@@ -2223,6 +2430,10 @@ function drawCrackedHelmetPickup(time) {
 }
 
 function drawGeneratedAirlock(time) {
+  if (state.room === "bathroom") {
+    drawGeneratedBathroom(time);
+    return;
+  }
   if (state.room === "hallway") {
     drawGeneratedHallway(time);
     return;
@@ -2253,6 +2464,163 @@ function drawGeneratedAirlock(time) {
     if (state.hover?.id === "cargoCart") drawGeneratedSpriteHighlight("cargoCart");
   }
   drawHover();
+}
+
+function drawGeneratedBathroom(time) {
+  // The generated closed-room painting is the base, so both doors inherit the
+  // room's exact perspective and lighting. Opening a stall reveals the matching
+  // region from the original open-stall painting without any detached overlay.
+  const panelElapsed = state.bathroomSecretPanelStart
+    ? Math.max(0, performance.now() - state.bathroomSecretPanelStart)
+    : BATHROOM_SECRET_PANEL_MS;
+  const panelFrame3 = Boolean(state.bathroomSecretPanelStart) &&
+    panelElapsed >= BATHROOM_SECRET_PANEL_MS * .5 && panelElapsed < BATHROOM_SECRET_PANEL_MS * .75;
+  const panelFrame4 = state.bathroomSecretPanelOpen ||
+    (Boolean(state.bathroomSecretPanelStart) && panelElapsed >= BATHROOM_SECRET_PANEL_MS * .75);
+  const panelBase = panelFrame4
+    ? generatedArt.bathroomSecretPanelOpenReference
+    : panelFrame3
+      ? generatedArt.bathroomSecretPanelTransitionFrame3
+      : generatedArt.bathroomClosedBackground;
+  ctx.drawImage(
+    panelBase,
+    0, 0, 960, 640
+  );
+  if (state.bathroomLeftDoorOpen) drawBathroomBackgroundRegion(generatedArt.bathroomBackground, 655, 18, 172, 350);
+  if (state.bathroomRightDoorOpen) drawBathroomBackgroundRegion(generatedArt.bathroomBackground, 820, 24, 140, 360);
+  // Frames 1-2 remain the clean closed panel. The retired sprite sheet carried
+  // obsolete circular-porthole and trash-can pixels, so it is deliberately no
+  // longer composited. Frame 3 and frame 4 use their dedicated approved art.
+  drawBathroomFaucetSprites();
+  // The interactive bowl is its own transparent sprite. Do not repaint the
+  // obsolete bowl from the full-room artwork beneath it.
+  if (state.bathroomLeftDoorOpen && !state.bathroomBowlCollected) {
+    ctx.drawImage(generatedArt.bathroomBowl, 716, 109, 48, 36);
+  }
+  // Reduced to 60% of its previous size and kept completely inside the right stall.
+  if (state.bathroomRightDoorOpen) ctx.drawImage(generatedArt.bathroomMud, 852, 305, 89, 48);
+  drawBathroomFaucetWater(time);
+  drawBathroomSteamMirror();
+  if (state.hover) drawGeneratedSpriteHighlight(state.hover.id);
+  drawPlayer(time);
+  drawHover();
+}
+
+const bathroomSecretPanelLayout = {
+  // Literal raster area enclosed by the user-approved yellow trace. The sheet
+  // was generated from that mask at the canvas's native 960x640 resolution;
+  // no rectangular approximation or runtime resampling is used here.
+  x: 580,
+  y: 70,
+  frameWidth: 75,
+  frameHeight: 180,
+  frameCount: 16
+};
+
+function drawBathroomSecretPanel() {
+  if (!state.bathroomSecretPanelOpen && !state.bathroomSecretPanelStart) return;
+  const elapsed = state.bathroomSecretPanelOpen
+    ? BATHROOM_SECRET_PANEL_MS
+    : Math.max(0, performance.now() - state.bathroomSecretPanelStart);
+  const progress = Math.min(1, elapsed / BATHROOM_SECRET_PANEL_MS);
+  const { x, y, frameWidth, frameHeight, frameCount } = bathroomSecretPanelLayout;
+  const frame = Math.min(frameCount - 1, Math.floor(progress * frameCount));
+
+  // Every animation cell is already clipped by the literal approved raster
+  // mask. This keeps the recess/slide motion inside the traced panel and makes
+  // the fully-open cutout exactly the approved shape.
+  ctx.drawImage(
+    generatedArt.bathroomSecretPanelSheet,
+    frame * frameWidth,
+    0,
+    frameWidth,
+    frameHeight,
+    x,
+    y,
+    frameWidth,
+    frameHeight
+  );
+
+  // The opening continues beneath the can so none of the old wall/panel fringe
+  // can survive around its silhouette. Repaint the exact extracted original
+  // can above the animation as the foreground authority.
+  ctx.drawImage(generatedArt.bathroomSecretPanelForeground, 0, 0, 960, 640);
+}
+
+const bathroomFaucetSpriteLayout = {
+  bathroomFaucetLeft: { image: generatedArt.bathroomFaucetLeft, x: 240, y: 203.125, w: 33.125, h: 31.25 },
+  bathroomFaucetMiddle: { image: generatedArt.bathroomFaucetMiddle, x: 331.875, y: 192.5, w: 33.125, h: 33.125 },
+  bathroomFaucetRight: { image: generatedArt.bathroomFaucetRight, x: 421.875, y: 178.75, w: 35, h: 36.25 }
+};
+
+function drawBathroomFaucetSprites() {
+  for (const faucet of Object.values(bathroomFaucetSpriteLayout)) {
+    ctx.drawImage(faucet.image, faucet.x, faucet.y, faucet.w, faucet.h);
+  }
+}
+
+const bathroomFaucetWaterSpriteLayout = [
+  { image: generatedArt.bathroomFaucetWaterLeft, x: 228.125, y: 187.5, w: 65.625, h: 68.75 },
+  { image: generatedArt.bathroomFaucetWaterMiddle, x: 325, y: 178.125, w: 62.5, h: 65.625 },
+  { image: generatedArt.bathroomFaucetWaterRight, x: 409.375, y: 165.625, w: 71.875, h: 68.75 }
+];
+
+function drawBathroomFaucetWater() {
+  bathroomFaucetWaterSpriteLayout.forEach((water, index) => {
+    if (!state.bathroomFaucets[index]) return;
+    ctx.drawImage(water.image, water.x, water.y, water.w, water.h);
+  });
+}
+
+const BATHROOM_STEAM_DELAY_MS = 3000;
+const BATHROOM_STEAM_REVEAL_MS = 2200;
+const bathroomSteamMirrorLayout = { x: 140, y: 22.5, w: 415, h: 267.5 };
+
+function drawBathroomSteamMirror() {
+  if (!state.bathroomMirrorCodeRevealed && !state.bathroomSteamRevealStart) return;
+  const progress = state.bathroomMirrorCodeRevealed
+    ? 1
+    : Math.max(0, Math.min(1, (performance.now() - state.bathroomSteamRevealStart) / BATHROOM_STEAM_REVEAL_MS));
+  if (progress <= 0) return;
+
+  const sheet = generatedArt.bathroomSteamMirrorSheet;
+  const frameWidth = sheet.naturalWidth / 4;
+  const frameHeight = sheet.naturalHeight;
+  if (!frameWidth || !frameHeight) return;
+
+  const framePosition = progress * 3;
+  const firstFrame = Math.min(3, Math.floor(framePosition));
+  const secondFrame = Math.min(3, firstFrame + 1);
+  const mix = framePosition - firstFrame;
+  const fadeIn = Math.min(1, progress * 8);
+  // Once a faucet is turned off, retain the fogged clue but omit the bottom
+  // faucet/water portion of the generated frame so no phantom water remains.
+  const sourceHeight = state.bathroomFaucets.every(Boolean) ? frameHeight : Math.round(frameHeight * .72);
+  const destinationHeight = bathroomSteamMirrorLayout.h * sourceHeight / frameHeight;
+
+  const drawFrame = (frame, alpha) => {
+    if (alpha <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = alpha * fadeIn;
+    ctx.drawImage(
+      sheet,
+      frame * frameWidth, 0, frameWidth, sourceHeight,
+      bathroomSteamMirrorLayout.x, bathroomSteamMirrorLayout.y,
+      bathroomSteamMirrorLayout.w, destinationHeight
+    );
+    ctx.restore();
+  };
+  drawFrame(firstFrame, 1 - mix);
+  if (secondFrame !== firstFrame) drawFrame(secondFrame, mix);
+}
+
+function drawBathroomBackgroundRegion(image, x, y, w, h) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.drawImage(image, 0, 0, 960, 640);
+  ctx.restore();
 }
 
 function drawGeneratedUtilityCloset(time) {
@@ -3757,12 +4125,33 @@ function drawGeneratedPlayerSprite(time) {
   const footAnchor = dh * .448;
 
   if (reacting) {
-    const reactionElapsed = NOPE_REACTION_MS - (state.reactionUntil - reactionNow);
-    const reactionFrame = Math.min(3, Math.max(0, Math.floor(reactionElapsed / 190)));
-    const reactionImage = generatedArt.ngSheet;
+    const disgusted = state.reactionKind === "disgust";
+    const reactionDuration = disgusted ? DISGUST_REACTION_MS : NOPE_REACTION_MS;
+    const reactionElapsed = reactionDuration - (state.reactionUntil - reactionNow);
+    const reactionFrame = Math.min(3, Math.max(0, Math.floor(reactionElapsed / (reactionDuration / 4))));
+    const reactionImage = disgusted ? generatedArt.disgustSheet : generatedArt.ngSheet;
     const reactionWidth = reactionImage.naturalWidth / 4;
     const reactionHeight = reactionImage.naturalHeight;
     const inset = 2;
+    if (disgusted) {
+      const gagWidth = 200;
+      const gagHeight = 230;
+      // The generated cells share a fixed foot baseline. Anchor that baseline
+      // to the player's ground position so the gag never floats or bounces.
+      const gagFootY = gagHeight * (500 / 600);
+      ctx.drawImage(
+        reactionImage,
+        reactionFrame * reactionWidth + inset,
+        inset,
+        reactionWidth - inset * 2,
+        reactionHeight - inset * 2,
+        p.x - gagWidth / 2,
+        p.y - gagFootY,
+        gagWidth,
+        gagHeight
+      );
+      return;
+    }
     ctx.save();
     ctx.translate(p.x, p.y - footAnchor);
     ctx.drawImage(
@@ -4065,6 +4454,39 @@ function drawComicEffects(time) {
 
 function drawGeneratedSpriteHighlight(id) {
   if (!generatedArt.spritesReady) return false;
+  if (id === "bathroomExit") {
+    drawSpriteOutlineOnly(generatedArt.bathroomExitHighlightMask, 0, 0, 960, 640);
+    return true;
+  }
+  if (id === "bathroomTrash") {
+    drawSpriteOutlineOnly(generatedArt.bathroomTrashHighlightMask, 0, 0, 960, 640);
+    return true;
+  }
+  if (id === "bathroomLeftStall") {
+    // The extracted door sprite's alpha is the outline source; no hotspot box
+    // or hand-drawn polygon participates in the hover effect.
+    drawSpriteOutlineOnly(generatedArt.bathroomDoorLeft, 674, 31, 151, 319);
+    return true;
+  }
+  if (id === "bathroomRightStall") {
+    drawSpriteOutlineOnly(generatedArt.bathroomDoorRight, 836, 38, 142, 317);
+    return true;
+  }
+  if (id === "bathroomMud") {
+    drawSpriteOutlineOnly(generatedArt.bathroomMud, 852, 305, 89, 48);
+    return true;
+  }
+  if (id === "bathroomBowl") {
+    if (state.bathroomBowlCollected) return false;
+    // Outline the same interactive sprite that is visible on the shelf.
+    drawSpriteOutlineOnly(generatedArt.bathroomBowl, 716, 109, 48, 36);
+    return true;
+  }
+  if (id === "bathroomFaucetLeft" || id === "bathroomFaucetMiddle" || id === "bathroomFaucetRight") {
+    const faucet = bathroomFaucetSpriteLayout[id];
+    drawSpriteOutlineOnly(faucet.image, faucet.x, faucet.y, faucet.w, faucet.h);
+    return true;
+  }
   ctx.save();
   ctx.globalAlpha = .96;
   ctx.filter = "drop-shadow(3px 0 #ffd365) drop-shadow(-3px 0 #ffd365) drop-shadow(0 3px #ffd365) drop-shadow(0 -3px #ffd365)";
@@ -4150,11 +4572,41 @@ function drawGeneratedSpriteHighlight(id) {
   return true;
 }
 
+const spriteOutlineCanvas = document.createElement("canvas");
+spriteOutlineCanvas.width = canvas.width;
+spriteOutlineCanvas.height = canvas.height;
+const spriteOutlineCtx = spriteOutlineCanvas.getContext("2d");
+function drawSpriteOutlineOnly(image, x, y, w, h, radius = 3) {
+  spriteOutlineCtx.clearRect(0, 0, spriteOutlineCanvas.width, spriteOutlineCanvas.height);
+  spriteOutlineCtx.save();
+  spriteOutlineCtx.fillStyle = "#ffd365";
+  // Build a solid expanded silhouette from the sprite's alpha channel.
+  for (let i = 0; i < 16; i++) {
+    const angle = i * Math.PI * 2 / 16;
+    spriteOutlineCtx.drawImage(image, x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, w, h);
+  }
+  spriteOutlineCtx.globalCompositeOperation = "source-in";
+  spriteOutlineCtx.fillRect(x - radius, y - radius, w + radius * 2, h + radius * 2);
+  // Remove the original silhouette, leaving only the narrow exterior ring.
+  spriteOutlineCtx.globalCompositeOperation = "destination-out";
+  spriteOutlineCtx.drawImage(image, x, y, w, h);
+  spriteOutlineCtx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = .98;
+  ctx.shadowBlur = 9;
+  ctx.shadowColor = "rgba(255,211,101,.82)";
+  ctx.drawImage(spriteOutlineCanvas, 0, 0);
+  ctx.restore();
+}
+
 const generatedSpriteHighlightIds = new Set([
   "outerDoor", "locker", "ladder", "vent", "scanner", "innerDoor",
   "helmetSpot", "lever", "decoyButton", "cargoCart", "alienToy", "tag",
   "hallTrash", "hallPaper", "hallCleaner", "hallMirror", "hallVase", "hallVent", "hallRagShreds",
-  "utilityHose", "utilityCleanRag", "utilityToolkit", "utilitySlimeBox", "utilityWire", "utilityDoorButton", "utilityCenterDoor", "utilityEmptyBox"
+  "utilityHose", "utilityCleanRag", "utilityToolkit", "utilitySlimeBox", "utilityWire", "utilityDoorButton", "utilityCenterDoor", "utilityEmptyBox",
+  "bathroomExit", "bathroomTrash", "bathroomLeftStall", "bathroomRightStall", "bathroomBowl", "bathroomMud",
+  "bathroomFaucetLeft", "bathroomFaucetMiddle", "bathroomFaucetRight"
 ]);
 
 function drawHover() {
@@ -4273,6 +4725,27 @@ function updateUtilityEntryAnimation() {
 }
 
 function update(dt) {
+  if (state.room === "bathroom" && state.bathroomFaucets.every(Boolean) && !state.bathroomMirrorCodeRevealed) {
+    const now = performance.now();
+    if (state.bathroomAllFaucetsStart && !state.bathroomSteamRevealStart && now - state.bathroomAllFaucetsStart >= BATHROOM_STEAM_DELAY_MS) {
+      state.bathroomSteamRevealStart = now;
+      playSfx("psshh");
+    }
+    if (state.bathroomSteamRevealStart && now - state.bathroomSteamRevealStart >= BATHROOM_STEAM_REVEAL_MS) {
+      state.bathroomMirrorCodeRevealed = true;
+      state.bathroomSteamRevealStart = 0;
+    }
+  }
+  if (state.bathroomSecretPanelStart) {
+    if (performance.now() - state.bathroomSecretPanelStart >= BATHROOM_SECRET_PANEL_MS) {
+      state.bathroomSecretPanelOpen = true;
+      state.bathroomSecretPanelStart = 0;
+      state.player.forcedFacing = null;
+      playSfx("ding");
+    } else {
+      return;
+    }
+  }
   if (state.utilityEntryAnimating) {
     updateUtilityEntryAnimation();
     return;
@@ -4416,11 +4889,12 @@ function resetDebugState(room) {
   outerDoorCloseTimer = 0;
   const hallway = room === "hallway";
   const utility = room === "utility";
-  const progressed = hallway || utility;
+  const bathroom = room === "bathroom";
+  const progressed = hallway || utility || bathroom;
   const now = performance.now();
 
   state.room = room;
-  state.inventory = utility ? ["tag"] : hallway ? ["helmet", "sealant", "tag"] : [];
+  state.inventory = bathroom ? ["tag", "cleanRag", "wrench"] : utility ? ["tag"] : hallway ? ["helmet", "sealant", "tag"] : [];
   state.selected = null;
   state.hover = null;
   state.lockerOpen = progressed;
@@ -4451,8 +4925,8 @@ function resetDebugState(room) {
   state.hallwayTonePulse = null;
   state.hallwayTonePulseUntil = 0;
   state.hallwayDoorToneProgress = 0;
-  state.hallDoorAOpen = false;
-  state.hallDoorAOpenStart = 0;
+  state.hallDoorAOpen = bathroom;
+  state.hallDoorAOpenStart = bathroom ? now - 1000 : 0;
   state.hallwayCleanerX = 780;
   state.hallwayCleanerTargetX = 780;
   state.hallwayRagCollected = utility;
@@ -4482,13 +4956,24 @@ function resetDebugState(room) {
   state.utilitySlimeBoxFallen = false;
   state.utilitySlimed = false;
   state.utilityAction = null;
+  state.bathroomLeftDoorOpen = false;
+  state.bathroomRightDoorOpen = false;
+  state.bathroomBowlCollected = false;
+  state.bathroomFaucets = [false, false, false];
+  state.bathroomSecretPanelOpen = false;
+  state.bathroomSecretPanelStart = 0;
+  state.bathroomAllFaucetsStart = 0;
+  state.bathroomSteamRevealStart = 0;
+  state.bathroomMirrorCodeRevealed = false;
   state.keypadOpen = false;
   state.keypadEntry = "";
   state.keypadUnlocked = false;
   state.keypadFeedbackUntil = 0;
   state.comicEffects = [];
 
-  Object.assign(state.player, utility
+  Object.assign(state.player, bathroom
+    ? { x: 105, y: 480, tx: 105, ty: 480, facing: "right" }
+    : utility
     ? { x: 666, y: 500, tx: 666, ty: 500, facing: "left" }
     : hallway
       ? { x: 72, y: 472, tx: 72, ty: 472, facing: "right" }
@@ -4498,7 +4983,9 @@ function resetDebugState(room) {
   state.player.forcedFacing = null;
   controller.inventoryIndex = 0;
 
-  setLog(utility
+  setLog(bathroom
+    ? "Debug: Alien Washroom loaded with the utility route complete."
+    : utility
     ? "Debug: Utility Closet loaded after the completed corridor route."
     : hallway
       ? "Debug: Crew Hallway loaded with every Room 1 inventory item."
@@ -4509,6 +4996,11 @@ function resetDebugState(room) {
 document.querySelector("#s4DebugAirlock")?.addEventListener("click", () => resetDebugState("airlock"));
 document.querySelector("#s4DebugHallway")?.addEventListener("click", () => resetDebugState("hallway"));
 document.querySelector("#s4DebugUtility")?.addEventListener("click", () => resetDebugState("utility"));
+document.querySelector("#s4DebugBathroom")?.addEventListener("click", () => resetDebugState("bathroom"));
+document.querySelector("#s4DebugBathroomPanel")?.addEventListener("click", () => {
+  if (state.room !== "bathroom") resetDebugState("bathroom");
+  openBathroomSecretPanel();
+});
 
 updateUI();
 requestAnimationFrame(loop);

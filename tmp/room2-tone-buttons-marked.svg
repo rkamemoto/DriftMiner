@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="645" height="632" viewBox="0 0 645 632">
+  <defs>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 L8 4 L0 8 Z" fill="#ffe76a"/>
+    </marker>
+  </defs>
+  <image href="room2-tone-buttons-current.png" width="645" height="632"/>
+  <circle cx="171" cy="424" r="13" fill="none" stroke="#ffe76a" stroke-width="3" filter="url(#glow)"/>
+  <circle cx="521" cy="379" r="15" fill="none" stroke="#ffe76a" stroke-width="3" filter="url(#glow)"/>
+  <path d="M109 397 L157 417" fill="none" stroke="#ffe76a" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M577 344 L534 369" fill="none" stroke="#ffe76a" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <g font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#fff7bb">
+    <rect x="29" y="366" width="111" height="31" rx="9" fill="#181625" stroke="#ffe76a"/>
+    <text x="84.5" y="386" text-anchor="middle">LOW TONE</text>
+    <rect x="532" y="313" width="104" height="31" rx="9" fill="#181625" stroke="#ffe76a"/>
+    <text x="584" y="333" text-anchor="middle">HIGH TONE</text>
+  </g>
+</svg>
