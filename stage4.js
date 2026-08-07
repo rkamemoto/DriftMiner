@@ -61,6 +61,8 @@ const generatedArt = {
   utilityEmptyBox: new Image(),
   bathroomBackground: new Image(),
   bathroomClosedBackground: new Image(),
+  bathroomTrashSprite: new Image(),
+  bathroomJanitorCart: new Image(),
   bathroomDoorLeft: new Image(),
   bathroomDoorRight: new Image(),
   bathroomExitHighlightMask: new Image(),
@@ -73,13 +75,7 @@ const generatedArt = {
   bathroomFaucetWaterLeft: new Image(),
   bathroomFaucetWaterMiddle: new Image(),
   bathroomFaucetWaterRight: new Image(),
-  bathroomSecretPanelSheet: new Image(),
-  bathroomSecretPanelTransitionFrame3: new Image(),
   bathroomSecretPanelOpenReference: new Image(),
-  bathroomSecretCrawlspace: new Image(),
-  bathroomSecretPanel: new Image(),
-  bathroomSecretPanelForeground: new Image(),
-  bathroomSecretPanelHighlight: new Image(),
   bathroomSteamMirrorSheet: new Image(),
   backgroundReady: false,
   playerReady: false,
@@ -107,12 +103,11 @@ const stageFourSpriteImages = [
   generatedArt.utilityToolkit, generatedArt.utilityToolkitOpen, generatedArt.utilityWrench, generatedArt.utilitySlimeBox, generatedArt.utilitySlimeReaction,
   generatedArt.utilityWire, generatedArt.utilityWirePull, generatedArt.utilityWirePullPlayer, generatedArt.utilityWirePullHands, generatedArt.utilityRoutedCable, generatedArt.utilityDoorOpenOverlay,
   generatedArt.utilityVentPaw, generatedArt.utilityVentPlayer, generatedArt.utilityDoorButton, generatedArt.utilityEmptyBox,
-  generatedArt.bathroomBackground, generatedArt.bathroomClosedBackground, generatedArt.bathroomDoorLeft, generatedArt.bathroomDoorRight,
+  generatedArt.bathroomBackground, generatedArt.bathroomClosedBackground, generatedArt.bathroomTrashSprite, generatedArt.bathroomJanitorCart, generatedArt.bathroomDoorLeft, generatedArt.bathroomDoorRight,
   generatedArt.bathroomExitHighlightMask, generatedArt.bathroomTrashHighlightMask, generatedArt.bathroomBowl, generatedArt.bathroomMud,
   generatedArt.bathroomFaucetLeft, generatedArt.bathroomFaucetMiddle, generatedArt.bathroomFaucetRight,
   generatedArt.bathroomFaucetWaterLeft, generatedArt.bathroomFaucetWaterMiddle, generatedArt.bathroomFaucetWaterRight,
-  generatedArt.bathroomSecretPanelSheet, generatedArt.bathroomSecretPanelTransitionFrame3, generatedArt.bathroomSecretPanelOpenReference,
-  generatedArt.bathroomSecretCrawlspace, generatedArt.bathroomSecretPanel, generatedArt.bathroomSecretPanelForeground, generatedArt.bathroomSecretPanelHighlight,
+  generatedArt.bathroomSecretPanelOpenReference,
   generatedArt.bathroomSteamMirrorSheet
 ];
 const updateStageFourSpriteReadiness = () => generatedArt.spritesReady = stageFourSpriteImages.every(image => image.complete && image.naturalWidth > 0);
@@ -171,7 +166,9 @@ generatedArt.utilityVentPlayer.src = "assets/stage4/level3-utility-closet/player
 generatedArt.utilityDoorButton.src = "assets/stage4/level3-utility-closet/door-blue-button-sprite-v1.png?v=stage4-utility-button-sprite-1";
 generatedArt.utilityEmptyBox.src = "assets/stage4/level3-utility-closet/light-parts-box-sprite-v1.png?v=stage4-light-parts-crate-1";
 generatedArt.bathroomBackground.src = "assets/stage4/level4-bathroom/bathroom-background-open-clean-v3.png?v=stage4-bathroom-filthy-toilet-1";
-generatedArt.bathroomClosedBackground.src = "assets/stage4/level4-bathroom/bathroom-background-faucets-clean-v1.png?v=stage4-original-faucet-sprites-1";
+generatedArt.bathroomClosedBackground.src = "assets/stage4/level4-bathroom/bathroom-background-faucets-interactable-v3.png?v=stage4-room-sprites-3";
+generatedArt.bathroomTrashSprite.src = "assets/stage4/level4-bathroom/bathroom-trash-sprite-v1.png?v=stage4-room-sprites-1";
+generatedArt.bathroomJanitorCart.src = "assets/stage4/level4-bathroom/bathroom-janitor-cart-sprite-v1.png?v=stage4-room-sprites-1";
 generatedArt.bathroomDoorLeft.src = "assets/stage4/level4-bathroom/stall-door-left-v1.png?v=stage4-bathroom-1";
 generatedArt.bathroomDoorRight.src = "assets/stage4/level4-bathroom/stall-door-right-v1.png?v=stage4-bathroom-1";
 generatedArt.bathroomExitHighlightMask.src = "assets/stage4/level4-bathroom/bathroom-exit-highlight-mask-v1.png?v=stage4-bathroom-alpha-highlights-1";
@@ -184,13 +181,7 @@ generatedArt.bathroomFaucetRight.src = "assets/stage4/level4-bathroom/faucet-rig
 generatedArt.bathroomFaucetWaterLeft.src = "assets/stage4/level4-bathroom/faucet-water-left-art-v1.png?v=stage4-rendered-faucet-water-1";
 generatedArt.bathroomFaucetWaterMiddle.src = "assets/stage4/level4-bathroom/faucet-water-middle-art-v1.png?v=stage4-rendered-faucet-water-1";
 generatedArt.bathroomFaucetWaterRight.src = "assets/stage4/level4-bathroom/faucet-water-right-art-v1.png?v=stage4-rendered-faucet-water-1";
-generatedArt.bathroomSecretPanelSheet.src = "assets/stage4/level4-bathroom/bathroom-secret-panel-animation-artgen-clean-v1.png?v=stage4-secret-panel-transition-trash-clean-1";
-generatedArt.bathroomSecretPanelTransitionFrame3.src = "assets/stage4/level4-bathroom/bathroom-secret-panel-transition-frame3-artgen-v1.png?v=stage4-secret-panel-artgen-frame3-1";
 generatedArt.bathroomSecretPanelOpenReference.src = "assets/stage4/level4-bathroom/bathroom-secret-panel-open-user-reference-v1.png?v=stage4-secret-panel-user-reference-3";
-generatedArt.bathroomSecretCrawlspace.src = "assets/stage4/level4-bathroom/bathroom-secret-crawlspace-frameless-v4.png?v=stage4-secret-panel-flat-seams-2";
-generatedArt.bathroomSecretPanel.src = "assets/stage4/level4-bathroom/bathroom-secret-panel-flat-v5.png?v=stage4-secret-panel-flat-seams-2";
-generatedArt.bathroomSecretPanelForeground.src = "assets/stage4/level4-bathroom/bathroom-secret-panel-trash-foreground-v2.png?v=stage4-secret-panel-flat-seams-2";
-generatedArt.bathroomSecretPanelHighlight.src = "assets/stage4/level4-bathroom/bathroom-secret-panel-highlight-v1.png?v=stage4-secret-panel-1";
 generatedArt.bathroomSteamMirrorSheet.src = "assets/stage4/level4-bathroom/bathroom-steam-mirror-sheet-v1.png?v=stage4-steam-code-1";
 
 const ui = {
@@ -808,8 +799,21 @@ function bathroomHotspotList() {
     { id: "bathroomMud", label: "Unknown Filth", x: 818, y: 292, w: 140, h: 82, visible: () => state.bathroomRightDoorOpen, action: reactDisgust },
     { id: "bathroomLeftStall", label: state.bathroomLeftDoorOpen ? "Open Left Stall" : "Left Stall", x: 661, y: 23, w: 160, h: 322, action: () => toggleBathroomStall("left") },
     { id: "bathroomRightStall", label: state.bathroomRightDoorOpen ? "Open Right Stall" : "Right Stall", x: 824, y: 35, w: 136, h: 325, action: () => toggleBathroomStall("right") },
-    { id: "bathroomTrash", label: "Purple Trash Can", x: 534, y: 205, w: 80, h: 104, action: reactNope }
+    { id: "bathroomJanitorCart", label: "Janitor Cart", x: 735, y: 340, w: 115, h: 233, action: inspectBathroomJanitorCart },
+    { id: "bathroomTrash", label: "Purple Trash Can", x: 862, y: 472, w: 86, h: 108, action: inspectBathroomTrash }
   ].filter(h => !h.visible || h.visible());
+}
+
+function inspectBathroomJanitorCart() {
+  playSfx("clank");
+  popComic("squeak!", 790, 468, "#f2c45b");
+  setLog("The janitor cart squeaks on four stubborn wheels. Its bright colors feel almost aggressively cheerful in here.");
+}
+
+function inspectBathroomTrash() {
+  playSfx("clank");
+  popComic("clang!", 904, 500, "#b89cff");
+  setLog("The purple trash can rings like a tiny spaceship hull. Whatever is inside refuses to explain itself.");
 }
 
 function enterBathroomFromHallway() {
@@ -1850,7 +1854,8 @@ function generatedApproachPoint(hotspot) {
       bathroomRightStall: { x: 876, y: 405, facing: "up" },
       bathroomBowl: { x: 780, y: 405, facing: "up" },
       bathroomMud: { x: 862, y: 405, facing: "up" },
-      bathroomTrash: { x: 570, y: 390, facing: "up" },
+      bathroomJanitorCart: { x: 706, y: 450, facing: "right" },
+      bathroomTrash: { x: 834, y: 450, facing: "right" },
       bathroomFaucetLeft: { x: 205, y: 390, facing: "right" },
       bathroomFaucetMiddle: { x: 400, y: 390, facing: "left" },
       bathroomFaucetRight: { x: 500, y: 390, facing: "left" }
@@ -2472,25 +2477,16 @@ function drawGeneratedBathroom(time) {
   // region from the original open-stall painting without any detached overlay.
   const panelElapsed = state.bathroomSecretPanelStart
     ? Math.max(0, performance.now() - state.bathroomSecretPanelStart)
-    : BATHROOM_SECRET_PANEL_MS;
-  const panelFrame3 = Boolean(state.bathroomSecretPanelStart) &&
-    panelElapsed >= BATHROOM_SECRET_PANEL_MS * .5 && panelElapsed < BATHROOM_SECRET_PANEL_MS * .75;
-  const panelFrame4 = state.bathroomSecretPanelOpen ||
-    (Boolean(state.bathroomSecretPanelStart) && panelElapsed >= BATHROOM_SECRET_PANEL_MS * .75);
-  const panelBase = panelFrame4
-    ? generatedArt.bathroomSecretPanelOpenReference
-    : panelFrame3
-      ? generatedArt.bathroomSecretPanelTransitionFrame3
-      : generatedArt.bathroomClosedBackground;
-  ctx.drawImage(
-    panelBase,
-    0, 0, 960, 640
-  );
+    : 0;
+  const panelOpenProgress = state.bathroomSecretPanelOpen
+    ? 1
+    : state.bathroomSecretPanelStart
+      ? Math.min(1, panelElapsed / BATHROOM_SECRET_PANEL_MS)
+      : 0;
+  ctx.drawImage(generatedArt.bathroomClosedBackground, 0, 0, 960, 640);
+  drawBathroomSecretPanelReveal(panelOpenProgress);
   if (state.bathroomLeftDoorOpen) drawBathroomBackgroundRegion(generatedArt.bathroomBackground, 655, 18, 172, 350);
   if (state.bathroomRightDoorOpen) drawBathroomBackgroundRegion(generatedArt.bathroomBackground, 820, 24, 140, 360);
-  // Frames 1-2 remain the clean closed panel. The retired sprite sheet carried
-  // obsolete circular-porthole and trash-can pixels, so it is deliberately no
-  // longer composited. Frame 3 and frame 4 use their dedicated approved art.
   drawBathroomFaucetSprites();
   // The interactive bowl is its own transparent sprite. Do not repaint the
   // obsolete bowl from the full-room artwork beneath it.
@@ -2501,50 +2497,244 @@ function drawGeneratedBathroom(time) {
   if (state.bathroomRightDoorOpen) ctx.drawImage(generatedArt.bathroomMud, 852, 305, 89, 48);
   drawBathroomFaucetWater(time);
   drawBathroomSteamMirror();
+  drawBathroomCleaningSprites();
   if (state.hover) drawGeneratedSpriteHighlight(state.hover.id);
   drawPlayer(time);
   drawHover();
 }
 
-const bathroomSecretPanelLayout = {
-  // Literal raster area enclosed by the user-approved yellow trace. The sheet
-  // was generated from that mask at the canvas's native 960x640 resolution;
-  // no rectangular approximation or runtime resampling is used here.
-  x: 580,
-  y: 70,
-  frameWidth: 75,
-  frameHeight: 180,
-  frameCount: 16
+const bathroomCleaningSpriteLayout = {
+  bathroomJanitorCart: { image: generatedArt.bathroomJanitorCart, x: 735, y: 340, w: 115, h: 233 },
+  bathroomTrash: { image: generatedArt.bathroomTrashSprite, x: 862, y: 472, w: 86, h: 108 }
 };
 
-function drawBathroomSecretPanel() {
-  if (!state.bathroomSecretPanelOpen && !state.bathroomSecretPanelStart) return;
-  const elapsed = state.bathroomSecretPanelOpen
-    ? BATHROOM_SECRET_PANEL_MS
-    : Math.max(0, performance.now() - state.bathroomSecretPanelStart);
-  const progress = Math.min(1, elapsed / BATHROOM_SECRET_PANEL_MS);
-  const { x, y, frameWidth, frameHeight, frameCount } = bathroomSecretPanelLayout;
-  const frame = Math.min(frameCount - 1, Math.floor(progress * frameCount));
+function drawBathroomCleaningSprites() {
+  for (const sprite of Object.values(bathroomCleaningSpriteLayout)) {
+    if (!sprite.image.complete || !sprite.image.naturalWidth) continue;
+    ctx.drawImage(sprite.image, sprite.x, sprite.y, sprite.w, sprite.h);
+  }
+}
 
-  // Every animation cell is already clipped by the literal approved raster
-  // mask. This keeps the recess/slide motion inside the traced panel and makes
-  // the fully-open cutout exactly the approved shape.
-  ctx.drawImage(
-    generatedArt.bathroomSecretPanelSheet,
-    frame * frameWidth,
-    0,
-    frameWidth,
-    frameHeight,
-    x,
-    y,
-    frameWidth,
-    frameHeight
-  );
+// Panel outline measured directly off the open-reference art's own pixels
+// (per-row/column luminance-transition + gradient scans, not hand-traced):
+// top edge sits on the true wall/panel seam above the rivet trim, and the
+// left/right edges were nudged a couple px per visual review. A parallelogram
+// following the wall's isometric lean, not an axis-aligned rectangle.
+const BATHROOM_SECRET_PANEL_QUAD = [[587, 71.4], [650, 82.36], [650, 240.2], [585.2, 229.8]];
+let bathroomSecretPanelPlateSprite = null;
+let bathroomSecretPanelOpenSprite = null;
+let bathroomSecretPanelWallPatch = null;
 
-  // The opening continues beneath the can so none of the old wall/panel fringe
-  // can survive around its silhouette. Repaint the exact extracted original
-  // can above the animation as the foreground authority.
-  ctx.drawImage(generatedArt.bathroomSecretPanelForeground, 0, 0, 960, 640);
+function clipToBathroomSecretPanelQuad(c) {
+  const q = BATHROOM_SECRET_PANEL_QUAD;
+  c.beginPath();
+  c.moveTo(q[0][0], q[0][1]);
+  c.lineTo(q[1][0], q[1][1]);
+  c.lineTo(q[2][0], q[2][1]);
+  c.lineTo(q[3][0], q[3][1]);
+  c.closePath();
+  c.clip();
+}
+
+// Scanline fill of the quad into a boolean mask, for the pixel-level cleanup
+// passes below (canvas clip() alone can't be queried per-pixel).
+function bathroomSecretPanelQuadMask() {
+  const q = BATHROOM_SECRET_PANEL_QUAD;
+  const w = 960, h = 640;
+  const mask = new Uint8Array(w * h);
+  const ys = q.map(p => p[1]);
+  const minY = Math.max(0, Math.floor(Math.min(...ys)));
+  const maxY = Math.min(h - 1, Math.ceil(Math.max(...ys)));
+  for (let y = minY; y <= maxY; y++) {
+    const yc = y + 0.5;
+    const xs = [];
+    for (let i = 0; i < q.length; i++) {
+      const [x1, y1] = q[i];
+      const [x2, y2] = q[(i + 1) % q.length];
+      if ((y1 <= yc && y2 > yc) || (y2 <= yc && y1 > yc)) xs.push(x1 + ((yc - y1) / (y2 - y1)) * (x2 - x1));
+    }
+    xs.sort((a, b) => a - b);
+    for (let i = 0; i < xs.length; i += 2) {
+      const xStart = Math.max(0, Math.round(xs[i]));
+      const xEnd = Math.min(w - 1, Math.round(xs[i + 1]));
+      for (let x = xStart; x <= xEnd; x++) mask[y * w + x] = 1;
+    }
+  }
+  return mask;
+}
+
+// Pixels within `radius` of a mask-boundary crossing, on the requested side.
+function bathroomSecretPanelBorderBand(mask, w, h, wantInside, radius) {
+  const out = new Uint8Array(mask.length);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      const here = !!mask[i];
+      if (here !== wantInside) continue;
+      let nearOpposite = false;
+      for (let dy = -radius; dy <= radius && !nearOpposite; dy++) {
+        const ny = y + dy;
+        if (ny < 0 || ny >= h) continue;
+        for (let dx = -radius; dx <= radius; dx++) {
+          const nx = x + dx;
+          if (nx < 0 || nx >= w) continue;
+          if (!!mask[ny * w + nx] !== here) { nearOpposite = true; break; }
+        }
+      }
+      if (nearOpposite) out[i] = 1;
+    }
+  }
+  return out;
+}
+
+// The plate is cut directly from the clean, un-animated background art (not
+// the old sprite sheet, which had a matte border baked into every frame) so
+// it has zero seams. Built once and cached.
+function getBathroomSecretPanelPlateSprite() {
+  if (bathroomSecretPanelPlateSprite) return bathroomSecretPanelPlateSprite;
+  const bg = generatedArt.bathroomClosedBackground;
+  if (!bg.complete || !bg.naturalWidth) return null;
+  const plate = document.createElement("canvas");
+  plate.width = 960;
+  plate.height = 640;
+  const pctx = plate.getContext("2d");
+  pctx.save();
+  clipToBathroomSecretPanelQuad(pctx);
+  pctx.drawImage(bg, 0, 0, 960, 640);
+  pctx.restore();
+  bathroomSecretPanelPlateSprite = plate;
+  return plate;
+}
+
+// The quad's top edge sits above the dark cavity (to include the rivet-trim
+// header as part of the panel), but the open-reference art was never drawn
+// with that header actually removed -- it's still plain wall art up there.
+// With no "header gone" art to fall back on, blend that strip into the
+// interior's own dark tone, tracked per-column against the diagonal top edge
+// (a flat cutoff leaves a wedge where the diagonal crosses it). Also flattens
+// the thin light sliver the nudged-out right edge pulled in from the door
+// frame trim, in a border band along the whole inside edge. Built once and cached.
+function getBathroomSecretPanelOpenSprite() {
+  if (bathroomSecretPanelOpenSprite) return bathroomSecretPanelOpenSprite;
+  const openImg = generatedArt.bathroomSecretPanelOpenReference;
+  if (!openImg.complete || !openImg.naturalWidth) return null;
+
+  const layer = document.createElement("canvas");
+  layer.width = 960;
+  layer.height = 640;
+  const lctx = layer.getContext("2d");
+  lctx.save();
+  clipToBathroomSecretPanelQuad(lctx);
+  lctx.drawImage(openImg, 0, 0, 960, 640);
+  lctx.restore();
+
+  const mask = bathroomSecretPanelQuadMask();
+  const imageData = lctx.getImageData(0, 0, 960, 640);
+  const data = imageData.data;
+
+  let sr = 0, sg = 0, sb = 0, sn = 0;
+  for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
+    if (!mask[i]) continue;
+    const lum = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
+    if (lum < 50) { sr += data[p]; sg += data[p + 1]; sb += data[p + 2]; sn++; }
+  }
+  const dark = sn ? [sr / sn, sg / sn, sb / sn] : [18, 18, 22];
+
+  const w = 960, h = 640, bandHeight = 20;
+  for (let x = 0; x < w; x++) {
+    let topY = -1;
+    for (let y = 0; y < h; y++) { if (mask[y * w + x]) { topY = y; break; } }
+    if (topY < 0) continue;
+    for (let y = topY; y < topY + bandHeight && y < h; y++) {
+      const i = y * w + x, p = i * 4;
+      if (!mask[i]) continue;
+      data[p] = dark[0]; data[p + 1] = dark[1]; data[p + 2] = dark[2];
+    }
+  }
+
+  const insideBand = bathroomSecretPanelBorderBand(mask, w, h, true, 3);
+  for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
+    if (!insideBand[i]) continue;
+    const lum = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
+    if (lum > 90) { data[p] = dark[0]; data[p + 1] = dark[1]; data[p + 2] = dark[2]; }
+  }
+
+  lctx.putImageData(imageData, 0, 0);
+  bathroomSecretPanelOpenSprite = layer;
+  return layer;
+}
+
+// The nudged-out left edge exposed a couple of dark seam/rivet marks on the
+// wall just outside the quad. Rather than mutate the shared background image,
+// build a small transparent-everywhere-except-the-fix patch (sampled from the
+// wall's own average tone nearby) and draw it as an overlay. Built once and cached.
+function getBathroomSecretPanelWallPatch() {
+  if (bathroomSecretPanelWallPatch) return bathroomSecretPanelWallPatch;
+  const bg = generatedArt.bathroomClosedBackground;
+  if (!bg.complete || !bg.naturalWidth) return null;
+
+  const src = document.createElement("canvas");
+  src.width = 960;
+  src.height = 640;
+  const sctx = src.getContext("2d");
+  sctx.drawImage(bg, 0, 0, 960, 640);
+  const imageData = sctx.getImageData(0, 0, 960, 640);
+  const data = imageData.data;
+
+  const w = 960, h = 640;
+  const mask = bathroomSecretPanelQuadMask();
+  const outsideBand = bathroomSecretPanelBorderBand(mask, w, h, false, 3);
+
+  let wr = 0, wg = 0, wb = 0, wn = 0;
+  for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
+    if (mask[i] || outsideBand[i]) continue;
+    wr += data[p]; wg += data[p + 1]; wb += data[p + 2]; wn++;
+  }
+  const wall = wn ? [wr / wn, wg / wn, wb / wn] : [190, 190, 195];
+
+  for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
+    if (!outsideBand[i]) { data[p + 3] = 0; continue; }
+    const lum = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
+    if (lum < 100) { data[p] = wall[0]; data[p + 1] = wall[1]; data[p + 2] = wall[2]; data[p + 3] = 255; }
+    else data[p + 3] = 0;
+  }
+  sctx.putImageData(imageData, 0, 0);
+  bathroomSecretPanelWallPatch = src;
+  return src;
+}
+
+// The whole plate recedes straight back into the crawlspace in place --
+// shrinking and fading toward the opening's darkness -- rather than sliding
+// sideways across the wall. Every draw here stays clipped to the recess
+// quad, so the motion can never spill onto neighboring props (trash can,
+// janitor cart) regardless of where they sit.
+function drawBathroomSecretPanelReveal(progress) {
+  const wallPatch = getBathroomSecretPanelWallPatch();
+  if (wallPatch) ctx.drawImage(wallPatch, 0, 0, 960, 640);
+
+  const openSprite = getBathroomSecretPanelOpenSprite();
+  if (openSprite) ctx.drawImage(openSprite, 0, 0, 960, 640);
+
+  if (progress >= 1) return;
+  const plate = getBathroomSecretPanelPlateSprite();
+  if (!plate) return;
+
+  const eased = 1 - Math.pow(1 - progress, 2);
+  const q = BATHROOM_SECRET_PANEL_QUAD;
+  const cx = (q[0][0] + q[2][0]) / 2;
+  const cy = (q[0][1] + q[2][1]) / 2;
+  const scale = 1 - eased * 0.55;
+  const dy = -eased * 26;
+  const alpha = Math.max(0, 1 - eased / 0.85);
+
+  ctx.save();
+  clipToBathroomSecretPanelQuad(ctx);
+  ctx.globalAlpha = alpha;
+  ctx.translate(cx, cy + dy);
+  ctx.scale(scale, scale);
+  ctx.translate(-cx, -cy);
+  ctx.drawImage(plate, 0, 0, 960, 640);
+  ctx.restore();
 }
 
 const bathroomFaucetSpriteLayout = {
@@ -4459,7 +4649,13 @@ function drawGeneratedSpriteHighlight(id) {
     return true;
   }
   if (id === "bathroomTrash") {
-    drawSpriteOutlineOnly(generatedArt.bathroomTrashHighlightMask, 0, 0, 960, 640);
+    const sprite = bathroomCleaningSpriteLayout.bathroomTrash;
+    drawSpriteOutlineOnly(sprite.image, sprite.x, sprite.y, sprite.w, sprite.h);
+    return true;
+  }
+  if (id === "bathroomJanitorCart") {
+    const sprite = bathroomCleaningSpriteLayout.bathroomJanitorCart;
+    drawSpriteOutlineOnly(sprite.image, sprite.x, sprite.y, sprite.w, sprite.h);
     return true;
   }
   if (id === "bathroomLeftStall") {
@@ -4605,7 +4801,7 @@ const generatedSpriteHighlightIds = new Set([
   "helmetSpot", "lever", "decoyButton", "cargoCart", "alienToy", "tag",
   "hallTrash", "hallPaper", "hallCleaner", "hallMirror", "hallVase", "hallVent", "hallRagShreds",
   "utilityHose", "utilityCleanRag", "utilityToolkit", "utilitySlimeBox", "utilityWire", "utilityDoorButton", "utilityCenterDoor", "utilityEmptyBox",
-  "bathroomExit", "bathroomTrash", "bathroomLeftStall", "bathroomRightStall", "bathroomBowl", "bathroomMud",
+  "bathroomExit", "bathroomTrash", "bathroomJanitorCart", "bathroomLeftStall", "bathroomRightStall", "bathroomBowl", "bathroomMud",
   "bathroomFaucetLeft", "bathroomFaucetMiddle", "bathroomFaucetRight"
 ]);
 

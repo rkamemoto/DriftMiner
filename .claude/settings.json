@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Write-Output *)",
+      "mcp__Claude_Browser__read_page",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(Get-Command *)",
+      "mcp__Claude_Browser__find",
+      "PowerShell(where *)",
+      "PowerShell(Test-Path *)",
+      "mcp__Claude_Browser__read_console_messages"
+    ]
+  }
+}
