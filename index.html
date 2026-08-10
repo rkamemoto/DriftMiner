@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Drift Miner Prototype</title>
-    <link rel="stylesheet" href="styles.css?v=stage4-airlock-1" />
+    <link rel="stylesheet" href="styles.css?v=stage1-intro-1" />
   </head>
   <body>
     <main class="game-shell">
@@ -27,11 +27,7 @@
           <div class="start-panel">
             <p class="eyebrow">Planetfall</p>
             <h2>Drift Miner</h2>
-            <div class="intro-copy">
-              <p>You descend through the violet storm clouds of an unknown world, your ship shuddering as it breaks into the lower atmosphere. For weeks, the signal has led you across dead sectors, ruined moons, and forgotten star lanes. Now, at last, the beacon is clear—steady, deliberate, and impossibly old.</p>
-              <p>This planet should not be here. No maps name it. No records mention it. Yet somewhere beneath its alien surface may lie the lost relic of Galactica Antares, a legendary artifact said to hold the final memory of a vanished civilization.</p>
-              <p>You have landed with little more than hope, fading fuel, and one question burning in your mind: is the relic truly here… or has something been waiting for you to answer its call?</p>
-            </div>
+            <button type="button" id="startGameButton">Start Game</button>
             <div class="start-settings">
               <label for="startModeSelect">Operation</label>
               <select id="startModeSelect">
@@ -55,8 +51,19 @@
               <div><span>Relics</span><strong>1-8 / Controller buttons</strong></div>
               <div><span>Laser sword</span><strong>R / Y</strong></div>
             </div>
-            <button type="button" id="startGameButton">Start Game</button>
             <p class="controller-status" id="controllerStatus">Waiting for controller input...</p>
+          </div>
+        </div>
+        <div class="start-overlay" id="stageOneIntroOverlay" hidden>
+          <div class="start-panel">
+            <p class="eyebrow">Planetfall</p>
+            <h2>Stage 1 - Mine the Artifact</h2>
+            <div class="intro-copy">
+              <p>You descend through the violet storm clouds of an unknown world, your ship shuddering as it breaks into the lower atmosphere. For weeks, the signal has led you across dead sectors, ruined moons, and forgotten star lanes. Now, at last, the beacon is clear—steady, deliberate, and impossibly old.</p>
+              <p>This planet should not be here. No maps name it. No records mention it. Yet somewhere beneath its alien surface may lie the lost relic of Galactica Antares, a legendary artifact said to hold the final memory of a vanished civilization.</p>
+              <p>You have landed with little more than hope, fading fuel, and one question burning in your mind: is the relic truly here… or has something been waiting for you to answer its call?</p>
+            </div>
+            <button type="button" id="stageOneIntroContinue">Begin Descent</button>
           </div>
         </div>
         <div class="game-over-overlay" id="gameOverOverlay" hidden>
@@ -350,6 +357,6 @@
       </section>
     </main>
 
-    <script src="game.js?v=stage4-airlock-1"></script>
+    <script src="game.js?v=stage1-intro-1"></script>
   </body>
 </html>

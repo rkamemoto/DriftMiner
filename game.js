@@ -5989,6 +5989,8 @@ function setupStartOverlay() {
     startGameWithSelectedWorldSize(select.value);
   });
 
+  document.querySelector("#stageOneIntroContinue")?.addEventListener("click", beginStageOneGameplay);
+
   if (sessionStorage.getItem("driftMinerAutoStart") === "1") {
     sessionStorage.removeItem("driftMinerAutoStart");
     startGameWithSelectedWorldSize(activeWorldSize);
@@ -6003,11 +6005,37 @@ function startGameWithSelectedWorldSize(selectedSize = activeWorldSize) {
     return;
   }
 
+  const intro = document.querySelector("#stageOneIntroOverlay");
+  if (!intro) {
+    beginStageOneGameplay();
+    return;
+  }
+
+  unlockAudio();
+  gamepadState.openSelect = null;
+  document.querySelector("#startOverlay").hidden = true;
+  intro.hidden = false;
+  selectControllerItem(0);
+}
+
+// Enter / gamepad A / Start should confirm whichever pre-game panel is showing.
+function clickPrimaryStartAction() {
+  const intro = document.querySelector("#stageOneIntroOverlay");
+  if (intro && !intro.hidden) {
+    document.querySelector("#stageOneIntroContinue")?.click();
+    return;
+  }
+  clickPrimaryStartAction();
+}
+
+function beginStageOneGameplay() {
   unlockAudio();
   gameStarted = true;
   gamePaused = false;
   gamepadState.openSelect = null;
   document.querySelector("#startOverlay").hidden = true;
+  const intro = document.querySelector("#stageOneIntroOverlay");
+  if (intro) intro.hidden = true;
   document.querySelector("#pauseOverlay").hidden = true;
   initializeGameplayControllerSelection();
   lastTime = performance.now();
@@ -7230,7 +7258,7 @@ function getDpadNavigationDirection(gamepad) {
 
 function getControllerSelectableElements() {
   if (!gameStarted) {
-    return ["#startModeSelect", "#startWorldSizeSelect", "#startGameButton"]
+    return ["#stageOneIntroContinue", "#startGameButton", "#startModeSelect", "#startWorldSizeSelect"]
       .map((selector) => document.querySelector(selector))
       .filter((element) => element && !element.hidden && !element.closest("[hidden]") && element.offsetParent !== null);
   }
@@ -7357,7 +7385,7 @@ function handleGamepadButtonPressed(index) {
   if (!gameStarted) {
     if ([0, 1, 2, 3, 9].includes(index)) {
       if (index === 9) {
-        document.querySelector("#startGameButton")?.click();
+        clickPrimaryStartAction();
         return;
       }
       if (index === 0 && gamepadState.openSelect && !getVirtualCursorTarget()?.matches("button")) {
@@ -7367,7 +7395,7 @@ function handleGamepadButtonPressed(index) {
       }
       if (index === 0 && activateVirtualCursorTarget()) return;
       if (activateControllerSelection()) return;
-      document.querySelector("#startGameButton")?.click();
+      clickPrimaryStartAction();
     }
     return;
   }
@@ -7416,7 +7444,7 @@ window.addEventListener("keydown", (event) => {
   focusGameSurface();
   unlockAudio();
   if (!gameStarted) {
-    if (event.key === "Enter") document.querySelector("#startGameButton")?.click();
+    if (event.key === "Enter") clickPrimaryStartAction();
     return;
   }
   if (event.key === " ") event.preventDefault();

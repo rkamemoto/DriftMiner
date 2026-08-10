@@ -43,6 +43,17 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(port, "127.0.0.1", () => {
+const host = process.env.HOST || "127.0.0.1";
+
+server.listen(port, host, () => {
   console.log(`Drift Miner preview running at http://localhost:${port}/`);
+  if (host === "0.0.0.0") {
+    for (const entries of Object.values(require("os").networkInterfaces())) {
+      for (const entry of entries || []) {
+        if (entry.family === "IPv4" && !entry.internal) {
+          console.log(`  LAN: http://${entry.address}:${port}/stage4.html`);
+        }
+      }
+    }
+  }
 });

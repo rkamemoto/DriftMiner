@@ -2515,25 +2515,44 @@ function drawBathroomCleaningSprites() {
   }
 }
 
-// Panel outline measured directly off the open-reference art's own pixels
-// (per-row/column luminance-transition + gradient scans, not hand-traced):
-// top edge sits on the true wall/panel seam above the rivet trim, and the
-// left/right edges were nudged a couple px per visual review. A parallelogram
-// following the wall's isometric lean, not an axis-aligned rectangle.
-const BATHROOM_SECRET_PANEL_QUAD = [[587, 71.4], [650, 82.36], [650, 240.2], [585.2, 229.8]];
+// Panel outline traced by hand against the room art in the interactive corner
+// tool, with the cut plate and finished hole previewed live while adjusting.
+// A parallelogram following the wall's isometric lean, not an axis-aligned
+// rectangle. Corner order is top-left, top-right, bottom-right, bottom-left.
+const BATHROOM_SECRET_PANEL_QUAD = [[583.3, 71.3], [654.1, 81.4], [652.1, 249.3], [583.3, 236.2]];
+// The plate is cut and drawn very slightly larger than the recess so its own
+// antialiased edge fully covers the interior layer's antialiased edge. Two
+// clip() passes on the same path each leave partial coverage on boundary
+// pixels, and the dark interior showing through that gap is what reads as an
+// outline around the panel. The overdraw ring is background-identical pixels
+// painted back over the background, so it is invisible.
+const BATHROOM_SECRET_PANEL_PLATE_OVERDRAW = 1.5;
 let bathroomSecretPanelPlateSprite = null;
 let bathroomSecretPanelOpenSprite = null;
 let bathroomSecretPanelWallPatch = null;
 
-function clipToBathroomSecretPanelQuad(c) {
-  const q = BATHROOM_SECRET_PANEL_QUAD;
+function clipToQuadPath(c, quad) {
   c.beginPath();
-  c.moveTo(q[0][0], q[0][1]);
-  c.lineTo(q[1][0], q[1][1]);
-  c.lineTo(q[2][0], q[2][1]);
-  c.lineTo(q[3][0], q[3][1]);
+  c.moveTo(quad[0][0], quad[0][1]);
+  for (let i = 1; i < quad.length; i++) c.lineTo(quad[i][0], quad[i][1]);
   c.closePath();
   c.clip();
+}
+
+function clipToBathroomSecretPanelQuad(c) {
+  clipToQuadPath(c, BATHROOM_SECRET_PANEL_QUAD);
+}
+
+function inflatedBathroomSecretPanelQuad(amount) {
+  const q = BATHROOM_SECRET_PANEL_QUAD;
+  const cx = q.reduce((sum, p) => sum + p[0], 0) / q.length;
+  const cy = q.reduce((sum, p) => sum + p[1], 0) / q.length;
+  return q.map(([x, y]) => {
+    const dx = x - cx;
+    const dy = y - cy;
+    const length = Math.hypot(dx, dy) || 1;
+    return [x + (dx / length) * amount, y + (dy / length) * amount];
+  });
 }
 
 // Scanline fill of the quad into a boolean mask, for the pixel-level cleanup
@@ -2563,11 +2582,27 @@ function bathroomSecretPanelQuadMask() {
   return mask;
 }
 
+// Band pixels only ever exist next to the quad's own boundary, so the scan is
+// confined to its bounding box. That keeps a wider radius affordable instead
+// of sweeping all 960x640 for every neighbourhood test.
+function bathroomSecretPanelQuadBounds(w, h, pad) {
+  const q = BATHROOM_SECRET_PANEL_QUAD;
+  const xs = q.map(p => p[0]);
+  const ys = q.map(p => p[1]);
+  return {
+    x0: Math.max(0, Math.floor(Math.min(...xs)) - pad),
+    y0: Math.max(0, Math.floor(Math.min(...ys)) - pad),
+    x1: Math.min(w - 1, Math.ceil(Math.max(...xs)) + pad),
+    y1: Math.min(h - 1, Math.ceil(Math.max(...ys)) + pad)
+  };
+}
+
 // Pixels within `radius` of a mask-boundary crossing, on the requested side.
 function bathroomSecretPanelBorderBand(mask, w, h, wantInside, radius) {
   const out = new Uint8Array(mask.length);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
+  const bounds = bathroomSecretPanelQuadBounds(w, h, radius + 2);
+  for (let y = bounds.y0; y <= bounds.y1; y++) {
+    for (let x = bounds.x0; x <= bounds.x1; x++) {
       const i = y * w + x;
       const here = !!mask[i];
       if (here !== wantInside) continue;
@@ -2599,7 +2634,7 @@ function getBathroomSecretPanelPlateSprite() {
   plate.height = 640;
   const pctx = plate.getContext("2d");
   pctx.save();
-  clipToBathroomSecretPanelQuad(pctx);
+  clipToQuadPath(pctx, inflatedBathroomSecretPanelQuad(BATHROOM_SECRET_PANEL_PLATE_OVERDRAW));
   pctx.drawImage(bg, 0, 0, 960, 640);
   pctx.restore();
   bathroomSecretPanelPlateSprite = plate;
@@ -2652,7 +2687,11 @@ function getBathroomSecretPanelOpenSprite() {
     }
   }
 
-  const insideBand = bathroomSecretPanelBorderBand(mask, w, h, true, 3);
+  // Reaches 8px in: the traced right edge sits a little outside the cavity,
+  // pulling a bright strip of door-frame trim up to ~7px into the opening.
+  // Only pixels brighter than the threshold below are flattened, so genuine
+  // dark cavity art in the band is left alone.
+  const insideBand = bathroomSecretPanelBorderBand(mask, w, h, true, 8);
   for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
     if (!insideBand[i]) continue;
     const lum = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
@@ -2712,6 +2751,11 @@ function drawBathroomSecretPanelReveal(progress) {
   const wallPatch = getBathroomSecretPanelWallPatch();
   if (wallPatch) ctx.drawImage(wallPatch, 0, 0, 960, 640);
 
+  // While fully closed the background already *is* the intact panel, so the
+  // interior is not composited at all -- that keeps the resting frame free of
+  // any boundary blending between the two layers.
+  if (progress <= 0) return;
+
   const openSprite = getBathroomSecretPanelOpenSprite();
   if (openSprite) ctx.drawImage(openSprite, 0, 0, 960, 640);
 
@@ -2728,7 +2772,7 @@ function drawBathroomSecretPanelReveal(progress) {
   const alpha = Math.max(0, 1 - eased / 0.85);
 
   ctx.save();
-  clipToBathroomSecretPanelQuad(ctx);
+  clipToQuadPath(ctx, inflatedBathroomSecretPanelQuad(BATHROOM_SECRET_PANEL_PLATE_OVERDRAW));
   ctx.globalAlpha = alpha;
   ctx.translate(cx, cy + dy);
   ctx.scale(scale, scale);

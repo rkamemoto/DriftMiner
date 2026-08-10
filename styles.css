@@ -375,6 +375,11 @@ canvas {
   overflow-y: auto;
 }
 
+.start-panel {
+  max-height: calc(100vh - 54px);
+  overflow-y: auto;
+}
+
 .start-panel h2,
 .game-over-panel h2,
 .pause-panel h2 {
@@ -494,6 +499,7 @@ select {
 }
 
 #startGameButton,
+#stageOneIntroContinue,
 #restartButton,
 #resumeButton {
   min-height: 40px;
