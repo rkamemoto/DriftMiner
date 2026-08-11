@@ -76,7 +76,7 @@ const generatedArt = {
   bathroomFaucetWaterMiddle: new Image(),
   bathroomFaucetWaterRight: new Image(),
   bathroomSecretPanelOpenReference: new Image(),
-  bathroomSteamMirrorSheet: new Image(),
+  bathroomFogMirrorGenerated: new Image(),
   backgroundReady: false,
   playerReady: false,
   spritesReady: false
@@ -108,7 +108,7 @@ const stageFourSpriteImages = [
   generatedArt.bathroomFaucetLeft, generatedArt.bathroomFaucetMiddle, generatedArt.bathroomFaucetRight,
   generatedArt.bathroomFaucetWaterLeft, generatedArt.bathroomFaucetWaterMiddle, generatedArt.bathroomFaucetWaterRight,
   generatedArt.bathroomSecretPanelOpenReference,
-  generatedArt.bathroomSteamMirrorSheet
+  generatedArt.bathroomFogMirrorGenerated
 ];
 const updateStageFourSpriteReadiness = () => generatedArt.spritesReady = stageFourSpriteImages.every(image => image.complete && image.naturalWidth > 0);
 stageFourSpriteImages.forEach(image => image.onload = updateStageFourSpriteReadiness);
@@ -181,8 +181,8 @@ generatedArt.bathroomFaucetRight.src = "assets/stage4/level4-bathroom/faucet-rig
 generatedArt.bathroomFaucetWaterLeft.src = "assets/stage4/level4-bathroom/faucet-water-left-art-v1.png?v=stage4-rendered-faucet-water-1";
 generatedArt.bathroomFaucetWaterMiddle.src = "assets/stage4/level4-bathroom/faucet-water-middle-art-v1.png?v=stage4-rendered-faucet-water-1";
 generatedArt.bathroomFaucetWaterRight.src = "assets/stage4/level4-bathroom/faucet-water-right-art-v1.png?v=stage4-rendered-faucet-water-1";
-generatedArt.bathroomSecretPanelOpenReference.src = "assets/stage4/level4-bathroom/bathroom-secret-panel-open-user-reference-v1.png?v=stage4-secret-panel-user-reference-3";
-generatedArt.bathroomSteamMirrorSheet.src = "assets/stage4/level4-bathroom/bathroom-steam-mirror-sheet-v1.png?v=stage4-steam-code-1";
+generatedArt.bathroomSecretPanelOpenReference.src = "assets/stage4/level4-bathroom/bathroom-secret-crawlspace-frameless-v4.png?v=stage4-secret-crawlspace-frameless-4";
+generatedArt.bathroomFogMirrorGenerated.src = "assets/stage4/level4-bathroom/bathroom-fog-mirror-generated-v3.png?v=stage4-fog-mirror-generated-3";
 
 const ui = {
   inventory: document.querySelector("#s4Inventory"),
@@ -1563,11 +1563,7 @@ function updateController(dt) {
 }
 
 function canvasPoint(event) {
-  const box = canvas.getBoundingClientRect();
-  return {
-    x: (event.clientX - box.left) * canvas.width / box.width,
-    y: (event.clientY - box.top) * canvas.height / box.height
-  };
+  return screenToCanvasPoint(event.clientX, event.clientY);
 }
 
 function isGeneratedMode() {
@@ -2495,8 +2491,9 @@ function drawGeneratedBathroom(time) {
   }
   // Reduced to 60% of its previous size and kept completely inside the right stall.
   if (state.bathroomRightDoorOpen) ctx.drawImage(generatedArt.bathroomMud, 852, 305, 89, 48);
-  drawBathroomFaucetWater(time);
+  drawBathroomFaucetWater();
   drawBathroomSteamMirror();
+  drawBathroomFaucetSteamEffects(time);
   drawBathroomCleaningSprites();
   if (state.hover) drawGeneratedSpriteHighlight(state.hover.id);
   drawPlayer(time);
@@ -2641,14 +2638,10 @@ function getBathroomSecretPanelPlateSprite() {
   return plate;
 }
 
-// The quad's top edge sits above the dark cavity (to include the rivet-trim
-// header as part of the panel), but the open-reference art was never drawn
-// with that header actually removed -- it's still plain wall art up there.
-// With no "header gone" art to fall back on, blend that strip into the
-// interior's own dark tone, tracked per-column against the diagonal top edge
-// (a flat cutoff leaves a wedge where the diagonal crosses it). Also flattens
-// the thin light sliver the nudged-out right edge pulled in from the door
-// frame trim, in a border band along the whole inside edge. Built once and cached.
+// Map the frameless crawlspace into the wall opening with one continuous
+// transform. The panel quad is close enough to a parallelogram that this small
+// affine perspective cue reads naturally, and avoiding a two-triangle mesh
+// prevents a diagonal interpolation seam from crossing the artwork.
 function getBathroomSecretPanelOpenSprite() {
   if (bathroomSecretPanelOpenSprite) return bathroomSecretPanelOpenSprite;
   const openImg = generatedArt.bathroomSecretPanelOpenReference;
@@ -2658,47 +2651,23 @@ function getBathroomSecretPanelOpenSprite() {
   layer.width = 960;
   layer.height = 640;
   const lctx = layer.getContext("2d");
+  const sw = openImg.naturalWidth;
+  const sh = openImg.naturalHeight;
+  const q = BATHROOM_SECRET_PANEL_QUAD;
   lctx.save();
   clipToBathroomSecretPanelQuad(lctx);
-  lctx.drawImage(openImg, 0, 0, 960, 640);
+  lctx.transform(
+    (q[1][0] - q[0][0]) / sw,
+    (q[1][1] - q[0][1]) / sw,
+    (q[3][0] - q[0][0]) / sh,
+    (q[3][1] - q[0][1]) / sh,
+    q[0][0],
+    q[0][1]
+  );
+  // Slight overdraw keeps the far edge covered where the traced quad differs
+  // by a couple of pixels from a perfect parallelogram.
+  lctx.drawImage(openImg, 0, 0, sw * 1.04, sh * 1.03);
   lctx.restore();
-
-  const mask = bathroomSecretPanelQuadMask();
-  const imageData = lctx.getImageData(0, 0, 960, 640);
-  const data = imageData.data;
-
-  let sr = 0, sg = 0, sb = 0, sn = 0;
-  for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
-    if (!mask[i]) continue;
-    const lum = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
-    if (lum < 50) { sr += data[p]; sg += data[p + 1]; sb += data[p + 2]; sn++; }
-  }
-  const dark = sn ? [sr / sn, sg / sn, sb / sn] : [18, 18, 22];
-
-  const w = 960, h = 640, bandHeight = 20;
-  for (let x = 0; x < w; x++) {
-    let topY = -1;
-    for (let y = 0; y < h; y++) { if (mask[y * w + x]) { topY = y; break; } }
-    if (topY < 0) continue;
-    for (let y = topY; y < topY + bandHeight && y < h; y++) {
-      const i = y * w + x, p = i * 4;
-      if (!mask[i]) continue;
-      data[p] = dark[0]; data[p + 1] = dark[1]; data[p + 2] = dark[2];
-    }
-  }
-
-  // Reaches 8px in: the traced right edge sits a little outside the cavity,
-  // pulling a bright strip of door-frame trim up to ~7px into the opening.
-  // Only pixels brighter than the threshold below are flattened, so genuine
-  // dark cavity art in the band is left alone.
-  const insideBand = bathroomSecretPanelBorderBand(mask, w, h, true, 8);
-  for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
-    if (!insideBand[i]) continue;
-    const lum = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
-    if (lum > 90) { data[p] = dark[0]; data[p + 1] = dark[1]; data[p + 2] = dark[2]; }
-  }
-
-  lctx.putImageData(imageData, 0, 0);
   bathroomSecretPanelOpenSprite = layer;
   return layer;
 }
@@ -2794,21 +2763,141 @@ function drawBathroomFaucetSprites() {
 }
 
 const bathroomFaucetWaterSpriteLayout = [
-  { image: generatedArt.bathroomFaucetWaterLeft, x: 228.125, y: 187.5, w: 65.625, h: 68.75 },
-  { image: generatedArt.bathroomFaucetWaterMiddle, x: 325, y: 178.125, w: 62.5, h: 65.625 },
-  { image: generatedArt.bathroomFaucetWaterRight, x: 409.375, y: 165.625, w: 71.875, h: 68.75 }
+  { image: generatedArt.bathroomFaucetWaterLeft, x: 228.125, y: 187.5, w: 65.625, h: 68.75, sourceX: 365, sourceY: 300 },
+  { image: generatedArt.bathroomFaucetWaterMiddle, x: 325, y: 178.125, w: 62.5, h: 65.625, sourceX: 520, sourceY: 285 },
+  { image: generatedArt.bathroomFaucetWaterRight, x: 409.375, y: 165.625, w: 71.875, h: 68.75, sourceX: 655, sourceY: 265 }
 ];
+const bathroomFaucetWaterOnlySprites = [null, null, null];
+
+function getBathroomFaucetWaterOnlySprite(index) {
+  if (bathroomFaucetWaterOnlySprites[index]) return bathroomFaucetWaterOnlySprites[index];
+  const water = bathroomFaucetWaterSpriteLayout[index];
+  const image = water.image;
+  const background = generatedArt.bathroomClosedBackground;
+  if (!image.complete || !image.naturalWidth || !background.complete || !background.naturalWidth) return null;
+
+  const width = image.naturalWidth;
+  const height = image.naturalHeight;
+  const layer = document.createElement("canvas");
+  layer.width = width;
+  layer.height = height;
+  const lctx = layer.getContext("2d");
+  lctx.drawImage(image, 0, 0);
+  const waterPixels = lctx.getImageData(0, 0, width, height);
+
+  const base = document.createElement("canvas");
+  base.width = width;
+  base.height = height;
+  const bctx = base.getContext("2d");
+  bctx.drawImage(background, water.sourceX, water.sourceY, width, height, 0, 0, width, height);
+  const basePixels = bctx.getImageData(0, 0, width, height).data;
+  const pixels = waterPixels.data;
+
+  for (let y = 0, p = 0; y < height; y++) {
+    for (let x = 0; x < width; x++, p += 4) {
+      const r = pixels[p], g = pixels[p + 1], b = pixels[p + 2];
+      const difference = Math.max(
+        Math.abs(r - basePixels[p]),
+        Math.abs(g - basePixels[p + 1]),
+        Math.abs(b - basePixels[p + 2])
+      );
+      const cyan = Math.max(0, Math.min(g, b) - r * .72 - 14);
+      const stream = Math.abs(x - width * .5) <= width * .14 && y >= height * .24 && y <= height * .82;
+      const ellipseX = (x - width * .5) / (width * .47);
+      const ellipseY = (y - height * .78) / (height * .25);
+      const basin = ellipseX * ellipseX + ellipseY * ellipseY <= 1;
+      const strength = Math.min(1, Math.max(0, (difference - 8) / 34)) * Math.min(1, cyan / 42);
+      pixels[p + 3] = stream || basin ? Math.round(255 * strength) : 0;
+    }
+  }
+
+  lctx.putImageData(waterPixels, 0, 0);
+  bathroomFaucetWaterOnlySprites[index] = layer;
+  return layer;
+}
+
+function drawBathroomFaucetSteam(water, index, time) {
+  const originX = water.x + water.w * .5;
+  const originY = water.y + water.h * .72;
+  ctx.save();
+  ctx.globalCompositeOperation = "source-over";
+  ctx.filter = "blur(.7px)";
+  for (let i = 0; i < 5; i++) {
+    const progress = (time * .24 + i / 5 + index * .13) % 1;
+    const fade = Math.sin(progress * Math.PI);
+    const drift = Math.sin(time * 1.35 + i * 2.2 + index * .8) * (2 + progress * 7);
+    const x = originX + drift;
+    const y = originY - progress * 58;
+    const radius = 4 + progress * 9;
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, `rgba(176, 205, 212, ${(.34 * fade).toFixed(3)})`);
+    gradient.addColorStop(.48, `rgba(206, 229, 234, ${(.23 * fade).toFixed(3)})`);
+    gradient.addColorStop(1, "rgba(222, 240, 244, 0)");
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.ellipse(x, y, radius, radius * 1.45, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.filter = "blur(.35px)";
+  ctx.lineCap = "round";
+  for (let i = 0; i < 3; i++) {
+    const progress = (time * .2 + i / 3 + index * .17) % 1;
+    const fade = Math.sin(progress * Math.PI);
+    const baseX = originX + Math.sin(time * 1.1 + i * 2.4 + index) * 4;
+    const baseY = originY - progress * 20;
+    const height = 24 + progress * 28;
+    const sway = 5 + progress * 7;
+    ctx.globalAlpha = .5 * fade;
+    ctx.strokeStyle = "#7899a2";
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(baseX, baseY);
+    ctx.bezierCurveTo(baseX - sway, baseY - height * .3, baseX + sway, baseY - height * .68, baseX, baseY - height);
+    ctx.stroke();
+    ctx.globalAlpha = .38 * fade;
+    ctx.strokeStyle = "#e4f3f5";
+    ctx.lineWidth = 1.1;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
 
 function drawBathroomFaucetWater() {
   bathroomFaucetWaterSpriteLayout.forEach((water, index) => {
     if (!state.bathroomFaucets[index]) return;
-    ctx.drawImage(water.image, water.x, water.y, water.w, water.h);
+    const sprite = getBathroomFaucetWaterOnlySprite(index);
+    if (sprite) ctx.drawImage(sprite, water.x, water.y, water.w, water.h);
+  });
+}
+
+function drawBathroomFaucetSteamEffects(time) {
+  bathroomFaucetWaterSpriteLayout.forEach((water, index) => {
+    if (state.bathroomFaucets[index]) drawBathroomFaucetSteam(water, index, time);
   });
 }
 
 const BATHROOM_STEAM_DELAY_MS = 3000;
 const BATHROOM_STEAM_REVEAL_MS = 2200;
-const bathroomSteamMirrorLayout = { x: 140, y: 22.5, w: 415, h: 267.5 };
+
+// Hugs the glass right up to the metal bezel. The previous trace sat a few
+// pixels inside the glass on every edge (worst at the bottom-left, ~6px), so
+// a thin rim of the original glossy reflection never got fogged and read as
+// the steam failing to cover the mirror. The fog art itself always extended
+// that far -- the clip was simply discarding its outer band.
+function clipToBathroomSteamMirrorGlass(c) {
+  c.beginPath();
+  c.moveTo(209, 63);
+  c.lineTo(477, 44);
+  c.bezierCurveTo(492, 43, 501, 52, 502, 66);
+  c.lineTo(503, 157);
+  c.bezierCurveTo(503, 171, 494, 181, 480, 185);
+  c.lineTo(218, 209);
+  c.bezierCurveTo(203, 210, 195, 201, 194, 187);
+  c.lineTo(188, 86);
+  c.bezierCurveTo(187, 74, 196, 64, 209, 63);
+  c.closePath();
+  c.clip();
+}
 
 function drawBathroomSteamMirror() {
   if (!state.bathroomMirrorCodeRevealed && !state.bathroomSteamRevealStart) return;
@@ -2817,35 +2906,18 @@ function drawBathroomSteamMirror() {
     : Math.max(0, Math.min(1, (performance.now() - state.bathroomSteamRevealStart) / BATHROOM_STEAM_REVEAL_MS));
   if (progress <= 0) return;
 
-  const sheet = generatedArt.bathroomSteamMirrorSheet;
-  const frameWidth = sheet.naturalWidth / 4;
-  const frameHeight = sheet.naturalHeight;
-  if (!frameWidth || !frameHeight) return;
+  const fogMirror = generatedArt.bathroomFogMirrorGenerated;
+  if (!fogMirror.complete || !fogMirror.naturalWidth) return;
 
-  const framePosition = progress * 3;
-  const firstFrame = Math.min(3, Math.floor(framePosition));
-  const secondFrame = Math.min(3, firstFrame + 1);
-  const mix = framePosition - firstFrame;
-  const fadeIn = Math.min(1, progress * 8);
-  // Once a faucet is turned off, retain the fogged clue but omit the bottom
-  // faucet/water portion of the generated frame so no phantom water remains.
-  const sourceHeight = state.bathroomFaucets.every(Boolean) ? frameHeight : Math.round(frameHeight * .72);
-  const destinationHeight = bathroomSteamMirrorLayout.h * sourceHeight / frameHeight;
-
-  const drawFrame = (frame, alpha) => {
-    if (alpha <= 0) return;
-    ctx.save();
-    ctx.globalAlpha = alpha * fadeIn;
-    ctx.drawImage(
-      sheet,
-      frame * frameWidth, 0, frameWidth, sourceHeight,
-      bathroomSteamMirrorLayout.x, bathroomSteamMirrorLayout.y,
-      bathroomSteamMirrorLayout.w, destinationHeight
-    );
-    ctx.restore();
-  };
-  drawFrame(firstFrame, 1 - mix);
-  if (secondFrame !== firstFrame) drawFrame(secondFrame, mix);
+  // The generated image was edited from the room's exact background, so its
+  // perspective, reflections, and rounded glass edge remain consistent. Only
+  // the mirror interior is composited over the authoritative room painting.
+  const eased = progress * progress * (3 - 2 * progress);
+  ctx.save();
+  clipToBathroomSteamMirrorGlass(ctx);
+  ctx.globalAlpha = eased;
+  ctx.drawImage(fogMirror, 0, 0, 960, 640);
+  ctx.restore();
 }
 
 function drawBathroomBackgroundRegion(image, x, y, w, h) {
