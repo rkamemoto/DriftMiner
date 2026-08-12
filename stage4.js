@@ -2516,7 +2516,18 @@ function drawBathroomCleaningSprites() {
 // tool, with the cut plate and finished hole previewed live while adjusting.
 // A parallelogram following the wall's isometric lean, not an axis-aligned
 // rectangle. Corner order is top-left, top-right, bottom-right, bottom-left.
-const BATHROOM_SECRET_PANEL_QUAD = [[583.3, 71.3], [654.1, 81.4], [652.1, 249.3], [583.3, 236.2]];
+// Top and bottom edges are held exactly parallel (slope 0.16653) so the plate
+// can retract along a single angle that hugs both. The hand trace had them
+// diverging slightly -- the opening was ~3px taller at the right -- which left
+// ~1.8px of drift against whichever edge the slide angle did not match.
+//
+// The two right corners are exactly as traced. Parallelism is taken up by
+// growing the left corners outward instead (TL up 1.69px, BL down 1.64px), so
+// the quad only ever gets larger. Squaring it up by pulling the right corners
+// in made it smaller than the opening and exposed bare wall in the bottom
+// right, which is the failure mode to avoid here: this quad must never
+// under-cover the hole.
+const BATHROOM_SECRET_PANEL_QUAD = [[583.3, 69.61], [654.1, 81.4], [652.1, 249.3], [583.3, 237.84]];
 // The plate is cut and drawn very slightly larger than the recess so its own
 // antialiased edge fully covers the interior layer's antialiased edge. Two
 // clip() passes on the same path each leave partial coverage on boundary
@@ -2524,7 +2535,18 @@ const BATHROOM_SECRET_PANEL_QUAD = [[583.3, 71.3], [654.1, 81.4], [652.1, 249.3]
 // outline around the panel. The overdraw ring is background-identical pixels
 // painted back over the background, so it is invisible.
 const BATHROOM_SECRET_PANEL_PLATE_OVERDRAW = 1.5;
+// Motion of the retracting plate. It pulls back for the first beat, then
+// slides left for the rest. The slide has to carry the plate's right edge
+// past the opening's left edge: after the pull-back that edge sits near
+// x=650 and the clip starts near x=582, so anything beyond -68 clears it.
+const BATHROOM_PANEL_RECESS_FRACTION = 0.3;
+const BATHROOM_PANEL_RECESS_SCALE = 0.95;
+const BATHROOM_PANEL_RECESS_LIFT = 3;
+const BATHROOM_PANEL_SLIDE_DX = -76;
+// How deeply the retracted plate sits in shadow once it is inside the pocket.
+const BATHROOM_PANEL_POCKET_SHADOW = "rgba(8, 12, 18, 0.22)";
 let bathroomSecretPanelPlateSprite = null;
+let bathroomSecretPanelShadedPlateSprite = null;
 let bathroomSecretPanelOpenSprite = null;
 let bathroomSecretPanelWallPatch = null;
 
@@ -2538,6 +2560,17 @@ function clipToQuadPath(c, quad) {
 
 function clipToBathroomSecretPanelQuad(c) {
   clipToQuadPath(c, BATHROOM_SECRET_PANEL_QUAD);
+}
+
+// The opening leans with the wall's perspective, so a retracting plate has to
+// travel along its own edge rather than straight across the screen. Averaged
+// from the traced quad's top and bottom edges so it stays correct if the quad
+// is ever re-traced.
+function bathroomSecretPanelEdgeSlope() {
+  const q = BATHROOM_SECRET_PANEL_QUAD;
+  const top = (q[1][1] - q[0][1]) / (q[1][0] - q[0][0]);
+  const bottom = (q[2][1] - q[3][1]) / (q[2][0] - q[3][0]);
+  return (top + bottom) / 2;
 }
 
 function inflatedBathroomSecretPanelQuad(amount) {
@@ -2638,6 +2671,27 @@ function getBathroomSecretPanelPlateSprite() {
   return plate;
 }
 
+// A shadowed copy of the plate, for once it has retracted into the pocket.
+// The plate is cut from the wall's lit front face, so without this it stays
+// exactly as bright as the wall it is supposedly sliding behind, and reads as
+// being erased along the wall surface rather than passing into the recess.
+// Darkened on its own canvas so "source-atop" only touches plate pixels.
+function getBathroomSecretPanelShadedPlateSprite() {
+  if (bathroomSecretPanelShadedPlateSprite) return bathroomSecretPanelShadedPlateSprite;
+  const plate = getBathroomSecretPanelPlateSprite();
+  if (!plate) return null;
+  const shaded = document.createElement("canvas");
+  shaded.width = 960;
+  shaded.height = 640;
+  const sctx = shaded.getContext("2d");
+  sctx.drawImage(plate, 0, 0);
+  sctx.globalCompositeOperation = "source-atop";
+  sctx.fillStyle = BATHROOM_PANEL_POCKET_SHADOW;
+  sctx.fillRect(0, 0, 960, 640);
+  bathroomSecretPanelShadedPlateSprite = shaded;
+  return shaded;
+}
+
 // Map the frameless crawlspace into the wall opening with one continuous
 // transform. The panel quad is close enough to a parallelogram that this small
 // affine perspective cue reads naturally, and avoiding a two-triangle mesh
@@ -2732,21 +2786,49 @@ function drawBathroomSecretPanelReveal(progress) {
   const plate = getBathroomSecretPanelPlateSprite();
   if (!plate) return;
 
-  const eased = 1 - Math.pow(1 - progress, 2);
   const q = BATHROOM_SECRET_PANEL_QUAD;
   const cx = (q[0][0] + q[2][0]) / 2;
   const cy = (q[0][1] + q[2][1]) / 2;
-  const scale = 1 - eased * 0.55;
-  const dy = -eased * 26;
-  const alpha = Math.max(0, 1 - eased / 0.85);
+
+  // Two beats: the plate pulls back into the recess, then slides left behind
+  // the wall. Retracting sideways (rather than shrinking away to nothing)
+  // reads as a solid panel going into a pocket instead of dissolving, so the
+  // plate stays fully opaque the whole way out -- the quad clip is what
+  // removes it, not a fade.
+  const smooth = t => t * t * (3 - 2 * t);
+  let scale, dx, dy, shade;
+  if (progress < BATHROOM_PANEL_RECESS_FRACTION) {
+    const t = smooth(progress / BATHROOM_PANEL_RECESS_FRACTION);
+    scale = 1 - (1 - BATHROOM_PANEL_RECESS_SCALE) * t;
+    dy = -BATHROOM_PANEL_RECESS_LIFT * t;
+    dx = 0;
+    shade = t;
+  } else {
+    const t = smooth((progress - BATHROOM_PANEL_RECESS_FRACTION) / (1 - BATHROOM_PANEL_RECESS_FRACTION));
+    scale = BATHROOM_PANEL_RECESS_SCALE;
+    dx = BATHROOM_PANEL_SLIDE_DX * t;
+    // Track the opening's lean: moving left along the panel's own axis also
+    // means moving slightly up, so the plate stays parallel to its frame.
+    dy = -BATHROOM_PANEL_RECESS_LIFT + dx * bathroomSecretPanelEdgeSlope();
+    shade = 1;
+  }
 
   ctx.save();
   clipToQuadPath(ctx, inflatedBathroomSecretPanelQuad(BATHROOM_SECRET_PANEL_PLATE_OVERDRAW));
-  ctx.globalAlpha = alpha;
-  ctx.translate(cx, cy + dy);
+  ctx.translate(cx + dx, cy + dy);
   ctx.scale(scale, scale);
   ctx.translate(-cx, -cy);
   ctx.drawImage(plate, 0, 0, 960, 640);
+  // Sink it into shadow as it pulls back, so the retracted plate is plainly
+  // behind the wall's lit face rather than flush with it. The shaded copy
+  // shares the plate's silhouette, so layering it keeps the plate opaque.
+  if (shade > 0) {
+    const shadedPlate = getBathroomSecretPanelShadedPlateSprite();
+    if (shadedPlate) {
+      ctx.globalAlpha = shade;
+      ctx.drawImage(shadedPlate, 0, 0, 960, 640);
+    }
+  }
   ctx.restore();
 }
 
