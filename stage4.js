@@ -371,7 +371,7 @@ const steps = [
   ["Restore airlock pressure", () => state.pressureEqualized],
   ["Spoof the alien scanner", () => state.scannerSpoofed],
   ["Open the inner hatch", () => state.complete],
-  ["Find the crawlspace clue", () => state.crawlspaceNoteCollected],
+  ["Find the hidden clue", () => state.crawlspaceNoteCollected],
   ["Follow the clue to its reward", () => state.bathroomToiletLeverPulled]
 ];
 
@@ -706,7 +706,7 @@ function hotspotList() {
 }
 
 function returnToHallwayVent() {
-  state.player.facing = "up";
+  state.player.facing = "right";
   beginUtilityAction("ventSwipe", 2350, { startX: state.player.x, startY: state.player.y });
   playSfx("kzzt");
 }
@@ -836,8 +836,7 @@ function bathroomHotspotList() {
 function crawlspaceHotspotList() {
   return [
     { id: "crawlspaceExit", label: "Alien Washroom", x: 52, y: 164, w: 132, h: 280, action: returnFromCrawlspaceToBathroom },
-    { id: "crawlspacePipeButton", label: "Red Button", ...crawlspacePipeButtonHotspotRect(), action: pressCrawlspacePipeButton },
-    { id: "crawlspaceNote", label: "Crude Note", ...crawlspaceNoteHotspotRect(), visible: () => !state.crawlspaceNotePickupStart && !state.crawlspaceNoteViewing && !state.crawlspaceNoteReturnStart, action: beginCrawlspaceNotePickup }
+    { id: "crawlspacePipeButton", label: "Red Button", ...crawlspacePipeButtonHotspotRect(), action: pressCrawlspacePipeButton }
   ].filter(h => !h.visible || h.visible());
 }
 
@@ -858,9 +857,7 @@ function inspectBathroomJanitorCart() {
 }
 
 function inspectBathroomTrash() {
-  playSfx("clank");
-  popComic("clang!", 904, 500, "#b89cff");
-  setLog("The purple trash can rings like a tiny spaceship hull. Whatever is inside refuses to explain itself.");
+  beginCrawlspaceNotePickup();
 }
 
 function openHallwayRightDoor() {
@@ -943,7 +940,7 @@ function beginCrawlspaceNotePickup() {
   state.player.ty = state.player.y;
   state.player.facing = "right";
   playSfx("pop");
-  setLog("You lift the stained note from the makeshift table.");
+  setLog("You pull a stained note from the purple trash can.");
 }
 
 function closeCrawlspaceNote() {
@@ -951,12 +948,14 @@ function closeCrawlspaceNote() {
   state.crawlspaceNoteViewing = false;
   state.crawlspaceNoteReturnStart = performance.now();
   playSfx("boop");
-  setLog("You lower the note and put it back on the desk.");
+  setLog("You lower the note and tuck it back into the purple trash can.");
   updateUI();
   return true;
 }
 
-const BATHROOM_TOILET_ACTION_MS = 2850;
+const BATHROOM_TOILET_ACTION_MS = 1000;
+const BATHROOM_TOILET_STALL_ENTRY = { x: 890, y: 405 };
+const BATHROOM_TOILET_STALL_BOWL = { x: 890, y: 350 };
 
 function inspectBathroomRightToilet() {
   if (state.bathroomToiletLeverPulled) {
@@ -986,9 +985,9 @@ function inspectBathroomRightToilet() {
   state.player.currentDone = null;
   state.player.tx = state.player.x;
   state.player.ty = state.player.y;
-  state.player.facing = "up";
+  state.player.facing = "right";
   playSfx("squish");
-  setLog("You wrap your glove in the clean rag and reach into the dirty right toilet.");
+  setLog("You wrap your glove in the clean rag and reach into the filthy toilet.");
   updateUI();
 }
 
@@ -1992,6 +1991,24 @@ function movePlayerNear(hotspot, onArrival = null) {
   }
   state.onLadder = false;
   state.player.path = [];
+
+  // Make the toilet interaction a readable two-part walk: first line up with
+  // the open stall, then turn away from the camera and step inside to the bowl.
+  if (state.room === "bathroom" && hotspot.id === "bathroomRightToilet") {
+    setPlayerPath([
+      { ...BATHROOM_TOILET_STALL_ENTRY },
+      {
+        ...BATHROOM_TOILET_STALL_BOWL,
+        facing: "up",
+        done: () => {
+          state.player.facing = "up";
+          if (onArrival) onArrival();
+        }
+      }
+    ]);
+    return;
+  }
+
   const target = generatedArt.usePreview && generatedArt.backgroundReady ? generatedApproachPoint(hotspot) : { x: Math.max(90, Math.min(850, hotspot.x + hotspot.w / 2)), y: 535 };
   state.player.currentDone = () => {
     if (target.facing) state.player.facing = target.facing;
@@ -2014,8 +2031,7 @@ function generatedApproachPoint(hotspot) {
   if (state.room === "crawlspace") {
     const crawlspacePoints = {
       crawlspaceExit: { x: 170, y: CRAWLSPACE_WALK_Y, facing: "left" },
-      crawlspacePipeButton: { x: 610, y: CRAWLSPACE_WALK_Y, facing: "right" },
-      crawlspaceNote: { x: 754, y: CRAWLSPACE_WALK_Y, facing: "right" }
+      crawlspacePipeButton: { x: 610, y: CRAWLSPACE_WALK_Y, facing: "right" }
     };
     return crawlspacePoints[hotspot.id] || { x: hotspot.x + hotspot.w / 2, y: CRAWLSPACE_WALK_Y };
   }
@@ -2025,7 +2041,7 @@ function generatedApproachPoint(hotspot) {
       bathroomCrawlspace: { x: 620, y: 390, facing: "up" },
       bathroomLeftStall: { x: 742, y: 405, facing: "up" },
       bathroomRightStall: { x: 876, y: 405, facing: "up" },
-      bathroomRightToilet: { x: 876, y: 405, facing: "up" },
+      bathroomRightToilet: { ...BATHROOM_TOILET_STALL_ENTRY, facing: "up" },
       bathroomBowl: { x: 780, y: 405, facing: "up" },
       bathroomMud: { x: 862, y: 405, facing: "up" },
       bathroomJanitorCart: { x: 700, y: 500, facing: "right" },
@@ -2649,36 +2665,15 @@ function drawGeneratedAirlock(time) {
   drawHover();
 }
 
-// The world sprite is a separate, foreshortened version of the note. The
-// detailed square clue is reserved for the inspection zoom below.
-// 30% smaller than the original 100x100 so the paper sits within the table
-// top instead of overhanging its left edge. x/y are shifted to keep the
-// visible paper's bottom-centre where it was, so it still reads as lying in
-// the same spot rather than jumping as it shrinks.
-const CRAWLSPACE_NOTE_WORLD_LAYOUT = { x: 790, y: 318, w: 70, h: 70 };
-const CRAWLSPACE_NOTE_PICKUP_ORIGIN = { x: 825, y: 350 };
-
-// The paper only fills part of its square sprite, so the clickable area is
-// derived from where the opaque pixels actually fall (measured as fractions
-// of the sprite) rather than the whole box. Keeps the hotspot honest when the
-// note is resized. Padded slightly since the drawn paper is small.
-const CRAWLSPACE_NOTE_INSETS = { left: .1754, right: .8286, top: .3939, bottom: .6093 };
+// The world sprite is tucked behind the purple trash-can rim. The detailed
+// square clue remains reserved for the centered inspection zoom.
+const BATHROOM_TRASH_NOTE_LAYOUT = { x: 875, y: 432, w: 60, h: 60 };
+const BATHROOM_TRASH_NOTE_ORIGIN = { x: 905, y: 462 };
 // Keep the generated panel centered on the cylinder while reducing it by 30%.
 const CRAWLSPACE_PIPE_PANEL_LAYOUT = { x: 528.5, y: 221.5, w: 63, h: 63 };
 const CRAWLSPACE_PIPE_PANEL_INSETS = { left: .142, right: .866, top: .183, bottom: .803 };
 const CRAWLSPACE_STEAM_ACTION_MS = 2450;
 const CRAWLSPACE_STEAM_DELAY_MS = 380;
-
-function crawlspaceNoteHotspotRect(pad = 4) {
-  const L = CRAWLSPACE_NOTE_WORLD_LAYOUT;
-  const i = CRAWLSPACE_NOTE_INSETS;
-  return {
-    x: L.x + L.w * i.left - pad,
-    y: L.y + L.h * i.top - pad,
-    w: L.w * (i.right - i.left) + pad * 2,
-    h: L.h * (i.bottom - i.top) + pad * 2
-  };
-}
 
 function crawlspacePipeButtonHotspotRect(pad = 2) {
   const L = CRAWLSPACE_PIPE_PANEL_LAYOUT;
@@ -2761,10 +2756,10 @@ function drawCrawlspaceSteamReactionPlayer(time) {
   ctx.restore();
 }
 
-function drawCrawlspaceNoteOnTable() {
+function drawBathroomTrashNote() {
   if (state.crawlspaceNotePickupStart || state.crawlspaceNoteViewing || state.crawlspaceNoteReturnStart) return;
   const note = generatedArt.crawlspaceNoteWorld;
-  const layout = CRAWLSPACE_NOTE_WORLD_LAYOUT;
+  const layout = BATHROOM_TRASH_NOTE_LAYOUT;
   if (note.complete && note.naturalWidth) ctx.drawImage(note, layout.x, layout.y, layout.w, layout.h);
 }
 
@@ -2799,9 +2794,9 @@ function drawCrawlspaceNoteSequence() {
     }
     const placeT = (t - .48) / .52;
     const eased = placeT * placeT * (3 - 2 * placeT);
-    const x = handX + (CRAWLSPACE_NOTE_PICKUP_ORIGIN.x - handX) * eased;
-    const y = handY + (CRAWLSPACE_NOTE_PICKUP_ORIGIN.y - handY) * eased - Math.sin(placeT * Math.PI) * 18;
-    const size = 110 + (CRAWLSPACE_NOTE_WORLD_LAYOUT.w - 110) * eased;
+    const x = handX + (BATHROOM_TRASH_NOTE_ORIGIN.x - handX) * eased;
+    const y = handY + (BATHROOM_TRASH_NOTE_ORIGIN.y - handY) * eased - Math.sin(placeT * Math.PI) * 18;
+    const size = 110 + (BATHROOM_TRASH_NOTE_LAYOUT.w - 110) * eased;
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(eased * .08);
@@ -2812,9 +2807,9 @@ function drawCrawlspaceNoteSequence() {
   if (pickupStart && elapsed < CRAWLSPACE_NOTE_ZOOM_DELAY_MS) {
     const t = Math.max(0, Math.min(1, elapsed / CRAWLSPACE_NOTE_ZOOM_DELAY_MS));
     const eased = 1 - Math.pow(1 - t, 3);
-    const x = CRAWLSPACE_NOTE_PICKUP_ORIGIN.x + (handX - CRAWLSPACE_NOTE_PICKUP_ORIGIN.x) * eased;
-    const y = CRAWLSPACE_NOTE_PICKUP_ORIGIN.y + (handY - CRAWLSPACE_NOTE_PICKUP_ORIGIN.y) * eased - Math.sin(t * Math.PI) * 28;
-    const size = CRAWLSPACE_NOTE_WORLD_LAYOUT.w + 10 * eased;
+    const x = BATHROOM_TRASH_NOTE_ORIGIN.x + (handX - BATHROOM_TRASH_NOTE_ORIGIN.x) * eased;
+    const y = BATHROOM_TRASH_NOTE_ORIGIN.y + (handY - BATHROOM_TRASH_NOTE_ORIGIN.y) * eased - Math.sin(t * Math.PI) * 28;
+    const size = BATHROOM_TRASH_NOTE_LAYOUT.w + 10 * eased;
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate((1 - eased) * .12);
@@ -2867,12 +2862,10 @@ function drawCrawlspacePlayer(time) {
 function drawGeneratedCrawlspace(time) {
   ctx.drawImage(generatedArt.crawlspaceBackground, 0, 0, 960, 640);
   drawCrawlspacePipeButtonPanel();
-  drawCrawlspaceNoteOnTable();
-  if (state.hover?.id === "crawlspaceNote" || state.hover?.id === "crawlspacePipeButton") drawGeneratedSpriteHighlight(state.hover.id);
+  if (state.hover?.id === "crawlspacePipeButton") drawGeneratedSpriteHighlight(state.hover.id);
   drawCrawlspacePlayer(time);
   drawCrawlspaceSteam(time);
   if (!state.crawlspaceNotePickupStart && !state.crawlspaceNoteViewing && !state.crawlspaceNoteReturnStart && !state.crawlspacePipeButtonPressStart) drawHover();
-  drawCrawlspaceNoteSequence();
 }
 
 function bathroomToiletActionProgress() {
@@ -2880,79 +2873,32 @@ function bathroomToiletActionProgress() {
   return action ? Math.max(0, Math.min(1, (performance.now() - action.start) / action.duration)) : 0;
 }
 
-function drawBathroomToiletLever(progress = 1) {
-  const reveal = Math.max(0, Math.min(1, progress));
-  if (reveal <= 0) return;
-  ctx.save();
-  ctx.globalAlpha = reveal;
-  // A small cleaned patch makes the note's concealed mechanism legible against
-  // the deliberately filthy baked toilet art.
-  ctx.fillStyle = "rgba(211, 226, 220, .78)";
-  ctx.strokeStyle = "rgba(103, 244, 224, .86)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.ellipse(901, 272, 31, 13, -.05, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-
-  const pull = state.bathroomToiletLeverPulled ? 1 : Math.max(0, Math.min(1, (progress - .72) / .28));
-  ctx.translate(900, 272);
-  ctx.rotate(-.72 + pull * 1.18);
-  ctx.fillStyle = "#7d6aa8";
-  ctx.strokeStyle = "#241d39";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.roundRect(-15, -8, 30, 16, 5);
-  ctx.fill();
-  ctx.stroke();
-  ctx.strokeStyle = "#ffd365";
-  ctx.lineWidth = 5;
-  ctx.beginPath();
-  ctx.moveTo(5, 0);
-  ctx.lineTo(34, -25);
-  ctx.stroke();
-  ctx.fillStyle = state.bathroomToiletLeverPulled ? "#80f4d4" : "#ffd365";
-  ctx.beginPath();
-  ctx.arc(36, -27, 8, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "#241d39";
-  ctx.lineWidth = 3;
-  ctx.stroke();
-  ctx.restore();
-}
-
 function drawBathroomToiletPlayerFrame(time, t) {
   const image = generatedArt.playerSheet;
   if (!image.complete || !image.naturalWidth) return;
   const sw = image.naturalWidth / 3;
   const sh = image.naturalHeight / 4;
-  const scrub = t < .70;
-  const frame = scrub ? (Math.floor(time * 7) % 2 ? 1 : 2) : 0;
-  const lean = scrub ? .035 + Math.sin(time * 12) * .018 : .07 * (1 - t);
+  const bend = t < .5
+    ? t / .5
+    : Math.max(0, (1 - t) / .5);
+  const eased = bend * bend * (3 - 2 * bend);
   const dw = 270;
   const dh = 270;
   const footAnchor = dh * .448;
-  ctx.save();
-  ctx.translate(state.player.x, state.player.y + 8);
-  ctx.rotate(lean);
-  ctx.scale(1.04, .94);
-  ctx.drawImage(image, frame * sw + 2, 2 * sh + 2, sw - 4, sh - 4, -dw / 2, -footAnchor - dh / 2, dw, dh);
-  ctx.restore();
 
-  if (scrub) {
-    const wipe = Math.sin(time * 17) * 13;
-    ctx.save();
-    ctx.translate(900 + wipe, 274 + Math.abs(Math.sin(time * 17)) * 4);
-    ctx.rotate(-.22 + Math.sin(time * 17) * .16);
-    ctx.drawImage(generatedArt.utilityCleanRag, -28, -14, 56, 28);
-    ctx.restore();
-  }
+  // Use the normal rear-facing frame and keep the boots planted beneath the
+  // stall. Compressing the upper body toward the bowl reads as a forward bend
+  // without adding a separately drawn arm or showing what is inside.
+  ctx.save();
+  ctx.translate(state.player.x, state.player.y);
+  ctx.scale(1 + eased * .08, 1 - eased * .18);
+  ctx.translate(0, -eased * 9);
+  ctx.drawImage(image, 2, sh * 2 + 2, sw - 4, sh - 4, -dw / 2, -footAnchor - dh / 2, dw, dh);
+  ctx.restore();
 }
 
 function drawBathroomToiletAction(time) {
   const t = bathroomToiletActionProgress();
-  const reveal = Math.max(0, Math.min(1, (t - .20) / .55));
-  drawBathroomToiletLever(reveal);
   drawBathroomToiletPlayerFrame(time, t);
 }
 
@@ -2980,15 +2926,16 @@ function drawGeneratedBathroom(time) {
   }
   // Reduced to 60% of its previous size and kept completely inside the right stall.
   if (state.bathroomRightDoorOpen) ctx.drawImage(generatedArt.bathroomMud, 852, 305, 89, 48);
-  if (state.bathroomToiletLeverPulled) drawBathroomToiletLever(1);
   drawBathroomFaucetWater();
   drawBathroomSteamMirror();
   drawBathroomFaucetSteamEffects(time);
   drawBathroomCleaningSprites();
   if (state.hover) drawGeneratedSpriteHighlight(state.hover.id);
   if (state.bathroomToiletAction) drawBathroomToiletAction(time);
+  else if (state.crawlspaceNotePickupStart || state.crawlspaceNoteViewing || state.crawlspaceNoteReturnStart) drawCrawlspacePlayer(time);
   else drawPlayer(time);
   drawHover();
+  drawCrawlspaceNoteSequence();
 }
 
 const bathroomCleaningSpriteLayout = {
@@ -3003,8 +2950,9 @@ function bathroomCleaningSpriteRect(id) {
 }
 
 function drawBathroomCleaningSprites() {
-  for (const sprite of Object.values(bathroomCleaningSpriteLayout)) {
+  for (const [id, sprite] of Object.entries(bathroomCleaningSpriteLayout)) {
     if (!sprite.image.complete || !sprite.image.naturalWidth) continue;
+    if (id === "bathroomTrash") drawBathroomTrashNote();
     ctx.drawImage(sprite.image, sprite.x, sprite.y, sprite.w, sprite.h);
   }
 }
@@ -5387,11 +5335,6 @@ function drawGeneratedSpriteHighlight(id) {
     drawSpriteOutlineOnly(generatedArt.crawlspacePipeButtonPanel, layout.x, layout.y, layout.w, layout.h, 2);
     return true;
   }
-  if (id === "crawlspaceNote") {
-    const layout = CRAWLSPACE_NOTE_WORLD_LAYOUT;
-    drawSpriteOutlineOnly(generatedArt.crawlspaceNoteWorld, layout.x, layout.y, layout.w, layout.h, 2);
-    return true;
-  }
   if (id === "bathroomExit") {
     drawSpriteOutlineOnly(generatedArt.bathroomExitHighlightMask, 0, 0, 960, 640);
     return true;
@@ -5604,7 +5547,7 @@ const generatedSpriteHighlightIds = new Set([
   "hallTrash", "hallPaper", "hallCleaner", "hallMirror", "hallVase", "hallVent", "hallRagShreds",
   "utilityHose", "utilityCleanRag", "utilityToolkit", "utilitySlimeBox", "utilityWire", "utilityDoorButton", "utilityCenterDoor", "utilityEmptyBox",
   "bathroomExit", "bathroomTrash", "bathroomJanitorCart", "bathroomLeftStall", "bathroomRightStall", "bathroomRightToilet", "bathroomBowl", "bathroomMud",
-  "bathroomFaucetLeft", "bathroomFaucetMiddle", "bathroomFaucetRight", "crawlspaceNote"
+  "bathroomFaucetLeft", "bathroomFaucetMiddle", "bathroomFaucetRight"
 ]);
 
 function drawHover() {
@@ -5754,7 +5697,7 @@ function update(dt) {
     if (performance.now() - state.crawlspaceNoteReturnStart >= CRAWLSPACE_NOTE_RETURN_MS) {
       state.crawlspaceNoteReturnStart = 0;
       playSfx("pop");
-      setLog("The sketch points to something hidden inside the dirty right toilet. The note remains on the desk.");
+      setLog("The sketch points to something hidden inside the dirty right toilet. The note remains tucked in the purple trash can.");
       updateUI();
     }
     return;
@@ -5765,10 +5708,10 @@ function update(dt) {
     state.bathroomToiletAction = null;
     state.bathroomToiletLeverPulled = true;
     state.keypadUnlocked = true;
-    Object.assign(state.player, { x: 876, y: 405, tx: 876, ty: 405, facing: "up", forcedFacing: null, currentDone: null, path: [] });
+    Object.assign(state.player, { ...BATHROOM_TOILET_STALL_BOWL, tx: BATHROOM_TOILET_STALL_BOWL.x, ty: BATHROOM_TOILET_STALL_BOWL.y, facing: "up", forcedFacing: null, currentDone: null, path: [] });
     playCombineTwinkle();
     playSfx("ding");
-    setLog("The hidden lever locks down with a cheerful click. Somewhere in the hallway, the secured corridor door unlocks.");
+    setLog("Your glove finds a concealed switch. It clicks, and somewhere in the hallway the secured corridor door unlocks.");
     updateUI();
     return;
   }
@@ -6072,7 +6015,7 @@ document.querySelector("#s4DebugToiletClue")?.addEventListener("click", () => {
   state.crawlspaceNoteCollected = true;
   state.selected = "cleanRag";
   Object.assign(state.player, { x: 760, y: 405, tx: 760, ty: 405, facing: "right", forcedFacing: null, currentDone: null, path: [] });
-  setLog("Debug: The crawlspace note is collected, the right stall is open, and the Clean Rag is selected.");
+  setLog("Debug: The trash-can clue is collected, the right stall is open, and the Clean Rag is selected.");
   updateUI();
 });
 document.querySelector("#s4DebugBathroomPanel")?.addEventListener("click", () => {
