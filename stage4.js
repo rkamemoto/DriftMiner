@@ -36,7 +36,14 @@ const generatedArt = {
   hallwayUtilityOpenBackground: new Image(),
   hallwayBothOpenBackground: new Image(),
   hallwayRightDoorOpenBackground: new Image(),
-  hallwayRightDoorOutlineMask: new Image(),
+  // The four hallway doors are painted into the background, so unlike the trash
+  // can or the vase they have no sprite alpha to outline. These are their
+  // silhouettes, solved off the painted art, so the hover ring can follow each
+  // door's real outer edge instead of an approximating polygon.
+  hallwayAirlockDoorSilhouette: new Image(),
+  hallwayCrewDoorSilhouette: new Image(),
+  hallwayUtilityDoorSilhouette: new Image(),
+  hallwayCorridorDoorSilhouette: new Image(),
   hallwayProps: new Image(),
   hallwayPaperArt: new Image(),
   hallwayRag: new Image(),
@@ -112,7 +119,8 @@ const stageFourSpriteImages = [
   generatedArt.highlightOuterHatch, generatedArt.highlightLocker, generatedArt.highlightLadder, generatedArt.highlightLeak,
   generatedArt.objectOuterHatch, generatedArt.outerHatchClosed, generatedArt.objectLocker, generatedArt.objectLadder,
   generatedArt.objectLeak, generatedArt.objectScanner, generatedArt.objectInnerDoor,
-  generatedArt.hallwayBackground, generatedArt.hallwayUtilityOpenBackground, generatedArt.hallwayBothOpenBackground, generatedArt.hallwayRightDoorOpenBackground, generatedArt.hallwayRightDoorOutlineMask,
+  generatedArt.hallwayBackground, generatedArt.hallwayUtilityOpenBackground, generatedArt.hallwayBothOpenBackground, generatedArt.hallwayRightDoorOpenBackground,
+  generatedArt.hallwayAirlockDoorSilhouette, generatedArt.hallwayCrewDoorSilhouette, generatedArt.hallwayUtilityDoorSilhouette, generatedArt.hallwayCorridorDoorSilhouette,
   generatedArt.hallwayProps, generatedArt.hallwayPaperArt,
   generatedArt.hallwayRag, generatedArt.hallwayDirt, generatedArt.hallwayRope,
   generatedArt.utilityBackground, generatedArt.utilityBackgroundDoorOpen, generatedArt.utilityHose, generatedArt.utilityCleanRag,
@@ -159,7 +167,10 @@ generatedArt.hallwayBackground.src = "assets/stage4/level2-hallway/hallway-backg
 generatedArt.hallwayUtilityOpenBackground.src = "assets/stage4/level2-hallway/hallway-background-utility-open-v1.png?v=stage4-hallway-open-doors-1";
 generatedArt.hallwayBothOpenBackground.src = "assets/stage4/level2-hallway/hallway-background-both-open-v1.png?v=stage4-hallway-open-doors-1";
 generatedArt.hallwayRightDoorOpenBackground.src = "assets/stage4/level2-hallway/hallway-background-right-door-open-v3.png?v=stage4-hallway-right-door-open-3";
-generatedArt.hallwayRightDoorOutlineMask.src = "assets/stage4/level2-hallway/hallway-right-door-outline-mask-v1.png?v=stage4-hallway-door-outline-mask-1";
+generatedArt.hallwayAirlockDoorSilhouette.src = "assets/stage4/level2-hallway/hallway-door-airlock-silhouette-v1.png?v=stage4-hallway-door-silhouettes-1";
+generatedArt.hallwayCrewDoorSilhouette.src = "assets/stage4/level2-hallway/hallway-door-crew-silhouette-v1.png?v=stage4-hallway-door-silhouettes-1";
+generatedArt.hallwayUtilityDoorSilhouette.src = "assets/stage4/level2-hallway/hallway-door-utility-silhouette-v1.png?v=stage4-hallway-door-silhouettes-1";
+generatedArt.hallwayCorridorDoorSilhouette.src = "assets/stage4/level2-hallway/hallway-door-corridor-silhouette-v1.png?v=stage4-hallway-door-silhouettes-1";
 generatedArt.hallwayProps.src = "assets/stage4/level2-hallway/hallway-props-v1.png?v=stage4-hallway-1";
 generatedArt.hallwayPaperArt.src = "assets/stage4/level2-hallway/paper-art-v1.png?v=stage4-hallway-paper-1";
 generatedArt.hallwayRag.src = "assets/stage4/level2-hallway/rag-sprite-v1.png?v=stage4-hallway-items-1";
@@ -1892,6 +1903,69 @@ function pointNearPolyline(point, vertices, radius) {
   return false;
 }
 
+// Painted-frame outlines for the three hallway doors that have no sprite of
+// their own. Kept as named constants because the hit test and the highlight
+// have to stay on exactly the same path.
+const HALL_RIGHT_DOOR_OUTLINE = [
+  [889,154],[897,151],[905,151],[914,152],[922,155],[930,159],
+  [937,164],[942,170],[947,176],[951,183],[954,192],[956,201],
+  [957,211],[958,220],[958,230],[958,240],[958,250],[958,259],
+  [958,269],[958,279],[957,288],[956,297],[956,307],[956,316],
+  [957,325],[957,334],[957,344],[957,353],[957,362],[957,371],
+  [957,381],[956,391],[955,401],[952,410],[948,417],[943,424],
+  [937,430],[930,436],[922,441],[914,444],[905,446],[896,446],
+  [888,443],[880,438],[874,430],[869,421],[864,412],[860,404],
+  [860,396],[860,389],[860,382],[860,373],[860,364],[860,353],
+  [860,343],[860,333],[860,323],[860,313],[860,304],[860,294],
+  [860,283],[860,273],[860,263],[860,253],[860,243],[860,233],
+  [860,223],[860,213],[860,203],[860,195],[860,187],[861,181],
+  [865,175],[870,170],[876,165],[882,159]
+];
+const HALL_LEFT_DOOR_OUTLINE = [
+  [56,148],[62,149],[68,153],[74,157],[79,163],[83,169],
+  [86,177],[88,184],[90,191],[92,199],[93,206],[93,214],
+  [94,221],[94,229],[94,236],[94,244],[94,251],[95,259],
+  [95,266],[96,274],[96,281],[96,289],[97,297],[96,304],
+  [96,312],[96,319],[95,327],[95,334],[94,342],[94,350],
+  [94,359],[94,368],[93,376],[92,383],[90,391],[88,399],
+  [85,406],[82,413],[78,419],[73,425],[67,429],[61,432],
+  [54,433],[47,432],[41,429],[36,424],[31,418],[27,411],
+  [24,403],[22,395],[21,386],[19,377],[19,369],[18,361],
+  [17,353],[17,345],[15,338],[15,330],[14,323],[15,315],
+  [14,308],[14,301],[13,293],[14,285],[14,277],[14,269],
+  [13,261],[13,254],[13,245],[13,237],[13,228],[13,220],
+  [13,212],[13,203],[14,195],[15,187],[17,180],[20,174],
+  [23,168],[27,161],[32,156],[37,152],[43,150],[50,148]
+];
+const HALL_DOOR_A_OUTLINE = [
+  [317,179],[325,180],[334,181],[341,185],[348,190],[354,196],
+  [359,204],[363,211],[366,219],[368,227],[369,235],[369,243],
+  [370,251],[370,260],[370,268],[370,277],[370,285],[370,294],
+  [370,302],[370,310],[370,319],[370,327],[370,335],[370,344],
+  [370,352],[369,360],[370,368],[370,377],[370,386],[369,396],
+  [367,404],[363,411],[357,416],[350,418],[341,418],[332,417],
+  [323,416],[314,415],[306,414],[297,414],[289,413],[282,410],
+  [277,405],[273,399],[271,391],[271,382],[271,373],[271,365],
+  [270,357],[270,349],[270,341],[270,332],[270,324],[270,316],
+  [270,307],[270,299],[270,291],[270,282],[270,274],[270,266],
+  [271,258],[271,250],[271,242],[272,234],[273,226],[275,219],
+  [279,211],[283,203],[288,195],[294,189],[301,183],[308,180]
+];
+const HALL_DOOR_B_OUTLINE = [
+  [663,181],[671,181],[679,183],[687,187],[694,192],[700,198],
+  [705,204],[710,210],[714,217],[717,224],[718,232],[719,240],
+  [720,248],[720,257],[721,265],[721,273],[722,282],[722,290],
+  [722,299],[722,308],[722,316],[721,325],[721,333],[721,342],
+  [721,350],[721,358],[720,366],[721,374],[721,383],[720,392],
+  [719,400],[715,406],[710,411],[703,413],[694,414],[686,415],
+  [677,415],[669,415],[660,415],[652,415],[643,414],[636,412],
+  [630,407],[626,402],[623,394],[622,385],[622,377],[622,369],
+  [621,361],[621,353],[621,345],[621,337],[621,328],[621,320],
+  [621,312],[621,303],[621,295],[621,287],[621,278],[621,270],
+  [621,262],[621,253],[621,245],[621,237],[623,229],[625,222],
+  [628,215],[631,208],[636,200],[642,193],[648,187],[655,183]
+];
+
 const tracedHotspots = {
   outerDoor: {
     hit: point => pointInPolygon(point, [[28,188],[51,159],[83,145],[118,140],[149,156],[176,204],[187,264],[173,329],[138,372],[89,389],[41,368],[14,319],[14,249]]),
@@ -1937,27 +2011,57 @@ const tracedHotspots = {
     draw: () => tracePolygon([[837,183],[921,183],[948,208],[949,390],[933,413],[846,413],[829,390],[829,208]])
   },
   hallRightDoor: {
-    // Trace the painted outer frame while the corridor remains secured.
-    hit: point => pointInPolygon(point, [[878,150],[925,151],[945,171],[956,211],[958,388],[947,420],[927,442],[884,438],[865,416],[854,387],[854,210],[864,174]]),
-    draw: () => tracePolygon([[878,150],[925,151],[945,171],[956,211],[958,388],[947,420],[927,442],[884,438],[865,416],[854,387],[854,210],[864,174]])
+    // Trace the painted outer frame rather than the broad interaction box.
+    // The alpha mask this door used to be highlighted from is authored at a
+    // different aspect than the box it was drawn into, so its ring came out
+    // narrow and notched down the right-hand side.
+    hit: point => pointInPolygon(point, HALL_RIGHT_DOOR_OUTLINE),
+    draw: () => tracePolygon(HALL_RIGHT_DOOR_OUTLINE)
+  },
+  // The two crew doors and the airlock door are painted into the hallway
+  // background, so there is no sprite alpha to outline the way the trash can
+  // and the vase are outlined. Trace their painted frames instead: measured
+  // off hallway-background-three-tone-buttons-v1.png, padded ~2px outward so
+  // the ring sits just outside the stone the way drawSpriteOutlineOnly does.
+  hallLeftDoor: {
+    // The airlock door is an oval seen from an angle, not a rectangle, and it
+    // leans off the left edge of the room.
+    hit: point => pointInPolygon(point, HALL_LEFT_DOOR_OUTLINE),
+    draw: () => tracePolygon(HALL_LEFT_DOOR_OUTLINE)
+  },
+  hallDoorA: {
+    hit: point => pointInPolygon(point, HALL_DOOR_A_OUTLINE),
+    draw: () => tracePolygon(HALL_DOOR_A_OUTLINE)
+  },
+  hallDoorB: {
+    hit: point => pointInPolygon(point, HALL_DOOR_B_OUTLINE),
+    draw: () => tracePolygon(HALL_DOOR_B_OUTLINE)
   },
   hallKeypad: {
-    // The keypad is the rectangular control plate mounted immediately left of
-    // the corridor door, not the magenta lamp embedded in the door frame.
-    hit: point => pointInPolygon(point, [[849,274],[877,274],[884,281],[884,339],[877,346],[849,346],[842,339],[842,281]]),
-    draw: () => tracePolygon([[849,274],[877,274],[884,281],[884,339],[877,346],[849,346],[842,339],[842,281]])
+    // The keypad is the narrow control plate mounted immediately left of the
+    // corridor door, not the magenta lamp embedded in the door frame. The
+    // plate itself is only x 839..855 by y 288..341; the previous box also
+    // covered the orange pipe and part of the door frame beside it. The hit
+    // area keeps a few extra pixels so the small plate stays easy to click,
+    // but stops short of x 854 where hallRightDoor begins: the keypad is
+    // listed first, so any overlap would swallow the door's left edge.
+    hit: point => pointInRect(point, 833, 282, 20, 65),
+    draw: () => tracePolygon([[840,286],[854,286],[857,289],[857,340],[854,343],[840,343],[837,340],[837,289]])
   },
+  // Bezel centres and radii read off the painted rings. Each hit ellipse keeps
+  // ~4px of slack over the drawn ring so tightening the outline does not make
+  // the tone buttons harder to click.
   hallToneLeft: {
-    hit: point => pointInEllipse(point, 258, 317, 18, 19, 0),
-    draw: () => ctx.ellipse(258, 317, 18, 19, 0, 0, Math.PI * 2)
+    hit: point => pointInEllipse(point, 257, 316, 17, 19, 0),
+    draw: () => ctx.ellipse(257, 316, 13, 16, 0, 0, Math.PI * 2)
   },
   hallToneMiddle: {
-    hit: point => pointInEllipse(point, 418, 289, 21, 22, 0),
-    draw: () => ctx.ellipse(418, 289, 21, 22, 0, 0, Math.PI * 2)
+    hit: point => pointInEllipse(point, 415, 287, 24, 26, 0),
+    draw: () => ctx.ellipse(415, 287, 20, 22, 0, 0, Math.PI * 2)
   },
   hallToneRight: {
-    hit: point => pointInEllipse(point, 798, 245, 21, 22, 0),
-    draw: () => ctx.ellipse(798, 245, 21, 22, 0, 0, Math.PI * 2)
+    hit: point => pointInEllipse(point, 793, 244, 24, 28, 0),
+    draw: () => ctx.ellipse(793, 244, 20, 24, 0, 0, Math.PI * 2)
   },
   utilityCenterDoor: {
     hit: point => pointInPolygon(point, [[408, 88], [490, 88], [508, 110], [508, 232], [494, 248], [404, 248], [389, 232], [389, 112]]),
@@ -5732,8 +5836,16 @@ function drawGeneratedSpriteHighlight(id) {
     drawSpriteOutlineOnly(generatedArt.crawlspacePipeButtonPanel, layout.x, layout.y, layout.w, layout.h, 2);
     return true;
   }
-  if (id === "hallRightDoor") {
-    drawSpriteOutlineOnly(generatedArt.hallwayRightDoorOutlineMask, 834, 130, 150, 334, 3);
+  const hallwayDoorSilhouettes = {
+    hallLeftDoor: generatedArt.hallwayAirlockDoorSilhouette,
+    hallDoorA: generatedArt.hallwayCrewDoorSilhouette,
+    hallDoorB: generatedArt.hallwayUtilityDoorSilhouette,
+    hallRightDoor: generatedArt.hallwayCorridorDoorSilhouette
+  };
+  if (hallwayDoorSilhouettes[id]) {
+    // Same treatment the trash can and vase get, just from a silhouette solved
+    // off the background instead of a sprite that already had alpha.
+    drawSpriteOutlineOnly(hallwayDoorSilhouettes[id], 0, 0, 960, 640, 3);
     return true;
   }
   if (id === "bathroomExit") {
@@ -5945,7 +6057,7 @@ function drawSpriteOutlineOnly(image, x, y, w, h, radius = 3) {
 const generatedSpriteHighlightIds = new Set([
   "outerDoor", "locker", "ladder", "vent", "scanner", "innerDoor",
   "helmetSpot", "lever", "decoyButton", "cargoCart", "alienToy", "tag",
-  "hallTrash", "hallPaper", "hallCleaner", "hallMirror", "hallVase", "hallVent", "hallRagShreds", "hallRightDoor",
+  "hallTrash", "hallPaper", "hallCleaner", "hallMirror", "hallVase", "hallVent", "hallRagShreds", "hallLeftDoor", "hallDoorA", "hallDoorB", "hallRightDoor",
   "utilityHose", "utilityCleanRag", "utilityToolkit", "utilitySlimeBox", "utilityWire", "utilityDoorButton", "utilityCenterDoor", "utilityEmptyBox",
   "bathroomExit", "bathroomTrash", "bathroomJanitorCart", "bathroomLeftStall", "bathroomRightStall", "bathroomRightToilet", "bathroomBowl", "bathroomMud",
   "bathroomFaucetLeft", "bathroomFaucetMiddle", "bathroomFaucetRight"
