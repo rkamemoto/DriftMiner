@@ -1892,25 +1892,6 @@ function pointNearPolyline(point, vertices, radius) {
   return false;
 }
 
-// Painted-frame outlines for the three hallway doors that have no sprite of
-// their own. Kept as named constants because the hit test and the highlight
-// have to stay on exactly the same path.
-const HALL_LEFT_DOOR_OUTLINE = [
-  [48,135],[64,139],[78,148],[88,162],[94,180],[97,208],[99,290],[97,348],
-  [93,390],[86,416],[74,432],[58,439],[42,435],[29,422],[20,400],[14,358],
-  [11,300],[11,240],[14,190],[20,164],[32,148]
-];
-const HALL_DOOR_A_OUTLINE = [
-  [308,178],[336,178],[346,182],[355,190],[363,199],[369,210],[372,222],
-  [373,404],[368,414],[358,417],[282,417],[272,414],[267,404],[267,222],
-  [270,210],[276,199],[284,190],[293,182]
-];
-const HALL_DOOR_B_OUTLINE = [
-  [654,178],[684,178],[694,183],[703,191],[711,200],[718,211],[721,223],
-  [724,404],[719,414],[709,417],[633,417],[623,414],[618,404],[618,223],
-  [621,211],[627,200],[635,191],[644,183]
-];
-
 const tracedHotspots = {
   outerDoor: {
     hit: point => pointInPolygon(point, [[28,188],[51,159],[83,145],[118,140],[149,156],[176,204],[187,264],[173,329],[138,372],[89,389],[41,368],[14,319],[14,249]]),
@@ -1956,56 +1937,27 @@ const tracedHotspots = {
     draw: () => tracePolygon([[837,183],[921,183],[948,208],[949,390],[933,413],[846,413],[829,390],[829,208]])
   },
   hallRightDoor: {
-    // Trace the painted outer frame rather than the broad interaction box.
-    // This preserves the curved, tapered silhouette of the generated corridor
-    // door in the same way the mirror and floor props keep their own outlines.
+    // Trace the painted outer frame while the corridor remains secured.
     hit: point => pointInPolygon(point, [[878,150],[925,151],[945,171],[956,211],[958,388],[947,420],[927,442],[884,438],[865,416],[854,387],[854,210],[864,174]]),
     draw: () => tracePolygon([[878,150],[925,151],[945,171],[956,211],[958,388],[947,420],[927,442],[884,438],[865,416],[854,387],[854,210],[864,174]])
   },
-  // The two crew doors and the airlock door are painted into the hallway
-  // background, so there is no sprite alpha to outline the way the trash can
-  // and the vase are outlined. Trace their painted frames instead: measured
-  // off hallway-background-three-tone-buttons-v1.png, padded ~2px outward so
-  // the ring sits just outside the stone the way drawSpriteOutlineOnly does.
-  hallLeftDoor: {
-    // The airlock door is an oval seen from an angle, not a rectangle, and it
-    // leans off the left edge of the room.
-    hit: point => pointInPolygon(point, HALL_LEFT_DOOR_OUTLINE),
-    draw: () => tracePolygon(HALL_LEFT_DOOR_OUTLINE)
-  },
-  hallDoorA: {
-    hit: point => pointInPolygon(point, HALL_DOOR_A_OUTLINE),
-    draw: () => tracePolygon(HALL_DOOR_A_OUTLINE)
-  },
-  hallDoorB: {
-    hit: point => pointInPolygon(point, HALL_DOOR_B_OUTLINE),
-    draw: () => tracePolygon(HALL_DOOR_B_OUTLINE)
-  },
   hallKeypad: {
-    // The keypad is the narrow control plate mounted immediately left of the
-    // corridor door, not the magenta lamp embedded in the door frame. The
-    // plate itself is only x 839..855 by y 288..341; the previous box also
-    // covered the orange pipe and part of the door frame beside it. The hit
-    // area keeps a few extra pixels so the small plate stays easy to click,
-    // but stops short of x 854 where hallRightDoor begins: the keypad is
-    // listed first, so any overlap would swallow the door's left edge.
-    hit: point => pointInRect(point, 833, 282, 20, 65),
-    draw: () => tracePolygon([[840,286],[854,286],[857,289],[857,340],[854,343],[840,343],[837,340],[837,289]])
+    // The keypad is the rectangular control plate mounted immediately left of
+    // the corridor door, not the magenta lamp embedded in the door frame.
+    hit: point => pointInPolygon(point, [[849,274],[877,274],[884,281],[884,339],[877,346],[849,346],[842,339],[842,281]]),
+    draw: () => tracePolygon([[849,274],[877,274],[884,281],[884,339],[877,346],[849,346],[842,339],[842,281]])
   },
-  // Bezel centres and radii read off the painted rings. Each hit ellipse keeps
-  // ~4px of slack over the drawn ring so tightening the outline does not make
-  // the tone buttons harder to click.
   hallToneLeft: {
-    hit: point => pointInEllipse(point, 257, 316, 17, 19, 0),
-    draw: () => ctx.ellipse(257, 316, 13, 16, 0, 0, Math.PI * 2)
+    hit: point => pointInEllipse(point, 258, 317, 18, 19, 0),
+    draw: () => ctx.ellipse(258, 317, 18, 19, 0, 0, Math.PI * 2)
   },
   hallToneMiddle: {
-    hit: point => pointInEllipse(point, 415, 287, 24, 26, 0),
-    draw: () => ctx.ellipse(415, 287, 20, 22, 0, 0, Math.PI * 2)
+    hit: point => pointInEllipse(point, 418, 289, 21, 22, 0),
+    draw: () => ctx.ellipse(418, 289, 21, 22, 0, 0, Math.PI * 2)
   },
   hallToneRight: {
-    hit: point => pointInEllipse(point, 793, 244, 24, 28, 0),
-    draw: () => ctx.ellipse(793, 244, 20, 24, 0, 0, Math.PI * 2)
+    hit: point => pointInEllipse(point, 798, 245, 21, 22, 0),
+    draw: () => ctx.ellipse(798, 245, 21, 22, 0, 0, Math.PI * 2)
   },
   utilityCenterDoor: {
     hit: point => pointInPolygon(point, [[408, 88], [490, 88], [508, 110], [508, 232], [494, 248], [404, 248], [389, 232], [389, 112]]),
@@ -5781,9 +5733,6 @@ function drawGeneratedSpriteHighlight(id) {
     return true;
   }
   if (id === "hallRightDoor") {
-    // Generated from the actual doorway reference and chroma-keyed to alpha.
-    // Its transparent silhouette lets the shared sprite-outline helper follow
-    // the curved metal frame instead of approximating the door with a polygon.
     drawSpriteOutlineOnly(generatedArt.hallwayRightDoorOutlineMask, 834, 130, 150, 334, 3);
     return true;
   }
