@@ -167,10 +167,10 @@ generatedArt.hallwayBackground.src = "assets/stage4/level2-hallway/hallway-backg
 generatedArt.hallwayUtilityOpenBackground.src = "assets/stage4/level2-hallway/hallway-background-utility-open-v1.png?v=stage4-hallway-open-doors-1";
 generatedArt.hallwayBothOpenBackground.src = "assets/stage4/level2-hallway/hallway-background-both-open-v1.png?v=stage4-hallway-open-doors-1";
 generatedArt.hallwayRightDoorOpenBackground.src = "assets/stage4/level2-hallway/hallway-background-right-door-open-v3.png?v=stage4-hallway-right-door-open-3";
-generatedArt.hallwayAirlockDoorSilhouette.src = "assets/stage4/level2-hallway/hallway-door-airlock-silhouette-v1.png?v=stage4-hallway-door-silhouettes-1";
-generatedArt.hallwayCrewDoorSilhouette.src = "assets/stage4/level2-hallway/hallway-door-crew-silhouette-v1.png?v=stage4-hallway-door-silhouettes-1";
-generatedArt.hallwayUtilityDoorSilhouette.src = "assets/stage4/level2-hallway/hallway-door-utility-silhouette-v1.png?v=stage4-hallway-door-silhouettes-1";
-generatedArt.hallwayCorridorDoorSilhouette.src = "assets/stage4/level2-hallway/hallway-door-corridor-silhouette-v1.png?v=stage4-hallway-door-silhouettes-1";
+generatedArt.hallwayAirlockDoorSilhouette.src = "assets/stage4/level2-hallway/hallway-door-airlock-silhouette-v2.png?v=stage4-hallway-door-silhouettes-2";
+generatedArt.hallwayCrewDoorSilhouette.src = "assets/stage4/level2-hallway/hallway-door-crew-silhouette-v2.png?v=stage4-hallway-door-silhouettes-2";
+generatedArt.hallwayUtilityDoorSilhouette.src = "assets/stage4/level2-hallway/hallway-door-utility-silhouette-v2.png?v=stage4-hallway-door-silhouettes-2";
+generatedArt.hallwayCorridorDoorSilhouette.src = "assets/stage4/level2-hallway/hallway-door-corridor-silhouette-v2.png?v=stage4-hallway-door-silhouettes-2";
 generatedArt.hallwayProps.src = "assets/stage4/level2-hallway/hallway-props-v1.png?v=stage4-hallway-1";
 generatedArt.hallwayPaperArt.src = "assets/stage4/level2-hallway/paper-art-v1.png?v=stage4-hallway-paper-1";
 generatedArt.hallwayRag.src = "assets/stage4/level2-hallway/rag-sprite-v1.png?v=stage4-hallway-items-1";
