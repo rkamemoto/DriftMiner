@@ -1,3 +1,6 @@
 node_modules/
 **/node_modules/
 /DriftMiner-main/
+
+# Local preview config: hardcodes this machine's node runtime and paths.
+.claude/launch.json
