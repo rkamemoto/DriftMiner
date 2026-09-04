@@ -100,6 +100,17 @@ const generatedArt = {
   crawlspaceMirrorPaperClue: new Image(),
   crawlspacePipeButtonPanel: new Image(),
   crawlspaceSteamJet: new Image(),
+  breachedHallwayBackground: new Image(),
+  breachedPowerCell: new Image(),
+  breachedNorthDoor: new Image(),
+  breachedNorthDoorOpen: new Image(),
+  breachedLeftPanel: new Image(),
+  breachedConsole: new Image(),
+  breachedFire: new Image(),
+  breachedLeftOpenDoor: new Image(),
+  breachedRightOpenDoor: new Image(),
+  breachedLeftOpenDoorHighlight: new Image(),
+  breachedRightOpenDoorHighlight: new Image(),
   backgroundReady: false,
   playerReady: false,
   spritesReady: false
@@ -133,7 +144,9 @@ const stageFourSpriteImages = [
   generatedArt.bathroomFaucetWaterLeft, generatedArt.bathroomFaucetWaterMiddle, generatedArt.bathroomFaucetWaterRight,
   generatedArt.bathroomSecretPanelOpenReference,
   generatedArt.bathroomFogMirrorGenerated,
-  generatedArt.crawlspaceBackground, generatedArt.crawlspaceNoteWorld, generatedArt.crawlspaceNoteClue, generatedArt.crawlspaceMirrorPaperWorld, generatedArt.crawlspaceMirrorPaperClue, generatedArt.crawlspacePipeButtonPanel, generatedArt.crawlspaceSteamJet
+  generatedArt.crawlspaceBackground, generatedArt.crawlspaceNoteWorld, generatedArt.crawlspaceNoteClue, generatedArt.crawlspaceMirrorPaperWorld, generatedArt.crawlspaceMirrorPaperClue, generatedArt.crawlspacePipeButtonPanel, generatedArt.crawlspaceSteamJet,
+  generatedArt.breachedHallwayBackground, generatedArt.breachedPowerCell, generatedArt.breachedNorthDoor, generatedArt.breachedNorthDoorOpen, generatedArt.breachedLeftPanel, generatedArt.breachedConsole, generatedArt.breachedFire,
+  generatedArt.breachedLeftOpenDoor, generatedArt.breachedRightOpenDoor, generatedArt.breachedLeftOpenDoorHighlight, generatedArt.breachedRightOpenDoorHighlight
 ];
 const updateStageFourSpriteReadiness = () => generatedArt.spritesReady = stageFourSpriteImages.every(image => image.complete && image.naturalWidth > 0);
 stageFourSpriteImages.forEach(image => image.onload = updateStageFourSpriteReadiness);
@@ -227,6 +240,17 @@ generatedArt.crawlspaceMirrorPaperWorld.src = "assets/stage4/level5-crawlspace/c
 generatedArt.crawlspaceMirrorPaperClue.src = "assets/stage4/level4-bathroom/bathroom-mirror-code-scrap-v1.png?v=stage4-mirror-paper-clue-1";
 generatedArt.crawlspacePipeButtonPanel.src = "assets/stage4/level5-crawlspace/crawlspace-pipe-button-panel-v1.png?v=stage4-crawlspace-pipe-button-1";
 generatedArt.crawlspaceSteamJet.src = "assets/stage4/level5-crawlspace/crawlspace-steam-jet-v1.png?v=stage4-crawlspace-steam-art-1";
+generatedArt.breachedHallwayBackground.src = "assets/stage4/level6-breached-hallway/breached-hallway-background-v2.png?v=stage4-breached-hallway-composed-2";
+generatedArt.breachedPowerCell.src = "assets/stage4/level6-breached-hallway/bridge-power-cell-sprite-v1.png?v=stage4-breached-power-cell-1";
+generatedArt.breachedNorthDoor.src = "assets/stage4/level6-breached-hallway/north-door-closed-pixel-sprite-v2.png?v=stage4-breached-north-door-pixel-6";
+generatedArt.breachedNorthDoorOpen.src = "assets/stage4/level6-breached-hallway/north-door-open-pixel-sprite-v2.png?v=stage4-breached-north-door-open-pixel-6";
+generatedArt.breachedLeftPanel.src = "assets/stage4/level6-breached-hallway/left-control-panel-pixel-sprite-v2.png?v=stage4-breached-left-panel-pixel-3";
+generatedArt.breachedConsole.src = "assets/stage4/level6-breached-hallway/damaged-console-pixel-sprite-v2.png?v=stage4-breached-console-pixel-3";
+generatedArt.breachedFire.src = "assets/stage4/level6-breached-hallway/breached-fire-sprite-v1.png?v=stage4-breached-fire-sprite-1";
+generatedArt.breachedLeftOpenDoor.src = "assets/stage4/level6-breached-hallway/left-open-door-sprite-v1.png?v=stage4-breached-generated-doors-1";
+generatedArt.breachedRightOpenDoor.src = "assets/stage4/level6-breached-hallway/right-open-door-sprite-v1.png?v=stage4-breached-generated-doors-1";
+generatedArt.breachedLeftOpenDoorHighlight.src = "assets/stage4/level6-breached-hallway/left-open-door-approved-highlight-v1.png?v=stage4-breached-approved-door-highlights-1";
+generatedArt.breachedRightOpenDoorHighlight.src = "assets/stage4/level6-breached-hallway/right-open-door-approved-highlight-v1.png?v=stage4-breached-approved-door-highlights-1";
 
 const ui = {
   inventory: document.querySelector("#s4Inventory"),
@@ -382,6 +406,8 @@ const state = {
   crawlspaceMirrorPaperReturnStart: 0,
   crawlspacePipeButtonPressStart: 0,
   crawlspaceSteamWhooshPlayed: false,
+  breachedNorthDoorOpen: false,
+  breachedPowerCellCollected: false,
   hallwayPickup: null,
   keypadOpen: false,
   keypadEntry: "",
@@ -717,6 +743,7 @@ function useSelectedOn(target) {
 
 function hotspotList() {
   if (state.keypadOpen) return keypadHotspotList();
+  if (state.room === "breachedHallway") return breachedHallwayHotspotList();
   if (state.room === "crawlspace") return crawlspaceHotspotList();
   if (state.room === "bathroom") return bathroomHotspotList();
   if (state.room === "hallway") return hallwayHotspotList();
@@ -748,6 +775,46 @@ function hotspotList() {
   ]
     .filter(h => !h.visible || h.visible())
     .filter(h => !state.onLadder || h.id === "vent" || h.id === "ladder");
+}
+
+function breachedHallwayHotspotList() {
+  return [
+    { id: "breachLeftOpenDoor", label: "Open Secured Corridor Door", x: 0, y: 135, w: 88, h: 170, action: () => setLog("The open doorway leads back toward the Secured Corridor.") },
+    { id: "breachRightOpenDoor", label: "Broken Open Door", x: 832, y: 180, w: 120, h: 210, action: () => setLog("The broken door is already open, but the split walkway blocks the route.") },
+    { id: "breachNorthDoor", label: state.breachedNorthDoorOpen ? "Open North Door" : "Locked North Door", x: 108, y: 134, w: 148, h: 270, action: openBreachedNorthDoor },
+    // Keep the flame ahead of the broad wall-panel target where their
+    // rectangles overlap, so hovering the visible fire selects the fire.
+    { id: "breachFire", label: "Burning Wreckage", x: 214, y: 260, w: 116, h: 96, action: inspectBreachedFire },
+    { id: "breachLeftPanel", label: "Damaged Door Panel", x: 260, y: 168, w: 74, h: 150, action: () => setLog("The left-side panel is missing its bridge-power cell.") },
+    { id: "breachConsole", label: "Damaged Computer Console", x: 645, y: 210, w: 154, h: 174, action: openBreachedNorthDoor },
+    { id: "breachPowerCell", label: "Bridge Power Cell", x: 246, y: 534, w: 100, h: 68, visible: () => !state.breachedPowerCellCollected, action: collectBreachedPowerCell }
+  ].filter(h => !h.visible || h.visible());
+}
+
+function openBreachedNorthDoor() {
+  if (state.breachedNorthDoorOpen) {
+    playSfx("ding");
+    setLog("The north door is already open.");
+    return;
+  }
+  state.breachedNorthDoorOpen = true;
+  state.player.facing = "up";
+  playSfx("ding");
+  setLog("The damaged console sends a signal. The north door unlocks.");
+  updateUI();
+}
+
+function collectBreachedPowerCell() {
+  state.breachedPowerCellCollected = true;
+  state.player.facing = "down";
+  playSfx("pop");
+  setLog("You pocket the bridge power cell. It may be useful for restoring a crossing device.");
+}
+
+function inspectBreachedFire() {
+  state.player.facing = "up";
+  playSfx("kzzt");
+  setLog("The wreckage is still burning. Too hot to touch.");
 }
 
 function returnToHallwayVent() {
@@ -1614,14 +1681,15 @@ function updateUI() {
   ui.clear.hidden = !state.selected;
   const roomLevel = document.querySelector("#s4RoomLevel");
   const roomName = document.querySelector("#s4RoomName");
-  if (roomLevel) roomLevel.textContent = state.room === "crawlspace" ? "Level 5" : state.room === "bathroom" ? "Level 4" : state.room === "utility" ? "Level 3" : state.room === "hallway" ? "Level 2" : "Level 1";
-  if (roomName) roomName.textContent = state.room === "crawlspace" ? "Hidden Crawlspace" : state.room === "bathroom" ? "Alien Washroom" : state.room === "utility" ? "Utility Closet" : state.room === "hallway" ? "Crew Hallway" : "Breached Airlock";
+  if (roomLevel) roomLevel.textContent = state.room === "breachedHallway" ? "Level 6" : state.room === "crawlspace" ? "Level 5" : state.room === "bathroom" ? "Level 4" : state.room === "utility" ? "Level 3" : state.room === "hallway" ? "Level 2" : "Level 1";
+  if (roomName) roomName.textContent = state.room === "breachedHallway" ? "Breached Hallway" : state.room === "crawlspace" ? "Hidden Crawlspace" : state.room === "bathroom" ? "Alien Washroom" : state.room === "utility" ? "Utility Closet" : state.room === "hallway" ? "Crew Hallway" : "Breached Airlock";
   document.querySelector("#s4DebugAirlock")?.classList.toggle("is-active", state.room === "airlock");
   document.querySelector("#s4DebugHallway")?.classList.toggle("is-active", state.room === "hallway");
   document.querySelector("#s4DebugUtility")?.classList.toggle("is-active", state.room === "utility");
   document.querySelector("#s4DebugBathroom")?.classList.toggle("is-active", state.room === "bathroom");
   document.querySelector("#s4DebugCrawlspace")?.classList.toggle("is-active", state.room === "crawlspace");
-  canvas.setAttribute("aria-label", state.room === "crawlspace" ? "Hidden alien maintenance crawlspace" : state.room === "bathroom" ? "Alien ship washroom" : state.room === "utility" ? "Alien ship utility closet" : state.room === "hallway" ? "Alien ship crew hallway" : "Alien airlock point and click puzzle");
+  document.querySelector("#s4DebugBreachedHallway")?.classList.toggle("is-active", state.room === "breachedHallway");
+  canvas.setAttribute("aria-label", state.room === "breachedHallway" ? "Breached alien ship hallway" : state.room === "crawlspace" ? "Hidden alien maintenance crawlspace" : state.room === "bathroom" ? "Alien ship washroom" : state.room === "utility" ? "Alien ship utility closet" : state.room === "hallway" ? "Alien ship crew hallway" : "Alien airlock point and click puzzle");
   if (ui.steps) {
     ui.steps.innerHTML = "";
     for (const [label, done] of steps) {
@@ -1696,7 +1764,12 @@ function movePlayerToPoint(point) {
   state.onLadder = false;
   state.player.path = [];
   state.player.currentDone = null;
-  if (state.room === "hallway" || state.room === "bathroom" || state.room === "crawlspace") {
+  if (state.room === "breachedHallway") {
+    // isGroundTile already validated this exact point against the intact
+    // platform. Do not apply the airlock's 414-474 Y clamp here.
+    state.player.tx = point.x;
+    state.player.ty = point.y;
+  } else if (state.room === "hallway" || state.room === "bathroom" || state.room === "crawlspace") {
     state.player.tx = Math.max(42, Math.min(918, point.x));
     // Room 2 is intentionally a side-scrolling corridor. Free movement only
     // changes X; interaction paths may step slightly off this line.
@@ -2163,6 +2236,12 @@ function hitTest(point) {
 
 function isGroundTile(point) {
   if (isGeneratedMode()) {
+    if (state.room === "breachedHallway") return pointInPolygon(point, [
+      // Boots stay on the intact top surface. The left edge begins beyond the
+      // fallen diagonal beam, and the lower edge stops before the broken lip.
+      [128, 284], [410, 284], [455, 292], [480, 309],
+      [470, 347], [142, 347], [128, 338]
+    ]);
     if (state.room === "hallway") return point.x >= 32 && point.x <= 928 && point.y >= 414 && point.y <= 522;
     if (state.room === "crawlspace") return point.x >= 42 && point.x <= 910 && point.y >= 415 && point.y <= 480;
     if (state.room === "bathroom") return pointInPolygon(point, [[48,390],[912,362],[940,390],[930,570],[52,570],[28,520]]);
@@ -2209,6 +2288,15 @@ function movePlayerNear(hotspot, onArrival = null) {
   }
   state.onLadder = false;
   state.player.path = [];
+
+  if (state.room === "breachedHallway" && (hotspot.id === "breachConsole" || hotspot.id === "breachRightOpenDoor")) {
+    state.player.tx = state.player.x;
+    state.player.ty = state.player.y;
+    state.player.currentDone = null;
+    reactNope();
+    setLog("The broken gap blocks the way. You need to restore a crossing first.");
+    return;
+  }
 
   // Failed attempts stop in front of the stall, so the gag/nope pose never
   // stands on its door frame. Only a prepared reach walks up to the bowl.
@@ -2295,6 +2383,17 @@ function generatedApproachPoint(hotspot) {
       utilityEmptyBox: { x: 642, y: 450 }
     };
     return utilityPoints[hotspot.id] || { x: hotspot.x + hotspot.w / 2, y: hotspot.y + hotspot.h / 2 };
+  }
+  if (state.room === "breachedHallway") {
+    const breachPoints = {
+      breachLeftOpenDoor: { x: 142, y: 334, facing: "left" },
+      breachNorthDoor: { x: 184, y: 336, facing: "up" },
+      breachLeftPanel: { x: 302, y: 336, facing: "up" },
+      breachConsole: { x: 720, y: 336, facing: "up" },
+      breachFire: { x: 352, y: 338, facing: "up" },
+      breachPowerCell: { x: 264, y: 336, facing: "down" }
+    };
+    return breachPoints[hotspot.id] || { x: hotspot.x + hotspot.w / 2, y: 418 };
   }
   if (state.room === "hallway") {
     // Bulky floor props are always approached from their nearest clear side.
@@ -2908,6 +3007,16 @@ const CRAWLSPACE_MIRROR_PAPER_CLUE_CROP = { x: 153, y: 168, w: 1108, h: 782 };
 // Keep the generated panel centered on the cylinder while reducing it by 30%.
 const CRAWLSPACE_PIPE_PANEL_LAYOUT = { x: 528.5, y: 221.5, w: 63, h: 63 };
 const CRAWLSPACE_PIPE_PANEL_INSETS = { left: .142, right: .866, top: .183, bottom: .803 };
+// Native v2 crop (169, 185, 174, 267) mapped from 1536x1024 to 960x640.
+const BREACHED_NORTH_DOOR_LAYOUT = { x: 105.625, y: 115.625, w: 108.75, h: 166.875 };
+const BREACHED_LEFT_PANEL_LAYOUT = { x: 266.25, y: 155, w: 66.25, h: 137.5 };
+const BREACHED_CONSOLE_LAYOUT = { x: 668.75, y: 180, w: 120, h: 110 };
+const BREACHED_FIRE_LAYOUT = { x: 218.75, y: 237.5, w: 103.125, h: 109.375 };
+// Approved generated door placement, mapped from the 1536x1024 art preview
+// to the 960x640 game canvas. The left sprite intentionally extends beyond
+// the canvas edge so only the doorway's in-room half is visible.
+const BREACHED_LEFT_OPEN_DOOR_LAYOUT = { x: -26.25, y: 96.25, w: 135, h: 211.25 };
+const BREACHED_RIGHT_OPEN_DOOR_LAYOUT = { x: 817.5, y: 167.5, w: 121.25, h: 228.75 };
 const CRAWLSPACE_STEAM_ACTION_MS = 2450;
 const CRAWLSPACE_STEAM_DELAY_MS = 380;
 
@@ -3206,6 +3315,58 @@ function drawGeneratedCrawlspace(time) {
   drawCrawlspaceSteam(time);
   drawCrawlspaceMirrorPaperSequence();
   if (!state.crawlspaceNotePickupStart && !state.crawlspaceNoteViewing && !state.crawlspaceNoteReturnStart && !state.crawlspaceMirrorPaperPickupStart && !state.crawlspaceMirrorPaperViewing && !state.crawlspaceMirrorPaperReturnStart && !state.crawlspacePipeButtonPressStart) drawHover();
+}
+
+function drawGeneratedBreachedHallway(time) {
+  ctx.drawImage(generatedArt.breachedHallwayBackground, 0, 0, 960, 640);
+  ctx.drawImage(
+    generatedArt.breachedLeftOpenDoor,
+    BREACHED_LEFT_OPEN_DOOR_LAYOUT.x,
+    BREACHED_LEFT_OPEN_DOOR_LAYOUT.y,
+    BREACHED_LEFT_OPEN_DOOR_LAYOUT.w,
+    BREACHED_LEFT_OPEN_DOOR_LAYOUT.h
+  );
+  ctx.drawImage(
+    generatedArt.breachedRightOpenDoor,
+    BREACHED_RIGHT_OPEN_DOOR_LAYOUT.x,
+    BREACHED_RIGHT_OPEN_DOOR_LAYOUT.y,
+    BREACHED_RIGHT_OPEN_DOOR_LAYOUT.w,
+    BREACHED_RIGHT_OPEN_DOOR_LAYOUT.h
+  );
+  const northDoorSprite = state.breachedNorthDoorOpen
+    ? generatedArt.breachedNorthDoorOpen
+    : generatedArt.breachedNorthDoor;
+  ctx.drawImage(
+    northDoorSprite,
+    BREACHED_NORTH_DOOR_LAYOUT.x,
+    BREACHED_NORTH_DOOR_LAYOUT.y,
+    BREACHED_NORTH_DOOR_LAYOUT.w,
+    BREACHED_NORTH_DOOR_LAYOUT.h
+  );
+  ctx.drawImage(
+    generatedArt.breachedLeftPanel,
+    BREACHED_LEFT_PANEL_LAYOUT.x,
+    BREACHED_LEFT_PANEL_LAYOUT.y,
+    BREACHED_LEFT_PANEL_LAYOUT.w,
+    BREACHED_LEFT_PANEL_LAYOUT.h
+  );
+  ctx.drawImage(
+    generatedArt.breachedConsole,
+    BREACHED_CONSOLE_LAYOUT.x,
+    BREACHED_CONSOLE_LAYOUT.y,
+    BREACHED_CONSOLE_LAYOUT.w,
+    BREACHED_CONSOLE_LAYOUT.h
+  );
+  ctx.drawImage(
+    generatedArt.breachedFire,
+    BREACHED_FIRE_LAYOUT.x,
+    BREACHED_FIRE_LAYOUT.y,
+    BREACHED_FIRE_LAYOUT.w,
+    BREACHED_FIRE_LAYOUT.h
+  );
+  if (state.hover) drawGeneratedSpriteHighlight(state.hover.id);
+  drawPlayer(time);
+  drawHover();
 }
 
 function bathroomToiletActionProgress() {
@@ -5038,7 +5199,8 @@ function drawAirlock(time) {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       return;
     }
-    drawGeneratedAirlock(time);
+    if (state.room === "breachedHallway") drawGeneratedBreachedHallway(time);
+    else drawGeneratedAirlock(time);
     return;
   }
 
@@ -5831,6 +5993,43 @@ function drawComicEffects(time) {
 
 function drawGeneratedSpriteHighlight(id) {
   if (!generatedArt.spritesReady) return false;
+  if (id === "breachPowerCell" && !state.breachedPowerCellCollected) {
+    drawSpriteOutlineOnly(getBreachedPowerCellOutlineMask(), 246, 534, 100, 68, 2);
+    return true;
+  }
+  if (id === "breachNorthDoor") {
+    const northDoorSprite = state.breachedNorthDoorOpen
+      ? generatedArt.breachedNorthDoorOpen
+      : generatedArt.breachedNorthDoor;
+    const layout = BREACHED_NORTH_DOOR_LAYOUT;
+    // Both states share one pixel-derived alpha and anchor, so the hover ring
+    // always follows the visible Room 6 door instead of an unrelated asset.
+    drawSpriteOutlineOnly(northDoorSprite, layout.x, layout.y, layout.w, layout.h, 2);
+    return true;
+  }
+  if (id === "breachLeftPanel") {
+    const layout = BREACHED_LEFT_PANEL_LAYOUT;
+    drawSpriteOutlineOnly(generatedArt.breachedLeftPanel, layout.x, layout.y, layout.w, layout.h, 2);
+    return true;
+  }
+  if (id === "breachConsole") {
+    const layout = BREACHED_CONSOLE_LAYOUT;
+    drawSpriteOutlineOnly(generatedArt.breachedConsole, layout.x, layout.y, layout.w, layout.h, 2);
+    return true;
+  }
+  if (id === "breachFire") {
+    const layout = BREACHED_FIRE_LAYOUT;
+    drawSpriteOutlineOnly(generatedArt.breachedFire, layout.x, layout.y, layout.w, layout.h, 2);
+    return true;
+  }
+  if (id === "breachLeftOpenDoor") {
+    ctx.drawImage(generatedArt.breachedLeftOpenDoorHighlight, 0, 0, 960, 640);
+    return true;
+  }
+  if (id === "breachRightOpenDoor") {
+    ctx.drawImage(generatedArt.breachedRightOpenDoorHighlight, 0, 0, 960, 640);
+    return true;
+  }
   if (id === "crawlspacePipeButton") {
     const layout = CRAWLSPACE_PIPE_PANEL_LAYOUT;
     drawSpriteOutlineOnly(generatedArt.crawlspacePipeButtonPanel, layout.x, layout.y, layout.w, layout.h, 2);
@@ -5975,6 +6174,63 @@ const spriteOutlineCanvas = document.createElement("canvas");
 spriteOutlineCanvas.width = canvas.width;
 spriteOutlineCanvas.height = canvas.height;
 const spriteOutlineCtx = spriteOutlineCanvas.getContext("2d");
+let breachedPowerCellOutlineMask = null;
+const breachedExteriorMasks = new Map();
+
+function getBreachedExteriorMask(key, image, width, height) {
+  if (breachedExteriorMasks.has(key)) return breachedExteriorMasks.get(key);
+  const mask = document.createElement("canvas");
+  mask.width = width;
+  mask.height = height;
+  const maskCtx = mask.getContext("2d", { willReadFrequently: true });
+  maskCtx.drawImage(image, 0, 0, width, height);
+  const pixels = maskCtx.getImageData(0, 0, width, height);
+  const { data } = pixels;
+  const exterior = new Uint8Array(width * height);
+  const queue = [];
+  const visit = (x, y) => {
+    const index = y * width + x;
+    if (exterior[index] || data[index * 4 + 3] !== 0) return;
+    exterior[index] = 1;
+    queue.push(index);
+  };
+  for (let x = 0; x < width; x++) {
+    visit(x, 0);
+    visit(x, height - 1);
+  }
+  for (let y = 1; y < height - 1; y++) {
+    visit(0, y);
+    visit(width - 1, y);
+  }
+  for (let head = 0; head < queue.length; head++) {
+    const index = queue[head];
+    const x = index % width;
+    const y = Math.floor(index / width);
+    if (x > 0) visit(x - 1, y);
+    if (x + 1 < width) visit(x + 1, y);
+    if (y > 0) visit(x, y - 1);
+    if (y + 1 < height) visit(x, y + 1);
+  }
+  for (let index = 0; index < width * height; index++) {
+    const alpha = index * 4 + 3;
+    if (data[alpha] !== 0 || !exterior[index]) {
+      data[index * 4] = 255;
+      data[index * 4 + 1] = 255;
+      data[index * 4 + 2] = 255;
+      data[alpha] = 255;
+    }
+  }
+  maskCtx.putImageData(pixels, 0, 0);
+  breachedExteriorMasks.set(key, mask);
+  return mask;
+}
+
+function getBreachedPowerCellOutlineMask() {
+  if (!breachedPowerCellOutlineMask) {
+    breachedPowerCellOutlineMask = getBreachedExteriorMask("powerCell", generatedArt.breachedPowerCell, 100, 68);
+  }
+  return breachedPowerCellOutlineMask;
+}
 // Stall door outlines, traced off the current room art by scanning for the
 // dark seams that bound each door. The extracted stall-door sprites are not
 // used for this any more: they were cut from the earlier background, and the
@@ -6054,13 +6310,30 @@ function drawSpriteOutlineOnly(image, x, y, w, h, radius = 3) {
   ctx.restore();
 }
 
+function drawHighlightStrokeMask(image, x, y, w, h) {
+  spriteOutlineCtx.clearRect(0, 0, spriteOutlineCanvas.width, spriteOutlineCanvas.height);
+  spriteOutlineCtx.save();
+  spriteOutlineCtx.drawImage(image, x, y, w, h);
+  spriteOutlineCtx.globalCompositeOperation = "source-in";
+  spriteOutlineCtx.fillStyle = "#ffd365";
+  spriteOutlineCtx.fillRect(x, y, w, h);
+  spriteOutlineCtx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = .98;
+  ctx.shadowBlur = 9;
+  ctx.shadowColor = "rgba(255,211,101,.82)";
+  ctx.drawImage(spriteOutlineCanvas, 0, 0);
+  ctx.restore();
+}
+
 const generatedSpriteHighlightIds = new Set([
   "outerDoor", "locker", "ladder", "vent", "scanner", "innerDoor",
   "helmetSpot", "lever", "decoyButton", "cargoCart", "alienToy", "tag",
   "hallTrash", "hallPaper", "hallCleaner", "hallMirror", "hallVase", "hallVent", "hallRagShreds", "hallLeftDoor", "hallDoorA", "hallDoorB", "hallRightDoor",
   "utilityHose", "utilityCleanRag", "utilityToolkit", "utilitySlimeBox", "utilityWire", "utilityDoorButton", "utilityCenterDoor", "utilityEmptyBox",
   "bathroomExit", "bathroomTrash", "bathroomJanitorCart", "bathroomLeftStall", "bathroomRightStall", "bathroomRightToilet", "bathroomBowl", "bathroomMud",
-  "bathroomFaucetLeft", "bathroomFaucetMiddle", "bathroomFaucetRight"
+  "bathroomFaucetLeft", "bathroomFaucetMiddle", "bathroomFaucetRight", "breachPowerCell", "breachNorthDoor", "breachLeftPanel", "breachConsole", "breachFire", "breachLeftOpenDoor", "breachRightOpenDoor"
 ]);
 
 function drawHover() {
@@ -6484,11 +6757,12 @@ ui.inventory.addEventListener("wheel", event => {
 function resetDebugState(room) {
   clearTimeout(outerDoorCloseTimer);
   outerDoorCloseTimer = 0;
+  const breachedHallway = room === "breachedHallway";
   const hallway = room === "hallway";
   const utility = room === "utility";
   const bathroom = room === "bathroom";
   const crawlspace = room === "crawlspace";
-  const progressed = hallway || utility || bathroom || crawlspace;
+  const progressed = hallway || utility || bathroom || crawlspace || breachedHallway;
   const now = performance.now();
 
   state.room = room;
@@ -6580,13 +6854,17 @@ function resetDebugState(room) {
   state.crawlspaceMirrorPaperReturnStart = 0;
   state.crawlspacePipeButtonPressStart = 0;
   state.crawlspaceSteamWhooshPlayed = false;
+  state.breachedNorthDoorOpen = false;
+  state.breachedPowerCellCollected = false;
   state.keypadOpen = false;
   state.keypadEntry = "";
   state.keypadUnlocked = false;
   state.keypadFeedbackUntil = 0;
   state.comicEffects = [];
 
-  Object.assign(state.player, crawlspace
+  Object.assign(state.player, breachedHallway
+    ? { x: 142, y: 334, tx: 142, ty: 334, facing: "right" }
+    : crawlspace
     ? { x: 190, y: CRAWLSPACE_WALK_Y, tx: 190, ty: CRAWLSPACE_WALK_Y, facing: "right" }
     : bathroom
     ? { x: 105, y: 480, tx: 105, ty: 480, facing: "right" }
@@ -6600,7 +6878,9 @@ function resetDebugState(room) {
   state.player.forcedFacing = null;
   controller.inventoryIndex = 0;
 
-  setLog(crawlspace
+  setLog(breachedHallway
+    ? "Debug: Breached Hallway loaded. Click the damaged console to test the north-door interaction."
+    : crawlspace
     ? "Debug: Hidden Crawlspace loaded with the bathroom panel already open."
     : bathroom
     ? "Debug: Alien Washroom loaded with the utility route complete."
@@ -6617,6 +6897,7 @@ document.querySelector("#s4DebugHallway")?.addEventListener("click", () => reset
 document.querySelector("#s4DebugUtility")?.addEventListener("click", () => resetDebugState("utility"));
 document.querySelector("#s4DebugBathroom")?.addEventListener("click", () => resetDebugState("bathroom"));
 document.querySelector("#s4DebugCrawlspace")?.addEventListener("click", () => resetDebugState("crawlspace"));
+document.querySelector("#s4DebugBreachedHallway")?.addEventListener("click", () => resetDebugState("breachedHallway"));
 document.querySelector("#s4DebugToiletClue")?.addEventListener("click", () => {
   resetDebugState("bathroom");
   state.bathroomRightDoorOpen = true;
