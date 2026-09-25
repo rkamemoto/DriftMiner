@@ -111,6 +111,12 @@ const generatedArt = {
   breachedRightOpenDoor: new Image(),
   breachedLeftOpenDoorHighlight: new Image(),
   breachedRightOpenDoorHighlight: new Image(),
+  biomatterBackground: new Image(),
+  biomatterCanisterA: new Image(),
+  biomatterCanisterB: new Image(),
+  biomatterBrokenCanister: new Image(),
+  biomatterConsole: new Image(),
+  biomatterClamp: new Image(),
   backgroundReady: false,
   playerReady: false,
   spritesReady: false
@@ -146,7 +152,9 @@ const stageFourSpriteImages = [
   generatedArt.bathroomFogMirrorGenerated,
   generatedArt.crawlspaceBackground, generatedArt.crawlspaceNoteWorld, generatedArt.crawlspaceNoteClue, generatedArt.crawlspaceMirrorPaperWorld, generatedArt.crawlspaceMirrorPaperClue, generatedArt.crawlspacePipeButtonPanel, generatedArt.crawlspaceSteamJet,
   generatedArt.breachedHallwayBackground, generatedArt.breachedPowerCell, generatedArt.breachedNorthDoor, generatedArt.breachedNorthDoorOpen, generatedArt.breachedLeftPanel, generatedArt.breachedConsole, generatedArt.breachedFire,
-  generatedArt.breachedLeftOpenDoor, generatedArt.breachedRightOpenDoor, generatedArt.breachedLeftOpenDoorHighlight, generatedArt.breachedRightOpenDoorHighlight
+  generatedArt.breachedLeftOpenDoor, generatedArt.breachedRightOpenDoor, generatedArt.breachedLeftOpenDoorHighlight, generatedArt.breachedRightOpenDoorHighlight,
+  generatedArt.biomatterBackground, generatedArt.biomatterCanisterA, generatedArt.biomatterCanisterB,
+  generatedArt.biomatterBrokenCanister, generatedArt.biomatterConsole, generatedArt.biomatterClamp
 ];
 const updateStageFourSpriteReadiness = () => generatedArt.spritesReady = stageFourSpriteImages.every(image => image.complete && image.naturalWidth > 0);
 stageFourSpriteImages.forEach(image => image.onload = updateStageFourSpriteReadiness);
@@ -251,6 +259,17 @@ generatedArt.breachedLeftOpenDoor.src = "assets/stage4/level6-breached-hallway/l
 generatedArt.breachedRightOpenDoor.src = "assets/stage4/level6-breached-hallway/right-open-door-sprite-v1.png?v=stage4-breached-generated-doors-1";
 generatedArt.breachedLeftOpenDoorHighlight.src = "assets/stage4/level6-breached-hallway/left-open-door-approved-highlight-v1.png?v=stage4-breached-approved-door-highlights-1";
 generatedArt.breachedRightOpenDoorHighlight.src = "assets/stage4/level6-breached-hallway/right-open-door-approved-highlight-v1.png?v=stage4-breached-approved-door-highlights-1";
+// Approved Generated image 9 composition. Its canisters and bench props are
+// already correctly recessed into the room, so do not overdraw them with the
+// separate sprite assets. Those assets remain the alpha sources for hover rings.
+generatedArt.biomatterBackground.src = "assets/stage4/level7-biomatter-samples/biomatter-room-background-v5-purple-canister-shrunk.png?v=stage4-biomatter-purple-canister-shrink-1";
+generatedArt.biomatterCanisterA.src = "assets/stage4/level7-biomatter-samples/biomatter-canister-a-sprite-v3-wall-facing-left.png?v=stage4-biomatter-sprites-8";
+// Generated image 9 has the purple vessel painted into the room plate; this
+// full-room RGBA mask is traced from that exact art for its hover ring.
+generatedArt.biomatterCanisterB.src = "assets/stage4/level7-biomatter-samples/biomatter-canister-b-purple-sprite-highlight-mask-v4-rounded.png?v=stage4-biomatter-purple-highlight-rounded-1";
+generatedArt.biomatterBrokenCanister.src = "assets/stage4/level7-biomatter-samples/biomatter-broken-canister-sprite-v2.png?v=stage4-biomatter-sprites-2";
+generatedArt.biomatterConsole.src = "assets/stage4/level7-biomatter-samples/biomatter-scanner-console-sprite-v2.png?v=stage4-biomatter-sprites-2";
+generatedArt.biomatterClamp.src = "assets/stage4/level7-biomatter-samples/biomatter-magnetic-clamp-sprite-v2.png?v=stage4-biomatter-sprites-2";
 
 const ui = {
   inventory: document.querySelector("#s4Inventory"),
@@ -272,7 +291,10 @@ const items = {
   hose: { name: "Maintenance Hose", sprite: "assets/stage4/level3-utility-closet/hose-sprite-v1.png", description: "A flexible alien hose with two incompatible-looking couplings." },
   cleanRag: { name: "Clean Rag", sprite: "assets/stage4/level3-utility-closet/clean-rag-shelf-inplace-v3.png", description: "A surprisingly pristine maintenance cloth." },
   wrench: { name: "Alien Wrench", sprite: "assets/stage4/level3-utility-closet/wrench-sprite-v1.png", description: "A heavy double-ended wrench from the utility toolkit." },
-  bowl: { name: "Alien Bowl", sprite: "assets/stage4/level4-bathroom/alien-bowl-shelf-mask-v1.png", description: "A shallow bowl recovered from the alien washroom shelf." }
+  bowl: { name: "Alien Bowl", sprite: "assets/stage4/level4-bathroom/alien-bowl-shelf-mask-v1.png", description: "A shallow bowl recovered from the alien washroom shelf." },
+  specimenPole: { name: "Specimen Pole", sprite: "assets/stage4/level7-biomatter-samples/magnetic-pole-beaker-sprite-v1.png", description: "A magnetic sampling pole with an empty clamp at the tip." },
+  heatedGoo: { name: "Heated Adhesive Goo", sprite: "assets/stage4/level7-biomatter-samples/sticky-goo-canister-sprite-v1.png", description: "Warm biomatter that clings to metal long enough to make a crossing." },
+  stickyPole: { name: "Goo-Coated Pole", sprite: "assets/stage4/level7-biomatter-samples/magnetic-pole-beaker-sprite-v1.png", description: "A specimen pole coated in warm adhesive biomatter." }
 };
 
 const art = {
@@ -408,6 +430,10 @@ const state = {
   crawlspaceSteamWhooshPlayed: false,
   breachedNorthDoorOpen: false,
   breachedPowerCellCollected: false,
+  biomatterCanisterOpened: false,
+  biomatterGooHeated: false,
+  biomatterPoleCollected: false,
+  biomatterHighlightPreview: false,
   hallwayPickup: null,
   keypadOpen: false,
   keypadEntry: "",
@@ -649,6 +675,16 @@ function tryCombine(a, b) {
     updateUI();
     return true;
   }
+  if (pair === "heatedGoo+specimenPole") {
+    removeItem("heatedGoo");
+    removeItem("specimenPole");
+    state.inventory.push("stickyPole");
+    state.selected = "stickyPole";
+    playCombineTwinkle();
+    setLog("You coat the specimen pole in warm adhesive goo. It should stick to the far side of the broken walkway.");
+    updateUI();
+    return true;
+  }
   reactNope();
   setLog(`${items[a].name} and ${items[b].name} do not seem useful together.`);
   return false;
@@ -744,6 +780,7 @@ function useSelectedOn(target) {
 function hotspotList() {
   if (state.keypadOpen) return keypadHotspotList();
   if (state.room === "breachedHallway") return breachedHallwayHotspotList();
+  if (state.room === "biomatter") return biomatterHotspotList();
   if (state.room === "crawlspace") return crawlspaceHotspotList();
   if (state.room === "bathroom") return bathroomHotspotList();
   if (state.room === "hallway") return hallwayHotspotList();
@@ -781,7 +818,7 @@ function breachedHallwayHotspotList() {
   return [
     { id: "breachLeftOpenDoor", label: "Open Secured Corridor Door", x: 0, y: 135, w: 88, h: 170, action: () => setLog("The open doorway leads back toward the Secured Corridor.") },
     { id: "breachRightOpenDoor", label: "Broken Open Door", x: 832, y: 180, w: 120, h: 210, action: () => setLog("The broken door is already open, but the split walkway blocks the route.") },
-    { id: "breachNorthDoor", label: state.breachedNorthDoorOpen ? "Open North Door" : "Locked North Door", x: 108, y: 134, w: 148, h: 270, action: openBreachedNorthDoor },
+    { id: "breachNorthDoor", label: state.breachedNorthDoorOpen ? "Open North Door" : "Locked North Door", x: 108, y: 134, w: 148, h: 270, action: state.breachedNorthDoorOpen ? enterBiomatterRoom : openBreachedNorthDoor },
     // Keep the flame ahead of the broad wall-panel target where their
     // rectangles overlap, so hovering the visible fire selects the fire.
     { id: "breachFire", label: "Burning Wreckage", x: 214, y: 260, w: 116, h: 96, action: inspectBreachedFire },
@@ -789,6 +826,17 @@ function breachedHallwayHotspotList() {
     { id: "breachConsole", label: "Damaged Computer Console", x: 645, y: 210, w: 154, h: 174, action: openBreachedNorthDoor },
     { id: "breachPowerCell", label: "Bridge Power Cell", x: 246, y: 534, w: 100, h: 68, visible: () => !state.breachedPowerCellCollected, action: collectBreachedPowerCell }
   ].filter(h => !h.visible || h.visible());
+}
+
+function biomatterHotspotList() {
+  return [
+    { id: "biomatterExit", label: "Back to Breached Hallway", x: 410, y: 560, w: 140, h: 80, action: returnFromBiomatterRoom },
+    { id: "biomatterCanisterA", label: "Active Sample Canister", x: 42, y: 56, w: 112, h: 188, action: () => inspectBiomatterCanister("A") },
+    { id: "biomatterCanisterB", label: "Sealed Sample Canister", x: 40, y: 210, w: 56, h: 120, action: () => inspectBiomatterCanister("B") },
+    { id: "biomatterBrokenCanister", label: "Broken Sample Canister", x: 150, y: 362, w: 150, h: 105, action: () => setLog("The shattered specimen vessel left a glowing trail beneath the desk.") },
+    { id: "biomatterConsole", label: "Specimen Scanner Console", x: 696, y: 266, w: 112, h: 88, action: operateBiomatterConsole },
+    { id: "biomatterPole", label: state.biomatterPoleCollected ? "Empty Sample Clamp" : "Magnetic Sample Pole and Beaker", x: 780, y: 342, w: 146, h: 86, action: collectSpecimenPole }
+  ];
 }
 
 function openBreachedNorthDoor() {
@@ -802,6 +850,60 @@ function openBreachedNorthDoor() {
   playSfx("ding");
   setLog("The damaged console sends a signal. The north door unlocks.");
   updateUI();
+}
+
+function enterBiomatterRoom() {
+  state.room = "biomatter";
+  state.player.x = state.player.tx = 480;
+  state.player.y = state.player.ty = 550;
+  state.player.facing = "up";
+  state.player.path = [];
+  setLog("You enter the cramped biomatter sample room. Something escaped its canister.");
+  updateUI();
+}
+
+function returnFromBiomatterRoom() {
+  state.room = "breachedHallway";
+  state.player.x = state.player.tx = 184;
+  state.player.y = state.player.ty = 336;
+  state.player.facing = "down";
+  setLog("You step back into the breached hallway.");
+  updateUI();
+}
+
+function inspectBiomatterCanister(slot) {
+  state.player.facing = "up";
+  playSfx("kzzt");
+  setLog(slot === "A" ? "The live sample pulses against the glass. The scanner marks it as adhesive when heated." : "This specimen is still sealed. Its violet spores are inert at room temperature.");
+}
+
+function operateBiomatterConsole() {
+  state.player.facing = "up";
+  if (!state.biomatterCanisterOpened) {
+    state.biomatterCanisterOpened = true;
+    playSfx("ding");
+    setLog("The scanner unlocks the green canister's extraction valve. The sample needs heat before it will bond.");
+    return;
+  }
+  if (!state.biomatterGooHeated) {
+    state.biomatterGooHeated = true;
+    addItem("heatedGoo");
+    playSfx("kzzt");
+    setLog("The console warms a bead of biomatter into adhesive goo. It can coat a tool.");
+    return;
+  }
+  setLog("The console's heater is idling. The adhesive sample is ready.");
+}
+
+function collectSpecimenPole() {
+  if (state.biomatterPoleCollected) {
+    setLog("The magnetic clamp is empty now.");
+    return;
+  }
+  state.biomatterPoleCollected = true;
+  addItem("specimenPole");
+  playSfx("pop");
+  setLog("You take the long magnetic specimen pole. It could reach the far side of a gap.");
 }
 
 function collectBreachedPowerCell() {
@@ -1681,15 +1783,16 @@ function updateUI() {
   ui.clear.hidden = !state.selected;
   const roomLevel = document.querySelector("#s4RoomLevel");
   const roomName = document.querySelector("#s4RoomName");
-  if (roomLevel) roomLevel.textContent = state.room === "breachedHallway" ? "Level 6" : state.room === "crawlspace" ? "Level 5" : state.room === "bathroom" ? "Level 4" : state.room === "utility" ? "Level 3" : state.room === "hallway" ? "Level 2" : "Level 1";
-  if (roomName) roomName.textContent = state.room === "breachedHallway" ? "Breached Hallway" : state.room === "crawlspace" ? "Hidden Crawlspace" : state.room === "bathroom" ? "Alien Washroom" : state.room === "utility" ? "Utility Closet" : state.room === "hallway" ? "Crew Hallway" : "Breached Airlock";
+  if (roomLevel) roomLevel.textContent = state.room === "biomatter" ? "Level 7" : state.room === "breachedHallway" ? "Level 6" : state.room === "crawlspace" ? "Level 5" : state.room === "bathroom" ? "Level 4" : state.room === "utility" ? "Level 3" : state.room === "hallway" ? "Level 2" : "Level 1";
+  if (roomName) roomName.textContent = state.room === "biomatter" ? "Biomatter Samples" : state.room === "breachedHallway" ? "Breached Hallway" : state.room === "crawlspace" ? "Hidden Crawlspace" : state.room === "bathroom" ? "Alien Washroom" : state.room === "utility" ? "Utility Closet" : state.room === "hallway" ? "Crew Hallway" : "Breached Airlock";
   document.querySelector("#s4DebugAirlock")?.classList.toggle("is-active", state.room === "airlock");
   document.querySelector("#s4DebugHallway")?.classList.toggle("is-active", state.room === "hallway");
   document.querySelector("#s4DebugUtility")?.classList.toggle("is-active", state.room === "utility");
   document.querySelector("#s4DebugBathroom")?.classList.toggle("is-active", state.room === "bathroom");
   document.querySelector("#s4DebugCrawlspace")?.classList.toggle("is-active", state.room === "crawlspace");
   document.querySelector("#s4DebugBreachedHallway")?.classList.toggle("is-active", state.room === "breachedHallway");
-  canvas.setAttribute("aria-label", state.room === "breachedHallway" ? "Breached alien ship hallway" : state.room === "crawlspace" ? "Hidden alien maintenance crawlspace" : state.room === "bathroom" ? "Alien ship washroom" : state.room === "utility" ? "Alien ship utility closet" : state.room === "hallway" ? "Alien ship crew hallway" : "Alien airlock point and click puzzle");
+  document.querySelector("#s4DebugBiomatter")?.classList.toggle("is-active", state.room === "biomatter");
+  canvas.setAttribute("aria-label", state.room === "biomatter" ? "Alien biomatter sample room" : state.room === "breachedHallway" ? "Breached alien ship hallway" : state.room === "crawlspace" ? "Hidden alien maintenance crawlspace" : state.room === "bathroom" ? "Alien ship washroom" : state.room === "utility" ? "Alien ship utility closet" : state.room === "hallway" ? "Alien ship crew hallway" : "Alien airlock point and click puzzle");
   if (ui.steps) {
     ui.steps.innerHTML = "";
     for (const [label, done] of steps) {
@@ -1776,7 +1879,7 @@ function movePlayerToPoint(point) {
     state.player.ty = state.room === "bathroom" ? Math.max(390, Math.min(555, point.y))
       : state.room === "crawlspace" ? CRAWLSPACE_WALK_Y
       : 472;
-  } else if (state.room === "utility") {
+  } else if (state.room === "utility" || state.room === "biomatter") {
     state.player.tx = point.x;
     state.player.ty = point.y;
   } else {
@@ -2248,6 +2351,13 @@ function isGroundTile(point) {
     if (state.room === "utility") return pointInPolygon(point, [
       [360, 188], [600, 188], [708, 585], [250, 585]
     ]);
+    if (state.room === "biomatter") return pointInPolygon(point, [
+      // Tightened to the actual tiled floor: the old quad reached into the
+      // dark open cavity and cabinet body under/behind the desk on the
+      // right, and into the wall cabinet's base on the front-left, letting
+      // the player walk (and float) off the visible floor.
+      [140, 348], [645, 345], [645, 588], [140, 588]
+    ]);
     // The character's position is anchored at the boots.  This polygon follows
     // only the painted golden deck surface; the dark machinery below the front
     // lip and the open space beyond either end are deliberately excluded.
@@ -2394,6 +2504,19 @@ function generatedApproachPoint(hotspot) {
       breachPowerCell: { x: 264, y: 336, facing: "down" }
     };
     return breachPoints[hotspot.id] || { x: hotspot.x + hotspot.w / 2, y: 418 };
+  }
+  if (state.room === "biomatter") {
+    const biomatterPoints = {
+      biomatterExit: { x: 480, y: 550, facing: "down" },
+      biomatterCanisterA: { x: 176, y: 398, facing: "left" },
+      biomatterCanisterB: { x: 132, y: 380, facing: "left" },
+      biomatterBrokenCanister: { x: 338, y: 450, facing: "up" },
+      // These previously sat inside the dark cavity/cabinet under the desk,
+      // off the real floor, which made the player float there on approach.
+      biomatterConsole: { x: 605, y: 470, facing: "up" },
+      biomatterPole: { x: 630, y: 480, facing: "up" }
+    };
+    return biomatterPoints[hotspot.id] || { x: hotspot.x + hotspot.w / 2, y: hotspot.y + hotspot.h / 2 };
   }
   if (state.room === "hallway") {
     // Bulky floor props are always approached from their nearest clear side.
@@ -2970,6 +3093,10 @@ function drawGeneratedAirlock(time) {
     drawGeneratedUtilityCloset(time);
     return;
   }
+  if (state.room === "biomatter") {
+    drawGeneratedBiomatterRoom(time);
+    return;
+  }
   ctx.drawImage(generatedArt.background, 0, 0, 960, 640);
   drawAirlockPowerSignal();
 
@@ -3012,6 +3139,18 @@ const BREACHED_NORTH_DOOR_LAYOUT = { x: 105.625, y: 115.625, w: 108.75, h: 166.8
 const BREACHED_LEFT_PANEL_LAYOUT = { x: 266.25, y: 155, w: 66.25, h: 137.5 };
 const BREACHED_CONSOLE_LAYOUT = { x: 668.75, y: 180, w: 120, h: 110 };
 const BREACHED_FIRE_LAYOUT = { x: 218.75, y: 237.5, w: 103.125, h: 109.375 };
+// Complete RGBA props, laid over their matching Room 7 positions. The same
+// sprite alpha is used by drawSpriteOutlineOnly(), so each hover ring follows
+// the exterior silhouette of the exact object the player sees.
+const BIOMATTER_SPRITE_LAYOUTS = {
+  // Reduced again so the complete vessels sit fully within the rack openings.
+  biomatterCanisterA: { x: 39, y: 48, w: 48, h: 108 },
+  biomatterCanisterB: { x: 46.3, y: 224.8, w: 46.4, h: 106.4 },
+  // Deliberately placed on the open floor tiles, clear of the lower shelf.
+  biomatterBrokenCanister: { x: 160, y: 370, w: 127.5, h: 83.64 },
+  biomatterConsole: { x: 690, y: 162, w: 110, h: 88.4 },
+  biomatterPole: { x: 829, y: 208, w: 72, h: 66 }
+};
 // Approved generated door placement, mapped from the 1536x1024 art preview
 // to the 960x640 game canvas. The left sprite intentionally extends beyond
 // the canvas edge so only the doorway's in-room half is visible.
@@ -3364,6 +3503,14 @@ function drawGeneratedBreachedHallway(time) {
     BREACHED_FIRE_LAYOUT.w,
     BREACHED_FIRE_LAYOUT.h
   );
+  if (state.hover) drawGeneratedSpriteHighlight(state.hover.id);
+  drawPlayer(time);
+  drawHover();
+}
+
+function drawGeneratedBiomatterRoom(time) {
+  ctx.drawImage(generatedArt.biomatterBackground, 0, 0, 960, 640);
+  // Highlights are hover-only: no prop starts with a yellow outline.
   if (state.hover) drawGeneratedSpriteHighlight(state.hover.id);
   drawPlayer(time);
   drawHover();
@@ -5992,7 +6139,22 @@ function drawComicEffects(time) {
 }
 
 function drawGeneratedSpriteHighlight(id) {
-  if (!generatedArt.spritesReady) return false;
+  const biomatterMasks = {
+    biomatterCanisterA: generatedArt.biomatterCanisterA,
+    biomatterCanisterB: generatedArt.biomatterCanisterB,
+    biomatterBrokenCanister: generatedArt.biomatterBrokenCanister,
+    biomatterConsole: generatedArt.biomatterConsole,
+    biomatterPole: generatedArt.biomatterClamp
+  };
+  // Room 7 masks must not be suppressed by a failed or slow-loading sprite
+  // elsewhere in Stage 4. Each one is independently ready to be outlined.
+  if (biomatterMasks[id] && !(biomatterMasks[id].complete && biomatterMasks[id].naturalWidth > 0)) return false;
+  if (!biomatterMasks[id] && !generatedArt.spritesReady) return false;
+  // HARD RULE — do not add a rectangular fallback, guessed polygon, or
+  // hand-drawn trace for any generated-room highlight. Every hover glow must
+  // be rendered through drawSpriteOutlineOnly() from a sprite or a mask whose
+  // alpha channel was traced from the actual visible artwork. If no such mask
+  // exists, make and preview that mask first; do not substitute geometry.
   if (id === "breachPowerCell" && !state.breachedPowerCellCollected) {
     drawSpriteOutlineOnly(getBreachedPowerCellOutlineMask(), 246, 534, 100, 68, 2);
     return true;
@@ -6028,6 +6190,30 @@ function drawGeneratedSpriteHighlight(id) {
   }
   if (id === "breachRightOpenDoor") {
     ctx.drawImage(generatedArt.breachedRightOpenDoorHighlight, 0, 0, 960, 640);
+    return true;
+  }
+  if (id === "biomatterCanisterA") {
+    const layout = BIOMATTER_SPRITE_LAYOUTS[id];
+    drawSpriteOutlineOnly(generatedArt.biomatterCanisterA, layout.x, layout.y, layout.w, layout.h, 2);
+    return true;
+  }
+  if (id === "biomatterCanisterB") {
+    drawSpriteOutlineOnly(generatedArt.biomatterCanisterB, 0, 0, 960, 640, 2);
+    return true;
+  }
+  if (id === "biomatterBrokenCanister") {
+    const layout = BIOMATTER_SPRITE_LAYOUTS[id];
+    drawSpriteOutlineOnly(generatedArt.biomatterBrokenCanister, layout.x, layout.y, layout.w, layout.h, 2);
+    return true;
+  }
+  if (id === "biomatterConsole") {
+    const layout = BIOMATTER_SPRITE_LAYOUTS[id];
+    drawSpriteOutlineOnly(generatedArt.biomatterConsole, layout.x, layout.y, layout.w, layout.h, 2);
+    return true;
+  }
+  if (id === "biomatterPole") {
+    const layout = BIOMATTER_SPRITE_LAYOUTS[id];
+    drawSpriteOutlineOnly(generatedArt.biomatterClamp, layout.x, layout.y, layout.w, layout.h, 2);
     return true;
   }
   if (id === "crawlspacePipeButton") {
@@ -6164,8 +6350,9 @@ function drawGeneratedSpriteHighlight(id) {
       break;
     default:
       ctx.restore();
-      return false;
-  }
+  return false;
+}
+
   ctx.restore();
   return true;
 }
@@ -6334,6 +6521,7 @@ const generatedSpriteHighlightIds = new Set([
   "utilityHose", "utilityCleanRag", "utilityToolkit", "utilitySlimeBox", "utilityWire", "utilityDoorButton", "utilityCenterDoor", "utilityEmptyBox",
   "bathroomExit", "bathroomTrash", "bathroomJanitorCart", "bathroomLeftStall", "bathroomRightStall", "bathroomRightToilet", "bathroomBowl", "bathroomMud",
   "bathroomFaucetLeft", "bathroomFaucetMiddle", "bathroomFaucetRight", "breachPowerCell", "breachNorthDoor", "breachLeftPanel", "breachConsole", "breachFire", "breachLeftOpenDoor", "breachRightOpenDoor"
+  , "biomatterCanisterA", "biomatterCanisterB", "biomatterBrokenCanister", "biomatterConsole", "biomatterPole"
 ]);
 
 function drawHover() {
@@ -6349,7 +6537,7 @@ function drawHover() {
     ctx.lineJoin = "round";
     ctx.setLineDash([]);
     const highlightedSprite = generatedArt.spritesReady && generatedSpriteHighlightIds.has(h.id);
-    if (!highlightedSprite) {
+    if (!highlightedSprite && state.room !== "biomatter") {
       ctx.beginPath();
       if (tracedHotspots[h.id]) {
         tracedHotspots[h.id].draw();
@@ -6762,7 +6950,8 @@ function resetDebugState(room) {
   const utility = room === "utility";
   const bathroom = room === "bathroom";
   const crawlspace = room === "crawlspace";
-  const progressed = hallway || utility || bathroom || crawlspace || breachedHallway;
+  const biomatter = room === "biomatter";
+  const progressed = hallway || utility || bathroom || crawlspace || breachedHallway || biomatter;
   const now = performance.now();
 
   state.room = room;
@@ -6856,6 +7045,10 @@ function resetDebugState(room) {
   state.crawlspaceSteamWhooshPlayed = false;
   state.breachedNorthDoorOpen = false;
   state.breachedPowerCellCollected = false;
+  state.biomatterCanisterOpened = false;
+  state.biomatterGooHeated = false;
+  state.biomatterPoleCollected = false;
+  state.biomatterHighlightPreview = false;
   state.keypadOpen = false;
   state.keypadEntry = "";
   state.keypadUnlocked = false;
@@ -6870,6 +7063,8 @@ function resetDebugState(room) {
     ? { x: 105, y: 480, tx: 105, ty: 480, facing: "right" }
     : utility
     ? { x: 666, y: 500, tx: 666, ty: 500, facing: "left" }
+    : biomatter
+    ? { x: 480, y: 550, tx: 480, ty: 550, facing: "up" }
     : hallway
       ? { x: 72, y: 472, tx: 72, ty: 472, facing: "right" }
       : { x: 160, y: 458, tx: 160, ty: 458, facing: "down" });
@@ -6880,6 +7075,8 @@ function resetDebugState(room) {
 
   setLog(breachedHallway
     ? "Debug: Breached Hallway loaded. Click the damaged console to test the north-door interaction."
+    : biomatter
+    ? "Debug: Biomatter Samples loaded. Hover the canisters, scanner, and magnetic clamp to verify alpha-mask highlights."
     : crawlspace
     ? "Debug: Hidden Crawlspace loaded with the bathroom panel already open."
     : bathroom
@@ -6898,6 +7095,7 @@ document.querySelector("#s4DebugUtility")?.addEventListener("click", () => reset
 document.querySelector("#s4DebugBathroom")?.addEventListener("click", () => resetDebugState("bathroom"));
 document.querySelector("#s4DebugCrawlspace")?.addEventListener("click", () => resetDebugState("crawlspace"));
 document.querySelector("#s4DebugBreachedHallway")?.addEventListener("click", () => resetDebugState("breachedHallway"));
+document.querySelector("#s4DebugBiomatter")?.addEventListener("click", () => resetDebugState("biomatter"));
 document.querySelector("#s4DebugToiletClue")?.addEventListener("click", () => {
   resetDebugState("bathroom");
   state.bathroomRightDoorOpen = true;
