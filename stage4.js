@@ -51,6 +51,7 @@ const generatedArt = {
   hallwayRope: new Image(),
   utilityBackground: new Image(),
   utilityBackgroundDoorOpen: new Image(),
+  utilityDoorwayHighlightMask: new Image(),
   utilityHose: new Image(),
   utilityCleanRag: new Image(),
   utilityToolkit: new Image(),
@@ -63,7 +64,6 @@ const generatedArt = {
   utilityWirePullPlayer: new Image(),
   utilityWirePullHands: new Image(),
   utilityRoutedCable: new Image(),
-  utilityDoorOpenOverlay: new Image(),
   utilityVentPaw: new Image(),
   utilityVentPlayer: new Image(),
   utilityDoorButton: new Image(),
@@ -140,9 +140,9 @@ const stageFourSpriteImages = [
   generatedArt.hallwayAirlockDoorSilhouette, generatedArt.hallwayCrewDoorSilhouette, generatedArt.hallwayUtilityDoorSilhouette, generatedArt.hallwayCorridorDoorSilhouette,
   generatedArt.hallwayProps, generatedArt.hallwayPaperArt,
   generatedArt.hallwayRag, generatedArt.hallwayDirt, generatedArt.hallwayRope,
-  generatedArt.utilityBackground, generatedArt.utilityBackgroundDoorOpen, generatedArt.utilityHose, generatedArt.utilityCleanRag,
+  generatedArt.utilityBackground, generatedArt.utilityBackgroundDoorOpen, generatedArt.utilityDoorwayHighlightMask, generatedArt.utilityHose, generatedArt.utilityCleanRag,
   generatedArt.utilityToolkit, generatedArt.utilityToolkitOpen, generatedArt.utilityWrench, generatedArt.utilitySlimeBox, generatedArt.utilitySlimeReaction,
-  generatedArt.utilityWire, generatedArt.utilityWirePull, generatedArt.utilityWirePullPlayer, generatedArt.utilityWirePullHands, generatedArt.utilityRoutedCable, generatedArt.utilityDoorOpenOverlay,
+  generatedArt.utilityWire, generatedArt.utilityWirePull, generatedArt.utilityWirePullPlayer, generatedArt.utilityWirePullHands, generatedArt.utilityRoutedCable,
   generatedArt.utilityVentPaw, generatedArt.utilityVentPlayer, generatedArt.utilityDoorButton, generatedArt.utilityEmptyBox,
   generatedArt.bathroomBackground, generatedArt.bathroomClosedBackground, generatedArt.bathroomTrashSprite, generatedArt.bathroomJanitorCart, generatedArt.bathroomJanitorCartNoMop, generatedArt.bathroomJanitorWinkSheet, generatedArt.bathroomMopPickupSheet, generatedArt.bathroomMopCarrySheet, generatedArt.bathroomMopCleanSheet, generatedArt.bathroomToiletReachSheet, generatedArt.bathroomLeftStallHighlightMask, generatedArt.bathroomRightStallHighlightMask,
   generatedArt.bathroomExitHighlightMask, generatedArt.bathroomTrashHighlightMask, generatedArt.bathroomRightToiletHighlightMask, generatedArt.bathroomBowl, generatedArt.bathroomMud,
@@ -199,6 +199,7 @@ generatedArt.hallwayDirt.src = "assets/stage4/level2-hallway/dirt-sprite-v1.png?
 generatedArt.hallwayRope.src = "assets/stage4/level2-hallway/makeshift-rag-rope-v1.png?v=stage4-rag-rope-1";
 generatedArt.utilityBackground.src = "assets/stage4/level3-utility-closet/utility-closet-background-v5.png?v=stage4-utility-button-sprite-1";
 generatedArt.utilityBackgroundDoorOpen.src = "assets/stage4/level3-utility-closet/utility-closet-background-door-open-v1.png?v=stage4-utility-door-open-art-1";
+generatedArt.utilityDoorwayHighlightMask.src = "assets/stage4/level3-utility-closet/utility-center-doorway-highlight-mask-v1.png?v=stage4-utility-doorway-mask-1";
 generatedArt.utilityHose.src = "assets/stage4/level3-utility-closet/hose-sprite-v1.png?v=stage4-utility-props-1";
 generatedArt.utilityCleanRag.src = "assets/stage4/level3-utility-closet/clean-rag-sprite-v1.png?v=stage4-clean-rag-full-sprite-1";
 generatedArt.utilityToolkit.src = "assets/stage4/level3-utility-closet/toolbox-closed-in-room-v1.png?v=stage4-toolbox-in-room-1";
@@ -211,7 +212,6 @@ generatedArt.utilityWirePull.src = "assets/stage4/level3-utility-closet/stuck-ca
 generatedArt.utilityWirePullPlayer.src = "assets/stage4/level3-utility-closet/player-wire-pull-v1.png?v=stage4-wire-pull-1";
 generatedArt.utilityWirePullHands.src = "assets/stage4/level3-utility-closet/player-wire-hands-overlay-v1.png?v=stage4-wire-hands-overlay-1";
 generatedArt.utilityRoutedCable.src = "assets/stage4/level3-utility-closet/routed-cable-to-panel-v2.png?v=stage4-routed-cable-hose-tie-1";
-generatedArt.utilityDoorOpenOverlay.src = "assets/stage4/level3-utility-closet/utility-center-door-open-overlay-v2.png?v=stage4-utility-door-open-clean-1";
 generatedArt.utilityVentPaw.src = "assets/stage4/level3-utility-closet/alien-vent-paw-green-concept-v1.png?v=stage4-vent-paw-green-1";
 generatedArt.utilityVentPlayer.src = "assets/stage4/level3-utility-closet/player-vent-swipe-reaction-v1.png?v=stage4-vent-player-art-1";
 generatedArt.utilityDoorButton.src = "assets/stage4/level3-utility-closet/door-blue-button-sprite-v1.png?v=stage4-utility-button-sprite-1";
@@ -6249,7 +6249,7 @@ function drawGeneratedSpriteHighlight(id) {
   }
   if (id === "bathroomLeftStall" || id === "bathroomRightStall") {
     // Door-leaf masks traced off the room art by
-    // tools/build_stage4_bathroom_door_masks.mjs.
+    // tools/build_stage4_door_masks.mjs.
     const mask = id === "bathroomLeftStall"
       ? generatedArt.bathroomLeftStallHighlightMask
       : generatedArt.bathroomRightStallHighlightMask;
@@ -6273,6 +6273,12 @@ function drawGeneratedSpriteHighlight(id) {
   if (id === "bathroomFaucetLeft" || id === "bathroomFaucetMiddle" || id === "bathroomFaucetRight") {
     const faucet = bathroomFaucetSpriteLayout[id];
     drawSpriteOutlineOnly(faucet.image, faucet.x, faucet.y, faucet.w, faucet.h);
+    return true;
+  }
+  if (id === "utilityCenterDoor") {
+    // Outline the open doorway only. Redrawing the door-open painting here
+    // covered the whole room, props included.
+    drawSpriteOutlineOnly(generatedArt.utilityDoorwayHighlightMask, 0, 0, 960, 640, 3);
     return true;
   }
   ctx.save();
@@ -6342,12 +6348,9 @@ function drawGeneratedSpriteHighlight(id) {
     case "utilitySlimeBox":
     case "utilityWire":
     case "utilityDoorButton":
-    case "utilityCenterDoor":
     case "utilityEmptyBox":
       if (id === "utilityDoorButton") {
         ctx.drawImage(generatedArt.utilityDoorButton, 3, 2, 70, 84, 548, 79, 44, 52);
-      } else if (id === "utilityCenterDoor") {
-        drawUtilityDoorOpenBackground();
       } else {
         drawUtilityProp(id, performance.now() / 1000);
       }

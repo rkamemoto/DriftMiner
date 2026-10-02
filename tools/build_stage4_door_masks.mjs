@@ -1,13 +1,17 @@
-// Builds the Room 4 (Alien Washroom) door hover masks by tracing the doors
-// off the room art, so the highlight follows what is actually painted:
+// Builds the Stage 4 door hover masks by tracing the doors off the room art,
+// so the highlight follows what is actually painted:
 //
-//   node tools/build_stage4_bathroom_door_masks.mjs
+//   node tools/build_stage4_door_masks.mjs
 //
-// Stall doors: flood the door leaf from its middle, bounded by the dark seam
+// Room 3 open utility door: flood the dark doorway in the door-open painting,
+// down to the threshold seam, with the sides and bottom pinned straight and
+// the arched top kept as traced.
+//
+// Room 4 stall doors: flood the door leaf from its middle, bounded by the dark seam
 // around it, then pin the sides to straight verticals and smooth top and
 // bottom, so hinges, handles and the porthole don't dent the silhouette.
 //
-// Exit door: its seams are too faint to flood, so each edge is traced by
+// Room 4 exit door: its seams are too faint to flood, so each edge is traced by
 // following the darkest pixel along the seam (the left wall is in strong
 // perspective, so top and bottom are sloped lines), then median-smoothed.
 //
@@ -15,8 +19,8 @@
 import fs from "node:fs";
 import zlib from "node:zlib";
 
-const DIR = "assets/stage4/level4-bathroom";
-const SOURCE = `${DIR}/bathroom-background-faucets-interactable-v3.png`;
+const UTILITY_DIR = "assets/stage4/level3-utility-closet";
+const BATHROOM_DIR = "assets/stage4/level4-bathroom";
 const W = 960, H = 640;
 
 function decodePng(buf) {
@@ -128,10 +132,14 @@ function smooth(values, med, avg) {
 // rows beyond are the corner curves and keep their (lightly smoothed) trace.
 // "On it" allows 2px so a hinge just below a corner (right stall, top left)
 // is not mistaken for part of the corner curve.
-function straightSide(values) {
+function mostCommon(values) {
   const counts = new Map();
   for (const v of values) if (v != null) counts.set(v, (counts.get(v) || 0) + 1);
-  const edge = [...counts].sort((a, b) => b[1] - a[1])[0][0];
+  return [...counts].sort((a, b) => b[1] - a[1])[0][0];
+}
+
+function straightSide(values) {
+  const edge = mostCommon(values);
   const onEdge = (v) => v != null && Math.abs(v - edge) <= 2;
   const first = values.findIndex(onEdge), last = values.findLastIndex(onEdge);
   const corners = smooth(values, 5, 3);
@@ -159,24 +167,90 @@ function stallDoorMask(lum, { x0, y0, x1, y1, seed, threshold = 125, minRun = 8,
       if (!seam[j] && !leaf[j]) { leaf[j] = 1; stack.push(j); }
     }
   }
-  const left = [], right = [], top = [], bottom = [];
-  for (let y = y0; y <= y1; y++) {
-    let l = null, r = null, n = 0;
-    for (let x = x0; x <= x1; x++) if (leaf[y * W + x]) { n++; if (l == null) l = x; r = x; }
-    left.push(n >= minRun ? l : null); right.push(n >= minRun ? r : null);
-  }
-  for (let x = x0; x <= x1; x++) {
-    let t = null, b = null, n = 0;
-    for (let y = y0; y <= y1; y++) if (leaf[y * W + x]) { n++; if (t == null) t = y; b = y; }
-    top.push(n >= minRun ? t : null); bottom.push(n >= minRun ? b : null);
-  }
   // The side edges are straight verticals that hinges and handle plates
   // notch inward (the right handle plate for ~60 rows), so no smoothing
   // window rides over them cleanly. Pin each side to its traced x along the
   // whole straight run and keep the trace only where it curves into the
   // rounded corners. Top and bottom carry the corners and the perspective
   // lean, so they are only smoothed.
-  const sL = straightSide(left), sR = straightSide(right), sT = smooth(top, 15, 7), sB = smooth(bottom, 15, 7);
+  return regionMask(leaf, { x0, y0, x1, y1, minRun, grow }, {
+    left: straightSide, right: straightSide,
+    top: (v) => smooth(v, 15, 7), bottom: (v) => smooth(v, 15, 7)
+  });
+}
+
+function utilityDoorwayMask(lum) {
+  // The open doorway is near-black against the lit frame, which gives clean
+  // jambs and arch. The corridor floor lightens toward the sill, so the
+  // flood fades out above it; the bottom is instead the threshold seam
+  // (y=185), where the open and closed paintings stop differing.
+  const SILL = 185;
+  const roi = { x0: 412, y0: 40, x1: 525, y1: SILL };
+  const region = new Uint8Array(W * H);
+  const stack = [100 * W + 470];
+  region[stack[0]] = 1;
+  while (stack.length) {
+    const i = stack.pop(), x = i % W, y = (i / W) | 0;
+    for (const [X, Y] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+      if (X < roi.x0 || X > roi.x1 || Y < roi.y0 || Y > roi.y1) continue;
+      const j = Y * W + X;
+      if (!region[j] && lum[j] < 20) { region[j] = 1; stack.push(j); }
+    }
+  }
+  // The jambs are straight all the way down to the sill and only the arch
+  // curves, so the sides run at their traced x the full height (the arch's
+  // corners come from the top edge) and the bottom is the sill.
+  const jamb = (v) => v.map(() => mostCommon(v));
+  const mask = regionMask(region, { ...roi, minRun: 8, grow: 0 }, {
+    left: jamb, right: jamb, bottom: (v) => v.map(() => SILL),
+    top: (v) => smooth(v, 9, 5)
+  });
+  // The arch traces as a chamfer that meets the jambs at a hard angle; the
+  // painted arch curves through there. Round the top corners off to match.
+  return roundTopCorners(mask, roi, 8);
+}
+
+// Morphological opening with a disc: rounds convex corners to `radius`
+// without moving straight edges. Only rows above the sill are touched, so
+// the square bottom corners stay square.
+function roundTopCorners(mask, { x0, y0, x1, y1 }, radius) {
+  const disc = [];
+  for (let dy = -radius; dy <= radius; dy++) for (let dx = -radius; dx <= radius; dx++) {
+    if (dx * dx + dy * dy <= radius * radius) disc.push([dx, dy]);
+  }
+  const inside = (m, x, y) => x >= 0 && x < W && y >= 0 && y < H && m[y * W + x];
+  const eroded = new Uint8Array(W * H);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    // Rows below the mask count as inside, so the sill doesn't erode.
+    if (disc.every(([dx, dy]) => y + dy > y1 ? inside(mask, x + dx, y1) : inside(mask, x + dx, y + dy))) eroded[y * W + x] = 1;
+  }
+  const opened = new Uint8Array(W * H);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    if (!eroded[y * W + x]) continue;
+    for (const [dx, dy] of disc) {
+      const X = x + dx, Y = y + dy;
+      if (X >= x0 && X <= x1 && Y >= y0 && Y <= y1) opened[Y * W + X] = 1;
+    }
+  }
+  return opened;
+}
+
+// Turns a traced region into a clean mask: each edge (left/right per row,
+// top/bottom per column) is cleaned up by its own function, and the mask is
+// what lies inside all four.
+function regionMask(region, { x0, y0, x1, y1, minRun, grow }, edges) {
+  const left = [], right = [], top = [], bottom = [];
+  for (let y = y0; y <= y1; y++) {
+    let l = null, r = null, n = 0;
+    for (let x = x0; x <= x1; x++) if (region[y * W + x]) { n++; if (l == null) l = x; r = x; }
+    left.push(n >= minRun ? l : null); right.push(n >= minRun ? r : null);
+  }
+  for (let x = x0; x <= x1; x++) {
+    let t = null, b = null, n = 0;
+    for (let y = y0; y <= y1; y++) if (region[y * W + x]) { n++; if (t == null) t = y; b = y; }
+    top.push(n >= minRun ? t : null); bottom.push(n >= minRun ? b : null);
+  }
+  const sL = edges.left(left), sR = edges.right(right), sT = edges.top(top), sB = edges.bottom(bottom);
   const mask = new Uint8Array(W * H);
   for (let y = y0; y <= y1; y++) {
     const l = sL[y - y0], r = sR[y - y0];
@@ -221,15 +295,20 @@ function exitDoorMask(lum) {
   return mask;
 }
 
-function writeMask(name, mask) {
+function writeMask(path, mask) {
   const rgba = Buffer.alloc(W * H * 4);
   let n = 0;
   for (let i = 0; i < W * H; i++) if (mask[i]) { rgba.fill(255, i * 4, i * 4 + 4); n++; }
-  fs.writeFileSync(`${DIR}/${name}`, encodePng(W, H, rgba));
-  console.log(`wrote ${DIR}/${name} (${n} px)`);
+  fs.writeFileSync(path, encodePng(W, H, rgba));
+  console.log(`wrote ${path} (${n} px)`);
 }
 
-const lum = canvasLuminance(decodePng(fs.readFileSync(SOURCE)));
-writeMask("stall-door-left-highlight-mask-v1.png", stallDoorMask(lum, { x0: 668, y0: 24, x1: 832, y1: 352, seed: [750, 200] }));
-writeMask("stall-door-right-highlight-mask-v1.png", stallDoorMask(lum, { x0: 836, y0: 34, x1: 959, y1: 392, seed: [905, 230] }));
-writeMask("bathroom-exit-highlight-mask-v2.png", exitDoorMask(lum));
+const loadLum = (path) => canvasLuminance(decodePng(fs.readFileSync(path)));
+
+const utilityOpen = loadLum(`${UTILITY_DIR}/utility-closet-background-door-open-v1.png`);
+writeMask(`${UTILITY_DIR}/utility-center-doorway-highlight-mask-v1.png`, utilityDoorwayMask(utilityOpen));
+
+const bathroom = loadLum(`${BATHROOM_DIR}/bathroom-background-faucets-interactable-v3.png`);
+writeMask(`${BATHROOM_DIR}/stall-door-left-highlight-mask-v1.png`, stallDoorMask(bathroom, { x0: 668, y0: 24, x1: 832, y1: 352, seed: [750, 200] }));
+writeMask(`${BATHROOM_DIR}/stall-door-right-highlight-mask-v1.png`, stallDoorMask(bathroom, { x0: 836, y0: 34, x1: 959, y1: 392, seed: [905, 230] }));
+writeMask(`${BATHROOM_DIR}/bathroom-exit-highlight-mask-v2.png`, exitDoorMask(bathroom));
