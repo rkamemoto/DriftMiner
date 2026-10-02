@@ -78,8 +78,8 @@ const generatedArt = {
   bathroomMopCarrySheet: new Image(),
   bathroomMopCleanSheet: new Image(),
   bathroomToiletReachSheet: new Image(),
-  bathroomDoorLeft: new Image(),
-  bathroomDoorRight: new Image(),
+  bathroomLeftStallHighlightMask: new Image(),
+  bathroomRightStallHighlightMask: new Image(),
   bathroomExitHighlightMask: new Image(),
   bathroomTrashHighlightMask: new Image(),
   bathroomRightToiletHighlightMask: new Image(),
@@ -144,7 +144,7 @@ const stageFourSpriteImages = [
   generatedArt.utilityToolkit, generatedArt.utilityToolkitOpen, generatedArt.utilityWrench, generatedArt.utilitySlimeBox, generatedArt.utilitySlimeReaction,
   generatedArt.utilityWire, generatedArt.utilityWirePull, generatedArt.utilityWirePullPlayer, generatedArt.utilityWirePullHands, generatedArt.utilityRoutedCable, generatedArt.utilityDoorOpenOverlay,
   generatedArt.utilityVentPaw, generatedArt.utilityVentPlayer, generatedArt.utilityDoorButton, generatedArt.utilityEmptyBox,
-  generatedArt.bathroomBackground, generatedArt.bathroomClosedBackground, generatedArt.bathroomTrashSprite, generatedArt.bathroomJanitorCart, generatedArt.bathroomJanitorCartNoMop, generatedArt.bathroomJanitorWinkSheet, generatedArt.bathroomMopPickupSheet, generatedArt.bathroomMopCarrySheet, generatedArt.bathroomMopCleanSheet, generatedArt.bathroomToiletReachSheet, generatedArt.bathroomDoorLeft, generatedArt.bathroomDoorRight,
+  generatedArt.bathroomBackground, generatedArt.bathroomClosedBackground, generatedArt.bathroomTrashSprite, generatedArt.bathroomJanitorCart, generatedArt.bathroomJanitorCartNoMop, generatedArt.bathroomJanitorWinkSheet, generatedArt.bathroomMopPickupSheet, generatedArt.bathroomMopCarrySheet, generatedArt.bathroomMopCleanSheet, generatedArt.bathroomToiletReachSheet, generatedArt.bathroomLeftStallHighlightMask, generatedArt.bathroomRightStallHighlightMask,
   generatedArt.bathroomExitHighlightMask, generatedArt.bathroomTrashHighlightMask, generatedArt.bathroomRightToiletHighlightMask, generatedArt.bathroomBowl, generatedArt.bathroomMud,
   generatedArt.bathroomFaucetLeft, generatedArt.bathroomFaucetMiddle, generatedArt.bathroomFaucetRight,
   generatedArt.bathroomFaucetWaterLeft, generatedArt.bathroomFaucetWaterMiddle, generatedArt.bathroomFaucetWaterRight,
@@ -226,9 +226,9 @@ generatedArt.bathroomMopPickupSheet.src = "assets/stage4/level4-bathroom/player-
 generatedArt.bathroomMopCarrySheet.src = "assets/stage4/level4-bathroom/player-mop-carry-sheet-v2.png?v=stage4-mop-clean-2";
 generatedArt.bathroomMopCleanSheet.src = "assets/stage4/level4-bathroom/player-mop-clean-sheet-v2.png?v=stage4-mop-clean-2";
 generatedArt.bathroomToiletReachSheet.src = "assets/stage4/level4-bathroom/player-toilet-reach-sheet-v4.png?v=stage4-toilet-reach-4";
-generatedArt.bathroomDoorLeft.src = "assets/stage4/level4-bathroom/stall-door-left-v1.png?v=stage4-bathroom-1";
-generatedArt.bathroomDoorRight.src = "assets/stage4/level4-bathroom/stall-door-right-v1.png?v=stage4-bathroom-1";
-generatedArt.bathroomExitHighlightMask.src = "assets/stage4/level4-bathroom/bathroom-exit-highlight-mask-v1.png?v=stage4-bathroom-alpha-highlights-1";
+generatedArt.bathroomLeftStallHighlightMask.src = "assets/stage4/level4-bathroom/stall-door-left-highlight-mask-v1.png?v=stage4-bathroom-door-masks-3";
+generatedArt.bathroomRightStallHighlightMask.src = "assets/stage4/level4-bathroom/stall-door-right-highlight-mask-v1.png?v=stage4-bathroom-door-masks-3";
+generatedArt.bathroomExitHighlightMask.src = "assets/stage4/level4-bathroom/bathroom-exit-highlight-mask-v2.png?v=stage4-bathroom-door-masks-1";
 generatedArt.bathroomTrashHighlightMask.src = "assets/stage4/level4-bathroom/bathroom-trash-highlight-mask-v1.png?v=stage4-bathroom-alpha-highlights-1";
 generatedArt.bathroomRightToiletHighlightMask.src = "assets/stage4/level4-bathroom/filthy-toilet-highlight-mask-v1.png?v=stage4-filthy-toilet-outline-1";
 generatedArt.bathroomBowl.src = "assets/stage4/level4-bathroom/alien-bowl-shelf-mask-v1.png?v=stage4-real-shelf-bowl-mask-1";
@@ -6248,8 +6248,12 @@ function drawGeneratedSpriteHighlight(id) {
     return true;
   }
   if (id === "bathroomLeftStall" || id === "bathroomRightStall") {
-    const door = BATHROOM_STALL_DOOR_OUTLINES[id];
-    drawRoundedQuadOutline(door.quad, door.radius);
+    // Door-leaf masks traced off the room art by
+    // tools/build_stage4_bathroom_door_masks.mjs.
+    const mask = id === "bathroomLeftStall"
+      ? generatedArt.bathroomLeftStallHighlightMask
+      : generatedArt.bathroomRightStallHighlightMask;
+    drawSpriteOutlineOnly(mask, 0, 0, 960, 640, 3);
     return true;
   }
   if (id === "bathroomMud") {
@@ -6418,61 +6422,6 @@ function getBreachedPowerCellOutlineMask() {
   }
   return breachedPowerCellOutlineMask;
 }
-// Stall door outlines, traced off the current room art by scanning for the
-// dark seams that bound each door. The extracted stall-door sprites are not
-// used for this any more: they were cut from the earlier background, and the
-// doors were redrawn larger and repositioned when that art was regenerated,
-// so their alpha no longer matches what is painted. Left/right edges are
-// vertical; the top and bottom lean with the room's perspective, and the
-// right door runs off the canvas edge.
-const BATHROOM_STALL_DOOR_OUTLINES = {
-  bathroomLeftStall: {
-    quad: [[678, 54], [818, 46], [818, 338], [678, 330]],
-    radius: 15
-  },
-  bathroomRightStall: {
-    quad: [[846, 54], [960, 73], [960, 380], [846, 367]],
-    radius: 15
-  }
-};
-
-// Quad with its corners rounded off, cutting `radius` back along each edge.
-function traceRoundedQuad(c, quad, radius) {
-  const n = quad.length;
-  const along = (from, to, dist) => {
-    const dx = to[0] - from[0];
-    const dy = to[1] - from[1];
-    const len = Math.hypot(dx, dy) || 1;
-    const t = Math.min(dist, len / 2) / len;
-    return [from[0] + dx * t, from[1] + dy * t];
-  };
-  c.beginPath();
-  for (let i = 0; i < n; i++) {
-    const prev = quad[(i - 1 + n) % n];
-    const corner = quad[i];
-    const next = quad[(i + 1) % n];
-    const start = along(corner, prev, radius);
-    const end = along(corner, next, radius);
-    if (i === 0) c.moveTo(start[0], start[1]);
-    else c.lineTo(start[0], start[1]);
-    c.quadraticCurveTo(corner[0], corner[1], end[0], end[1]);
-  }
-  c.closePath();
-}
-
-function drawRoundedQuadOutline(quad, radius) {
-  ctx.save();
-  ctx.globalAlpha = .98;
-  ctx.strokeStyle = "#ffd365";
-  ctx.lineWidth = 3;
-  ctx.lineJoin = "round";
-  ctx.shadowBlur = 9;
-  ctx.shadowColor = "rgba(255,211,101,.82)";
-  traceRoundedQuad(ctx, quad, radius);
-  ctx.stroke();
-  ctx.restore();
-}
-
 function drawSpriteOutlineOnly(image, x, y, w, h, radius = 3) {
   spriteOutlineCtx.clearRect(0, 0, spriteOutlineCanvas.width, spriteOutlineCanvas.height);
   spriteOutlineCtx.save();
