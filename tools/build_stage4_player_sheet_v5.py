@@ -4,7 +4,7 @@ from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "assets" / "stage4" / "level1-airlock"
+ASSETS = ROOT / "stage4" / "assets" / "level1-airlock"
 BASE = Image.open(ASSETS / "player-sheet-cells-v4.png").convert("RGBA")
 SIDE_CYCLES = Image.open(ASSETS / "player-left-right-walk-alpha-v5.png").convert("RGBA")
 

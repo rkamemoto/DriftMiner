@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "assets" / "stage4" / "level1-airlock"
+ASSETS = ROOT / "stage4" / "assets" / "level1-airlock"
 PLAYER = Image.open(ASSETS / "player-sheet-cells-v8.png").convert("RGBA")
 REACTION = Image.open(ASSETS / "player-ng-reaction-cells-v2.png").convert("RGBA")
 

@@ -4,7 +4,7 @@ from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "assets" / "stage4" / "level1-airlock"
+ASSETS = ROOT / "stage4" / "assets" / "level1-airlock"
 source = Image.open(ASSETS / "alien-toy-alpha-raw-v1.png").convert("RGBA")
 bbox = source.getchannel("A").getbbox()
 if not bbox:

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Drift Miner: Heart Run</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #05080d; }
+      body { display: flex; align-items: center; justify-content: center; }
+      .s5-shell { position: relative; width: min(100vw, calc(100vh * 1.5)); aspect-ratio: 3 / 2; }
+      #stageFiveCanvas { display: block; width: 100%; height: 100%; background: #030711; image-rendering: auto; cursor: crosshair; }
+      .s5-home { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center;
+        background: rgba(8, 20, 28, .55); border: 1px solid rgba(104, 214, 199, .35); opacity: .45; transition: opacity .2s; }
+      .s5-home:hover { opacity: 1; }
+      .s5-home svg { width: 18px; height: 18px; stroke: #68d6c7; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </head>
+  <body class="stage-five">
+    <main class="s5-shell">
+      <canvas id="stageFiveCanvas" width="960" height="640" aria-label="Heart Run top-down shooter"></canvas>
+      <a class="s5-home" href="../index.html" aria-label="Operations"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></a>
+    </main>
+    <script src="stage5.js?v=shop-reset"></script>
+  </body>
+</html>

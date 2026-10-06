@@ -19,8 +19,8 @@
 import fs from "node:fs";
 import zlib from "node:zlib";
 
-const UTILITY_DIR = "assets/stage4/level3-utility-closet";
-const BATHROOM_DIR = "assets/stage4/level4-bathroom";
+const UTILITY_DIR = "stage4/assets/level3-utility-closet";
+const BATHROOM_DIR = "stage4/assets/level4-bathroom";
 const W = 960, H = 640;
 
 function decodePng(buf) {

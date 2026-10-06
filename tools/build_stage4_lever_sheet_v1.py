@@ -4,7 +4,7 @@ from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "assets" / "stage4" / "level1-airlock"
+ASSETS = ROOT / "stage4" / "assets" / "level1-airlock"
 UP = Image.open(ASSETS / "lever-sprite-v1.png").convert("RGBA")
 DOWN = Image.open(ASSETS / "lever-down-alpha-v1.png").convert("RGBA")
 

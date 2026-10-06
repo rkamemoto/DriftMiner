@@ -6,7 +6,7 @@ from PIL import Image, ImageFilter
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "assets" / "stage4" / "level1-airlock"
+ASSETS = ROOT / "stage4" / "assets" / "level1-airlock"
 SOURCE = Image.open(ASSETS / "scanner-console-markup-source.png").convert("RGBA")
 MARKUP = Image.open(ASSETS / "scanner-console-markup-highlight.png").convert("RGB")
 

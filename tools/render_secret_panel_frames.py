@@ -3,7 +3,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "assets" / "stage4" / "level4-bathroom"
+ASSETS = ROOT / "stage4" / "assets" / "level4-bathroom"
 OUT = ROOT / "tmp" / "secret-panel-frames"
 OUT.mkdir(parents=True, exist_ok=True)
 

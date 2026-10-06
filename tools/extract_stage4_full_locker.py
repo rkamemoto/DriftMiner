@@ -4,7 +4,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "assets" / "stage4" / "level1-airlock"
+ASSETS = ROOT / "stage4" / "assets" / "level1-airlock"
 original = Image.open(ASSETS / "airlock-background-v1.png").convert("RGBA")
 cleaned = Image.open(ASSETS / "airlock-background-sprites-v3.png").convert("RGBA")
 

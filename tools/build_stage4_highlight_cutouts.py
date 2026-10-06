@@ -4,7 +4,7 @@ from PIL import Image, ImageChops, ImageDraw
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "assets" / "stage4" / "level1-airlock"
+ASSETS = ROOT / "stage4" / "assets" / "level1-airlock"
 BACKGROUND = Image.open(ASSETS / "airlock-background-clean-v2.png").convert("RGBA")
 SCALE = BACKGROUND.width / 960
 

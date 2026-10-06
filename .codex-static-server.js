@@ -51,7 +51,7 @@ server.listen(port, host, () => {
     for (const entries of Object.values(require("os").networkInterfaces())) {
       for (const entry of entries || []) {
         if (entry.family === "IPv4" && !entry.internal) {
-          console.log(`  LAN: http://${entry.address}:${port}/stage4.html`);
+          console.log(`  LAN: http://${entry.address}:${port}/stage4/stage4.html`);
         }
       }
     }

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Drift Miner: Silent Vessel</title>
+    <link rel="stylesheet" href="styles.css?v=stage4-item-sprites-1" />
+  </head>
+  <body class="stage-four">
+    <main class="game-shell stage-four-shell">
+      <section class="hud stage-four-hud">
+        <div class="resource-hud">
+          <p class="eyebrow">Stage 4</p>
+          <div>
+            <h1>Silent Vessel</h1>
+            <p>Enter the intact alien ship and salvage the power relic at its heart.</p>
+          </div>
+        </div>
+        <div class="s4-top-inventory">
+          <h2>Inventory</h2>
+          <div class="s4-inventory" id="s4Inventory"></div>
+          <button type="button" id="s4ClearItem" hidden>Put item away</button>
+        </div>
+        <a class="stage-link" href="index.html">Operations</a>
+      </section>
+
+      <section class="stage-four-area">
+        <div class="stage-four-board">
+          <canvas id="stageFourCanvas" width="960" height="640" aria-label="Alien airlock point and click puzzle"></canvas>
+          <div class="s4-room-title">
+            <span id="s4RoomLevel">Level 1</span>
+            <strong id="s4RoomName">Breached Airlock</strong>
+          </div>
+          <p class="controller-status s4-controller-status" id="s4ControllerStatus">Controller: left stick / D-pad moves cursor · A clicks · B puts item away · LB/RB cycles items</p>
+          <div class="s4-toast" id="s4Toast" hidden></div>
+        </div>
+
+        <p class="s4-log" id="s4Log" hidden>The outer hatch seals behind you. The ship is quiet, but not dead.</p>
+      </section>
+
+      <section class="s4-debug-bar" aria-label="Room testing controls">
+        <strong>Room Debug</strong>
+        <button type="button" class="s4-debug-button" id="s4DebugAirlock">Room 1 · Airlock</button>
+        <button type="button" class="s4-debug-button" id="s4DebugHallway">Room 2 · Hallway + Room 1 Items</button>
+        <button type="button" class="s4-debug-button" id="s4DebugUtility">Room 3 · Utility Closet</button>
+        <button type="button" class="s4-debug-button" id="s4DebugBathroom">Room 4 · Alien Washroom</button>
+        <button type="button" class="s4-debug-button" id="s4DebugCrawlspace">Room 5 · Hidden Crawlspace</button>
+        <button type="button" class="s4-debug-button" id="s4DebugBreachedHallway">Test · Room 6 Breached Hallway</button>
+        <button type="button" class="s4-debug-button" id="s4DebugToiletClue">Test · Toilet Clue</button>
+        <button type="button" class="s4-debug-button" id="s4DebugBiomatter">Test · Room 7 Biomatter Samples</button>
+        <button type="button" class="s4-debug-button" id="s4DebugBathroomPanel">Test · Secret Panel</button>
+        <button type="button" class="s4-debug-button" id="s4DebugControlRoom">Room 8 · Heart Chamber</button>
+      </section>
+    </main>
+
+<script src="stage4.js?v=stage4-hatch-lever-5"></script>
+</body>
+</html>

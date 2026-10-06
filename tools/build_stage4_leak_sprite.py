@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "assets" / "stage4" / "level1-airlock"
+ASSETS = ROOT / "stage4" / "assets" / "level1-airlock"
 SOURCE = Image.open(ASSETS / "airlock-background-clean-v2.png").convert("RGBA")
 CLEAN = Image.open(ASSETS / "airlock-background-sprites-v3.png").convert("RGBA")
 

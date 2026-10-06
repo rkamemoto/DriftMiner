@@ -4,7 +4,7 @@ from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "assets" / "stage4" / "level1-airlock"
+ASSETS = ROOT / "stage4" / "assets" / "level1-airlock"
 SOURCE = Image.open(ASSETS / "player-ng-reaction-alpha-v1.png").convert("RGBA")
 PLAYER_SHEET = Image.open(ASSETS / "player-sheet-cells-v6.png").convert("RGBA")
 
