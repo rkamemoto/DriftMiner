@@ -1,5 +1,5 @@
 "use strict";
-// Drift Miner — Stage 6 "Landfall": turn-based deckbuilder. Phase 1 = Zone 1 only (ends at the Landing Sentinel).
+// Drift Miner — Stage 6 "Landfall": turn-based deckbuilder. Zones 1-2 are playable (the run ends at Thornback); Zone 3 is data still to come.
 (() => {
 const canvas = document.getElementById("stageSixCanvas");
 const ctx = canvas.getContext("2d");
@@ -48,10 +48,11 @@ const ART_FILES = {
   bg1: "assets/bg-zone1.webp", bg2: "assets/bg-zone2.webp", bg3: "assets/bg-zone3.webp",
   bgHub: "assets/bg-hub.webp", bgCamp: "assets/bg-camp.webp", bgBench: "assets/bg-workbench.webp", // NOTE: Codex swapped these two files (bg-event.webp holds the trader stall, bg-trader.webp the glyph stones); mapped by content until the files are swapped back
   bgTrader: "assets/bg-event.webp", bgEvent: "assets/bg-trader.webp",
+  mapAntidote: "assets/map-antidote.png", // no art yet: drawTileIcon draws a canvas vial until the file exists
   ev_probe: "assets/event-probe.png", ev_sporePool: "assets/event-sporePool.png", ev_mouse: "assets/event-mouse.png"
 };
 // enemies: key "e_<id>"; the Zone 2/3 files are registered now so Phase 2 picks them up
-for (const id of ["crawler", "spitter", "worm", "drone", "sentinel", "sporeMother", "stalker", "leech", "broodKnight", "thornback", "hiveGuard", "psionicDrone", "mimic", "warden", "homeCore", "turret"]) ART_FILES["e_" + id] = `assets/enemy-${id}.png`;
+for (const id of ["crawler", "spitter", "worm", "drone", "sentinel", "sporeMother", "stalker", "leech", "broodKnight", "thornback", "puffcap", "bloomshade", "rotHound", "rotHulk", "sporeBat", "burrowGrub", "mycelidWeaver", "glowcap", "mireLurker", "bloomMatriarch", "hiveGuard", "psionicDrone", "mimic", "warden", "homeCore", "turret"]) ART_FILES["e_" + id] = `assets/enemy-${id}.png`;
 for (const f of ["basic", "drill", "blaster", "bomb", "radiation", "sword", "companion", "uplink", "utility"]) ART_FILES["card_" + f] = `assets/cards-${f}.png`;
 const ART = {}, ART_FAIL = {};
 function loadArt(k) { const i = new Image(); i.onerror = () => { ART_FAIL[k] = true; }; i.src = ART_FILES[k]; ART[k] = i; return i; }
@@ -348,7 +349,8 @@ const STATUS = {
   weak: { ico: [0, 0], l: "W", col: "#a77ed4", n: "Weak", d: "Deals 25% less attack damage. -1 at end of turn." },
   vuln: { ico: [1, 0], l: "V", col: "#e08a3a", n: "Vulnerable", d: "Takes 50% more attack damage. -1 at end of turn." },
   str: { ico: [2, 0], l: "S", col: "#e05050", n: "Strength", d: "+1 damage per hit per stack." },
-  rad: { ico: [3, 0], l: "R", col: "#66cc55", n: "Radiation", d: "Lose HP equal to stacks at start of turn (ignores Block), then -1." }
+  rad: { ico: [3, 0], l: "R", col: "#66cc55", n: "Radiation", d: "Lose HP equal to stacks at start of turn (ignores Block), then -1." },
+  thorns: { l: "T", col: "#7fbf5a", n: "Thorns", d: "Whenever you hit this enemy with an attack, take N damage." }
 };
 const RELICS = {
   impactDrill: { n: "Impact Drill", d: "Start each combat with 2 Charge.", col: "#d9822b" },
@@ -370,7 +372,8 @@ const RELIC_ICON = { impactDrill: 0, blasterR: 1, bombR: 2, dogR: 3, mouseR: 4, 
 const initials = n => n.split(/\s+/).map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
 // ---------------------------------------------------------------- data: enemies / encounters
-// move: dmg+hits attack, block (self), allyBlock, str (self buff), apply {status:n} on player
+// move: dmg+hits attack, block (self), allyBlock, str (self buff), apply {status:n} on player; also summon [ids], drain, addDisc {card:n},
+// thornsTemp, perSpore (+dmg per Spore card held), heal, allyStr. def: thorns (passive), onDeath (move-shaped), overdrive (half-HP swap-in move)
 const ENEMIES = {
   crawler: { n: "Spore Crawler", artScale: 1.45, hp: [12, 16], shape: "blob", col: "#a0b84a", w: 90, h: 64, moves: [{ n: "Bite", dmg: 5 }, { n: "Bite", dmg: 5 }, { n: "Spores", apply: { weak: 1 } }] },
   spitter: { n: "Acid Spitter", artScale: 1.5, hp: [20, 24], shape: "spiky", col: "#c8d040", w: 100, h: 90, moves: [{ n: "Spit", dmg: 8 }, { n: "Corrode", dmg: 3, apply: { vuln: 2 } }] },
@@ -381,6 +384,33 @@ const ENEMIES = {
     n: "Landing Sentinel", hp: [140, 140], shape: "boss", col: "#d0703a", w: 200, h: 190, boss: 1,
     moves: [{ n: "Scan", apply: { vuln: 2 } }, { n: "Cannon", dmg: 22 }, { n: "Sweep", dmg: 6, hits: 3 }, { n: "Fortify", block: 20, str: 2 }],
     overdrive: { n: "Overdrive", str: 3 }
+  },
+  // Zone 2: Spore Wilds
+  sporeMother: { n: "Spore Mother", artScale: 1.4, hp: [40, 44], shape: "blob", col: "#7a9a4a", w: 110, h: 100, moves: [{ n: "Spawn", summon: ["crawler"] }, { n: "Lash", dmg: 10 }] },
+  stalker: { n: "Stalker", artScale: 1.4, hp: [36, 40], shape: "spiky", col: "#8a5a9a", w: 100, h: 90, moves: [{ n: "Stalk", str: 3, block: 6 }, { n: "Pounce", dmg: 8 }] },
+  leech: { n: "Leech", artScale: 1.4, hp: [26, 30], shape: "worm", col: "#9a4a5a", w: 90, h: 70, moves: [{ n: "Drain", dmg: 7, drain: 1 }, { n: "Latch", apply: { weak: 2 } }] },
+  broodKnight: {
+    n: "Brood Knight", artScale: 1.25, hp: [90, 90], shape: "spiky", col: "#6a7a8a", w: 140, h: 130,
+    moves: [{ n: "Shield Bash", dmg: 12, block: 8 }, { n: "Rally", str: 2 }, { n: "Cleave", dmg: 20 }],
+    overdrive: { n: "Call the Brood", summon: ["crawler", "crawler"], banner: "The Brood answers!" }
+  },
+  thornback: {
+    n: "Thornback", hp: [220, 220], shape: "boss", col: "#5a7a3a", w: 200, h: 170, boss: 1, thorns: 3,
+    moves: [{ n: "Spike Volley", dmg: 5, hits: 4 }, { n: "Spore Cloud", addDisc: { spore: 2 } }, { n: "Curl", block: 30, thornsTemp: 2 }, { n: "Crush", dmg: 28 }]
+  },
+  puffcap: { n: "Puffcap", hp: [16, 20], shape: "mushroom", col: "#4fb3a0", w: 70, h: 60, moves: [{ n: "Spore Puff", addDisc: { spore: 1 } }, { n: "Headbutt", dmg: 6 }], onDeath: { n: "Burst", addDisc: { spore: 1 } } },
+  bloomshade: { n: "Bloomshade", fly: 1, hp: [26, 30], shape: "bloom", col: "#d05aa8", w: 90, h: 100, moves: [{ n: "Pollen", apply: { vuln: 2 } }, { n: "Choke", dmg: 4, perSpore: 2 }] },
+  rotHound: { n: "Rot Hound", hp: [30, 34], shape: "hound", col: "#6f7a3a", w: 110, h: 70, moves: [{ n: "Maul", dmg: 7, hits: 2 }, { n: "Lick Wounds", heal: 8, block: 5 }] },
+  rotHulk: { n: "Rot Hulk", hp: [100, 100], shape: "hulk", col: "#5a6a3a", w: 150, h: 140, moves: [{ n: "Fungal Slam", dmg: 18 }, { n: "Rot Spray", addDisc: { spore: 2 }, apply: { weak: 2 } }, { n: "Regrow", heal: 15, block: 10 }] },
+  sporeBat: { n: "Spore Bat", fly: 1, hp: [14, 18], shape: "bat", col: "#6a5a8a", w: 70, h: 56, moves: [{ n: "Screech", apply: { weak: 1 } }, { n: "Swoop", dmg: 4, hits: 2 }] },
+  burrowGrub: { n: "Burrow Grub", hp: [24, 28], shape: "grub", col: "#c8b48a", w: 110, h: 70, thorns: 1, moves: [{ n: "Harden", block: 12 }, { n: "Gnaw", dmg: 9 }] },
+  mycelidWeaver: { n: "Mycelid Weaver", hp: [28, 32], shape: "weaver", col: "#8a9a6a", w: 110, h: 90, moves: [{ n: "Knit", allyBlock: 8 }, { n: "Spore Lash", dmg: 6, addDisc: { spore: 1 } }] },
+  glowcap: { n: "Glowcap Shaman", hp: [30, 34], shape: "shaman", col: "#4a3a5a", w: 70, h: 100, moves: [{ n: "Blessing", allyStr: 2 }, { n: "Spark", dmg: 5, apply: { rad: 2 } }] },
+  mireLurker: { n: "Mire Lurker", hp: [44, 48], shape: "lurker", col: "#3e5a4a", w: 150, h: 70, moves: [{ n: "Submerge", block: 14 }, { n: "Ambush Bite", dmg: 16 }, { n: "Drag", dmg: 6, apply: { vuln: 1 } }] },
+  bloomMatriarch: {
+    n: "Bloom Matriarch", hp: [95, 95], shape: "matriarch", col: "#b0306a", w: 150, h: 150,
+    moves: [{ n: "Pollen Storm", apply: { weak: 2, vuln: 2 } }, { n: "Strangle", dmg: 8, perSpore: 3 }, { n: "Overgrow", heal: 12, allyBlock: 10 }],
+    overdrive: { n: "Seed the Wind", summon: ["bloomshade"], banner: "The Matriarch blooms!" }
   }
 };
 const ENC = {
@@ -389,12 +419,23 @@ const ENC = {
     normal: [["crawler", "crawler", "crawler"], ["worm", "crawler"], ["spitter", "spitter"], ["worm", "spitter"]],
     elite: [["droneA", "droneB"]],
     boss: [["sentinel"]]
+  },
+  z2: {
+    easy: [["stalker"], ["leech", "crawler"], ["puffcap", "puffcap"], ["bloomshade"], ["sporeBat", "sporeBat"], ["burrowGrub"]],
+    normal: [["sporeMother"], ["stalker", "leech"], ["leech", "leech"], ["stalker", "crawler", "crawler"], ["sporeMother", "crawler"],
+      ["rotHound", "puffcap"], ["bloomshade", "puffcap", "puffcap"], ["rotHound", "bloomshade"],
+      ["mireLurker"], ["mycelidWeaver", "rotHound"], ["glowcap", "stalker"], ["glowcap", "puffcap", "puffcap"],
+      ["sporeBat", "sporeBat", "bloomshade"], ["mycelidWeaver", "burrowGrub"]],
+    elite: [["broodKnight"], ["rotHulk"], ["bloomMatriarch"]],
+    boss: [["thornback"]]
   }
 };
+const bossName = () => ENEMIES[ENC["z" + run.zone].boss[0][0]].n;
+const ZONE_GOAL = ["Dig toward the Sentinel's lair", "Dig toward the Thornback's den"];
 const NODE_INFO = {
   battle: { n: "Battle", l: "B", col: "#d05a4a" }, elite: { n: "Elite Battle", l: "E", col: "#e0a030" }, boss: { n: "Boss", l: "!", col: "#e03030" },
   event: { n: "Event", l: "?", col: "#5aa7ff" }, camp: { n: "Field Camp", l: "C", col: "#58b447" }, trader: { n: "Salvage Trader", l: "$", col: "#e0c040" },
-  cache: { n: "Relic Cache", l: "R", col: "#b070e0" },
+  cache: { n: "Relic Cache", l: "R", col: "#b070e0" }, antidote: { n: "Spore Antidote", l: "+", col: "#7affc0" },
   cu: { n: "Copper Vein", l: "", col: "#d9822b" }, ag: { n: "Silver Vein", l: "", col: "#c8ccd2" }, au: { n: "Gold Vein", l: "", col: "#ffcc4a" }
 };
 const ORE = { cu: { n: "Copper", col: "#d9822b", scrap: 3, buy: 20, sell: 8 }, ag: { n: "Silver", col: "#c8ccd2", scrap: 10, buy: 60, sell: 25 }, au: { n: "Gold", col: "#ffcc4a", scrap: 30, buy: 150, sell: 70 } };
@@ -438,25 +479,34 @@ function newRun(seedOverride) {
     deck.push({ id: "pilotBore", up: false });
   }
   const maxhp = 70 + 5 * f.hp;
-  run = { seed, rngState: 0, zone: 1, map: null, cur: null, hp: maxhp, maxhp, deck, relics: [], scrap: 50 * f.supply, removals: 0, pending: null, alert: 0, ambushDue: 0, ore: { cu: 2 * f.satchel, ag: 0, au: 0 } };
+  run = { seed, rngState: 0, zone: 1, map: null, cur: null, hp: maxhp, maxhp, deck, relics: [], scrap: 50 * f.supply, removals: 0, pending: null, alert: 0, ambushDue: 0, shipRest: false, antidote: false, ore: { cu: 2 * f.satchel, ag: 0, au: 0 } };
   if (params.has("ore")) { const n = Math.max(0, Number(params.get("ore")) || 0); run.ore = { cu: n, ag: n, au: n }; }
   if (params.get("relics") === "all") run.relics = RELIC_IDS.slice();
-  run.map = genDigMap();
+  run.map = genDigMap(1);
   save.stats.runs++;
   if (f.relicLocker && params.get("relics") !== "all") {
     const pool = shuffle(RELIC_IDS.slice()).slice(0, 3);
     run.pending = { screen: "reward", locker: true, scrap: 0, cards: [], relicChoices: pool };
   }
   if (params.get("bench") === "1") run.pending = { screen: "bench" };
+  if (params.get("zone") === "2") { const pend = run.pending; enterZone(2); run.pending = pend; }   // debug: skip to Zone 2, keeping any Relic Locker choice first
   saveRun();
+}
+function enterZone(z) {
+  run.zone = z;
+  const h = Math.min(Math.ceil(run.maxhp * .3), run.maxhp - run.hp); run.hp += h;
+  run.map = genDigMap(z); run.cur = null; run.pending = null;
+  run.alert = 0; run.ambushDue = 0; run.antidote = false;
+  S.toast = { text: `${ZONES[z - 1]} — healed ${h} HP`, t: 3 };
+  S.screen = "map"; S.face = null; S.walk = null; saveRun();
 }
 
 // ---------------------------------------------------------------- dig map
 const MW = 9, MH = 11, TILE = 52, GX = 24, GY = 34;
 const tileAt = (x, y) => run.map.tiles[y * MW + x];
 const inMap = (x, y) => x >= 0 && y >= 0 && x < MW && y < MH;
-function genDigMap() {
-  const protectedT = (x, y) => x === 4 && (y === 0 || y === 9 || y === 10);
+const protectedT = (x, y) => x === 4 && (y === 0 || y === 9 || y === 10);
+function genDigMap(zone = 1) {
   for (let attempt = 0; attempt < 200; attempt++) {
     const tiles = [];
     for (let i = 0; i < MW * MH; i++) tiles.push({ k: "dirt", c: null, dug: false, used: false });
@@ -481,7 +531,7 @@ function genDigMap() {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const nx = x + dx, ny = y + dy;
         if (!inMap(nx, ny) || seen.has(ny * MW + nx) || T_(nx, ny).k === "bedrock") continue;
-        if (T_(nx, ny).k === "lair" && !(x === 4 && y === 9)) continue;
+        if (T_(nx, ny).k === "lair") { if (x === 4 && y === 9) seen.add(ny * MW + nx); continue; }   // the lair is reached but never walked through
         seen.add(ny * MW + nx); q.push([nx, ny]);
       }
     }
@@ -493,9 +543,23 @@ function genDigMap() {
         if (cand.length) pick(cand).c = c;
       }
     };
+    if (zone === 2) {
+      // the Spore Antidote: one empty, reachable dirt tile in the bottom third (placed first so nothing else crowds it out)
+      const cand = [];
+      tiles.forEach((t, i) => { const x = i % MW, y = (i / MW) | 0; if (t.k === "dirt" && !t.c && y >= 8 && !protectedT(x, y) && seen.has(i)) cand.push(t); });
+      if (!cand.length) continue;
+      pick(cand).c = "antidote";
+    }
     place("au", 2, 7, 9); place("ag", 4, 4, 9); place("elite", 2, 5, 9); place("trader", 1, 3, 7); place("camp", 1, 4, 7);
     place("cache", 1, 3, 9); place("event", 3, 0, 9); place("battle", 9, 1, 9); place("cu", 10, 0, 9);
-    return { w: MW, h: MH, tiles, px: 4, py: 0 };
+    const map = { w: MW, h: MH, tiles, px: 4, py: 0 };
+    if (zone === 2) {
+      // spore overlay flags: content stays on the tile underneath
+      const cand = []; tiles.forEach((t, i) => { const x = i % MW, y = (i / MW) | 0; if (t.k === "dirt" && !t.dug && y >= 2 && y <= 8 && !protectedT(x, y) && t.c !== "antidote") cand.push(t); });
+      shuffle(cand).slice(0, 3).forEach(t => { t.spore = true; });
+      map.sporeIn = 3;
+    }
+    return map;
   }
   throw new Error("dig map generation failed");
 }
@@ -546,7 +610,10 @@ function rollCards(kind, n) {
   return out;
 }
 
-const chooseEncounter = (kind, row) => kind === "boss" ? pick(ENC.z1.boss) : kind === "elite" ? pick(ENC.z1.elite) : pick(row <= 3 ? ENC.z1.easy : ENC.z1.normal);
+function chooseEncounter(kind, row) {
+  const z = ENC["z" + run.zone];
+  return kind === "boss" ? pick(z.boss) : kind === "elite" ? pick(z.elite) : pick(row <= 3 ? z.easy : z.normal);
+}
 function makeStock() {
   const cards = [];
   for (const [rar, n] of [["C", 3], ["U", 1], ["R", 1]]) {
@@ -571,6 +638,31 @@ function makePending(c, y) {
   if (c === "trader") { const t = tileAt(run.cur.x, run.cur.y); if (!t.stock) t.stock = makeStock(); return { screen: "trader" }; }
   return null;
 }
+// Zone 2 spores: t.spore is an overlay flag only, the tile keeps its content
+const hasSpores = () => run.zone === 2;
+const canSpore = (x, y) => inMap(x, y) && (t => !t.dug && t.k === "dirt" && !t.spore && t.c !== "antidote" && !protectedT(x, y))(tileAt(x, y));
+function spreadSpores() {
+  const m = run.map, snap = [];
+  m.tiles.forEach((t, i) => { if (t.spore) snap.push([i % MW, (i / MW) | 0]); });
+  m.sporeIn = 3;
+  let total = snap.length;
+  const fresh = [], elig = (x, y) => NB4.map(([dx, dy]) => [x + dx, y + dy]).filter(([a, b]) => canSpore(a, b));
+  const infect = (a, b) => { tileAt(a, b).spore = true; fresh.push([a, b]); total++; };
+  for (const [x, y] of snap) if (total < 25 && rng.next() < .5) { const el = elig(x, y); if (el.length) { const [a, b] = pick(el); infect(a, b); } }
+  if (!fresh.length && total < 25) {   // every spread does something
+    const all = snap.flatMap(([x, y]) => elig(x, y));
+    if (all.length) { const [a, b] = pick(all); infect(a, b); }
+  }
+  S.toast = { text: "The spores spread", t: 2 };
+  for (const [a, b] of fresh) if (isRevealed(a, b)) mapFloat(a, b, "Spores!", "#8fe06a");
+}
+function digAntidote(t, x, y) {
+  run.antidote = true; t.used = true;
+  let n = 0;
+  for (let i = run.deck.length - 1; i >= 0; i--) if (run.deck[i].id === "spore") { run.deck.splice(i, 1); n++; }
+  S.toast = { text: n ? `Spore Antidote! Removed ${n} Spore card${n === 1 ? "" : "s"}. Spores no longer affect you.` : "Spore Antidote! No Spore cards to remove. Spores no longer affect you.", t: 4 };
+  mapFloat(x, y, "Antidote", "#7affc0");
+}
 function digTile(x, y) {
   if (S.dig || S.modal || !canDig(x, y)) return;
   const t = tileAt(x, y), from = { x: run.map.px, y: run.map.py };
@@ -578,6 +670,13 @@ function digTile(x, y) {
   run.alert++; if (run.alert % 8 === 0) run.ambushDue++;
   run.cur = { x, y };
   const c = t.c;
+  if (t.spore) {
+    t.spore = false;
+    if (run.antidote) mapFloat(x, y, "Cleansed", "#7affc0");
+    else { addCard("spore"); mapFloat(x, y, "+1 Spore", "#8fe06a"); }
+  }
+  if (c === "antidote") digAntidote(t, x, y);
+  else if (hasSpores() && !run.antidote && --run.map.sporeIn <= 0) spreadSpores();
   if (ORE_KEYS.includes(c)) {
     const n = (c === "cu" ? rr(2, 3) : c === "ag" ? rr(1, 2) : 1) + (hasRelic("magnetR") ? 1 : 0);
     gainOre(c, n); t.used = true; mapFloat(x, y, `+${n} ${ORE[c].n}`, ORE[c].col);
@@ -626,6 +725,13 @@ function confirmMap() {
   if (S.face && canDig(S.face.x, S.face.y)) { digTile(S.face.x, S.face.y); return; }
   const t = tileAt(m.px, m.py);
   if (t.dug && t.c === "trader") openTrader(m.px, m.py);
+  else if (m.px === 4 && m.py === 0 && !S.face) shipRest();
+}
+// Zone 1 ship: one free full heal per run
+function shipRest() {
+  if (run.zone !== 1 || run.shipRest || run.hp >= run.maxhp) return;
+  const h = run.maxhp - run.hp; run.hp = run.maxhp; run.shipRest = true;
+  S.toast = { text: `Rested aboard the ship: +${h} HP`, t: 2.5 }; saveRun();
 }
 function updateMap(dt) {
   if (S.dig) { S.dig.t += dt; if (S.dig.t >= (S.dig.dur || .2)) { S.dig = null; if (run && run.pending) openPending(); } }
@@ -795,19 +901,37 @@ function act(fn, d = .18) {
 }
 const val = n => typeof n === "function" ? n() : n;
 
+const SLOTS = [null, [700], [620, 800], [520, 670, 820], [450, 580, 710, 840]];
+const mkEnemy = (id, uid, x) => {
+  const d = ENEMIES[id], hp = rr(d.hp[0], d.hp[1]);
+  return { id, def: d, hp, maxhp: hp, block: 0, str: 0, weak: 0, vuln: 0, rad: 0, mi: 0, override: null, dead: false, fade: 1, hitT: 0, lungeT: 0, x, tx: x, y: 325, odDone: false, uid };
+};
+// spreads the living enemies over the slots for their count; updateCombat eases x toward tx
+function relayout() { const L = livingEnemies(), xs = SLOTS[L.length]; if (xs) L.forEach((e, i) => { e.tx = xs[i]; }); }
+function summonEnemies(src, ids) {
+  const fresh = [];
+  for (const id of ids) {
+    if (livingEnemies().length >= 4) { addFloat(src, "No room", "#aab"); break; }
+    const e = mkEnemy(id, C.enemies.length, src.x); e.summoned = true; e.fade = 0; C.enemies.push(e); fresh.push(e);
+    relayout();
+  }
+  for (const e of fresh) e.x = e.tx;
+}
+const thornsOf = e => e.isP ? 0 : (e.def.thorns || 0) + (e.thornsTemp || 0);
+const sporeCount = () => [...C.hand, ...C.draw, ...C.disc].filter(c => c.id === "spore").length;
+const baseDmg = m => m.dmg + (m.perSpore || 0) * sporeCount();
+function healEnemy(e, n) { const h = Math.min(n, e.maxhp - e.hp); e.hp += h; if (h > 0) addFloat(e, `+${h}`, "#6aff8a"); }
+function addToDisc(id, n) { for (let i = 0; i < n; i++) C.disc.push({ id, up: false, uid: C.uid++, appear: 1 }); addFloat(C.P, `+${n} ${CARDS[id].n}`, "#8fe06a"); }
+
 function startCombat(encIds, kind) {
-  const n = encIds.length;
-  const xs = n === 1 ? [700] : n === 2 ? [620, 800] : [520, 670, 820];
+  const xs = SLOTS[encIds.length];
   C = {
     kind, over: null, overT: 0, phase: "busy", turn: 0, Q: [], timer: .4, ins: -1, floats: [], sel: -1, choose: null, flash: 0, hoverCard: -1,
     P: { isP: true, hp: run.hp, maxhp: run.maxhp, block: 0, str: 0, weak: 0, vuln: 0, rad: 0, hitT: 0, pose: 0, poseT: 0 },
     enemies: [], draw: [], hand: [], disc: [], exh: [], energy: 0, nextEnergy: 0, charge: 0, heat: 0,
     comp: { dog: 0, mouse: 0 }, pw: {}, pwv: {}, swordN: 0, atkN: 0, uid: 1, banner: null, dogT: 0, mouseT: 0, oreGain: { cu: 0, ag: 0, au: 0 }
   };
-  encIds.forEach((id, i) => {
-    const d = ENEMIES[id], hp = rr(d.hp[0], d.hp[1]);
-    C.enemies.push({ id, def: d, hp, maxhp: hp, block: 0, str: 0, weak: 0, vuln: 0, rad: 0, mi: 0, override: null, dead: false, fade: 1, hitT: 0, lungeT: 0, x: xs[i], y: 325, odDone: false, uid: i });
-  });
+  encIds.forEach((id, i) => C.enemies.push(mkEnemy(id, i, xs[i])));
   for (const c of run.deck) C.draw.push(Object.assign(JSON.parse(JSON.stringify(c)), { uid: C.uid++, appear: 1 }));
   shuffle(C.draw);
   S.screen = "combat"; S.modal = null;
@@ -855,7 +979,9 @@ function strike(t, n, raw, x) {
   if (raw) return takeDamage(t, n, false);
   let first = 0;
   if (x && x.fz && x.fz.first) { first = x.fz.first; x.fz.first = 0; }
-  return takeDamage(t, calcDmg(C.P, t, n + (x ? x.bonus : 0) + first, x && x.dbl ? 2 : 1), false);
+  const lost = takeDamage(t, calcDmg(C.P, t, n + (x ? x.bonus : 0) + first, x && x.dbl ? 2 : 1), false), th = thornsOf(t);
+  if (th > 0) act(() => takeDamage(C.P, th, false), .15);   // every card hit pays Thorns (Dog / relic damage is raw and doesn't)
+  return lost;
 }
 function dogAttack() {
   const v = C.comp.dog; if (v <= 0) return;
@@ -994,8 +1120,10 @@ function endTurn() {
   }, 0);
   act(() => { if (C.pw.fallout) for (const e of livingEnemies()) applyStatus(e, "rad", C.pwv.fallout); }, .25);
   act(() => { C.P.weak = Math.max(0, C.P.weak - 1); C.P.vuln = Math.max(0, C.P.vuln - 1); C.banner = { t: 1.1, text: "Enemy Turn" }; }, .3);
+  // all enemy Block / temp Thorns expire together as the phase starts, so a support's ally Block (Knit, Shield Ally) survives whoever acts after it
+  act(() => { for (const e of C.enemies) { e.block = 0; e.thornsTemp = 0; } }, 0);
   for (const e of C.enemies) {
-    act(() => { if (!alive(e)) return; e.block = 0; if (e.rad > 0) { takeDamage(e, e.rad, true); e.rad--; } }, .15);
+    act(() => { if (!alive(e)) return; if (e.rad > 0) { takeDamage(e, e.rad, true); e.rad--; } }, .15);
     act(() => { if (alive(e)) execMove(e); }, .3);
     act(() => {
       if (!alive(e)) return;
@@ -1011,27 +1139,44 @@ function execMove(e) {
   const m = moveOf(e);
   e.lungeT = .4;
   addFloat(e, m.n, "#ffd9a0");
-  if (m.dmg) for (let h = 0; h < (m.hits || 1); h++) act(() => { if (alive(e)) takeDamage(C.P, calcDmg(e, C.P, m.dmg), false); }, .2);
+  if (m.dmg) for (let h = 0; h < (m.hits || 1); h++) act(() => {
+    if (!alive(e)) return;
+    const lost = takeDamage(C.P, calcDmg(e, C.P, baseDmg(m)), false);
+    if (m.drain && lost > 0) healEnemy(e, lost);
+  }, .2);
   act(() => {
     if (!alive(e)) return;
     if (m.apply) for (const k in m.apply) applyStatus(C.P, k, m.apply[k]);
     if (m.block) { e.block += m.block; addFloat(e, `+${m.block} Block`, "#9cc8ff"); }
     if (m.str) applyStatus(e, "str", m.str);
+    if (m.heal) healEnemy(e, m.heal);
     if (m.allyBlock) {
       let al = livingEnemies().filter(o => o !== e); if (!al.length) al = [e];
       for (const o of al) { o.block += m.allyBlock; addFloat(o, `+${m.allyBlock} Block`, "#9cc8ff"); }
     }
+    if (m.allyStr) {
+      let al = livingEnemies().filter(o => o !== e); if (!al.length) al = [e];
+      for (const o of al) { o.str += m.allyStr; addFloat(o, `+${m.allyStr} Str`, STATUS.str.col); }
+    }
+    if (m.addDisc) for (const k in m.addDisc) addToDisc(k, m.addDisc[k]);
+    if (m.thornsTemp) { e.thornsTemp = (e.thornsTemp || 0) + m.thornsTemp; addFloat(e, `+${m.thornsTemp} Thorns`, STATUS.thorns.col); }
+    if (m.summon) summonEnemies(e, m.summon);
   }, .1);
 }
-// sentinel enrages once at half HP: swaps its next move for Overdrive without losing its place in the cycle
+// enemies with an overdrive (Sentinel, Brood Knight, Bloom Matriarch) swap it in once at half HP, without losing their place in the cycle
 function refreshIntents() {
   for (const e of C.enemies) if (alive(e) && e.def.overdrive && !e.odDone && e.hp <= e.maxhp / 2) {
     e.odDone = true; e.override = e.def.overdrive;
-    C.banner = { t: 1.2, text: "Overdrive!" };
+    C.banner = { t: 1.2, text: e.def.overdrive.banner || "Overdrive!" };
   }
 }
 function afterAction() {
-  for (const e of C.enemies) if (!e.dead && e.hp <= 0) { e.dead = true; e.hp = 0; addFloat(e, "Defeated", "#ffd24a"); gainOre("cu", 1); }
+  for (const e of C.enemies) if (!e.dead && e.hp <= 0) {
+    e.dead = true; e.hp = 0; addFloat(e, "Defeated", "#ffd24a");
+    if (!e.summoned) gainOre("cu", 1);
+    const od = e.def.onDeath;
+    if (od) { addFloat(e, od.n, "#8fe06a"); for (const k in od.addDisc) addToDisc(k, od.addDisc[k]); }
+  }
   refreshIntents();
   if (C.P.hp <= 0) { C.P.hp = 0; C.over = "lost"; C.overT = 1; C.Q.length = 0; C.choose = null; return; }
   if (C.enemies.every(e => e.dead)) { C.over = "won"; C.overT = .9; C.Q.length = 0; C.choose = null; }
@@ -1048,7 +1193,14 @@ function updateCombat(dt) {
     }
     if (!C.Q.length && !C.over) afterAction();
   }
-  for (const e of C.enemies) { e.hitT = Math.max(0, e.hitT - dt); e.lungeT = Math.max(0, e.lungeT - dt); if (e.dead) e.fade = Math.max(0, e.fade - dt * 2.2); }
+  for (const e of C.enemies) {
+    e.hitT = Math.max(0, e.hitT - dt); e.lungeT = Math.max(0, e.lungeT - dt);
+    if (e.dead) e.fade = Math.max(0, e.fade - dt * 2.2);
+    else {
+      if (e.fade < 1) e.fade = Math.min(1, e.fade + dt * 3);
+      if (e.x !== e.tx) e.x = Math.abs(e.tx - e.x) < .5 ? e.tx : lerp(e.x, e.tx, 1 - Math.exp(-dt * 14));
+    }
+  }
   C.P.hitT = Math.max(0, C.P.hitT - dt); C.flash = Math.max(0, C.flash - dt);
   C.P.poseT = Math.max(0, C.P.poseT - dt); C.dogT = Math.max(0, C.dogT - dt); C.mouseT = Math.max(0, C.mouseT - dt);
   for (const c of C.hand) { c.appear = Math.min(1, c.appear + dt * 5); if (c.shake) c.shake = Math.max(0, c.shake - dt); }
@@ -1065,10 +1217,10 @@ function onWin() {
   if (kind === "boss") gainOre("au", 1);
   const oreG = Object.assign({}, C.oreGain);
   C = null;
-  if (kind === "boss") { run.scrap += 75; run.zone = 1; endRun(true); return; }
-  const scrap = gainScrap(kind === "elite" ? rr(30, 40) : kind === "ambush" ? rr(10, 20) : rr(15, 25));
-  const pend = { screen: "reward", scrap, cards: kind === "ambush" ? [] : rollCards(kind, save.forge.survey ? 4 : 3), relic: null, ore: oreG, ambush: kind === "ambush" };
-  if (kind === "elite") { const pool = unownedRelics(); if (pool.length) { pend.relic = pick(pool); grantRelic(pend.relic); } }
+  if (kind === "boss" && run.zone >= 2) { run.scrap += 75; endRun(true); return; }   // the last zone's boss ends the run
+  const scrap = gainScrap(kind === "elite" ? rr(30, 40) : kind === "boss" ? 75 : kind === "ambush" ? rr(10, 20) : rr(15, 25));
+  const pend = { screen: "reward", scrap, cards: kind === "ambush" ? [] : rollCards(kind, save.forge.survey ? 4 : 3), relic: null, ore: oreG, ambush: kind === "ambush", nextZone: kind === "boss" };
+  if (kind === "elite" || kind === "boss") { const pool = unownedRelics(); if (pool.length) { pend.relic = pick(pool); grantRelic(pend.relic); } }
   run.pending = pend;
   saveRun(); S.screen = "reward";
 }
@@ -1259,14 +1411,15 @@ function drawRelicRow(x, y) {
   run.relics.forEach((id, i) => drawRelic(id, x + 14 + i * 30, y, 13));
 }
 function statusRow(u, cx, y) {
-  const keys = ["str", "weak", "vuln", "rad"].filter(k => u[k] > 0);
+  const sv = k => k === "thorns" ? thornsOf(u) : u[k];
+  const keys = ["str", "weak", "vuln", "rad", "thorns"].filter(k => sv(k) > 0);
   const x0 = cx - (keys.length - 1) * 15;
   keys.forEach((k, i) => {
-    const st = STATUS[k], x = x0 + i * 30;
+    const st = STATUS[k], x = x0 + i * 30, n = sv(k);
     ctx.beginPath(); ctx.arc(x, y, 12, 0, TAU); ctx.fillStyle = "#12161e"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = st.col; ctx.stroke();
-    if (!uiIcon(st.ico[0], st.ico[1], x, y, 24)) T(st.l, x, y, 12, st.col, "center", true);
-    T(String(u[k]), x + 9, y + 10, 11, "#fff", "center", true);
-    if (over(x - 12, y - 12, 24, 24)) setTip([{ t: `${st.n} ${u[k]}`, d: st.d }], x + 16, y);
+    if (!st.ico || !uiIcon(st.ico[0], st.ico[1], x, y, 24)) T(st.l, x, y, 12, st.col, "center", true);
+    T(String(n), x + 9, y + 10, 11, "#fff", "center", true);
+    if (over(x - 12, y - 12, 24, 24)) setTip([{ t: `${st.n} ${n}`, d: st.d }], x + 16, y);
   });
 }
 function hpBar(u, cx, y, w) {
@@ -1312,16 +1465,21 @@ function drawIntentIcon(kind, x, y) {
 function intentInfo(e) {
   const m = moveOf(e), kinds = [];
   let num = "";
-  if (m.dmg) { const d = calcDmg(e, C.P, m.dmg); kinds.push("attack"); num = m.hits > 1 ? `${d}×${m.hits}` : String(d); }
+  if (m.dmg) { const d = calcDmg(e, C.P, baseDmg(m)); kinds.push("attack"); num = m.hits > 1 ? `${d}×${m.hits}` : String(d); }
   if (m.block || m.allyBlock) kinds.push("block");
-  if (m.apply) kinds.push("debuff");
-  if (m.str) kinds.push("buff");
+  if (m.apply || m.addDisc) kinds.push("debuff");
+  if (m.str || m.heal || m.allyStr || m.thornsTemp) kinds.push("buff");
+  if (m.summon) kinds.push("summon");
   return { m, kinds, num };
 }
 const enemyArtKey = id => "e_" + (id.startsWith("drone") ? "drone" : id);
 function enemyTop(e) {
   const d = e.def;
   return artReady(enemyArtKey(e.id)) ? d.h * (d.boss ? 1.15 : 1.25) * (d.artScale || 1) + (d.fly ? d.h * .2 + 6 : 0) : d.h;
+}
+function eyeAt(x, y, r = 7) {
+  ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+  ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(x - r * .25, y + r * .1, r * .5, 0, TAU); ctx.fill();
 }
 function drawEnemyBody(e, x, y) {
   const d = e.def, t = S.time, col = d.col;
@@ -1359,6 +1517,105 @@ function drawEnemyBody(e, x, y) {
     ctx.strokeStyle = "#cfe4ff"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x, by, 46, 11, -.2, 0, TAU); ctx.stroke();
     ctx.beginPath(); ctx.arc(x - 8, by, 11, 0, TAU); ctx.fillStyle = "#ff4a3a"; ctx.fill();
     ctx.fillStyle = "#ffd0c0"; ctx.beginPath(); ctx.arc(x - 11, by - 3, 3.5, 0, TAU); ctx.fill();
+  } else if (d.shape === "mushroom") {
+    const bob = Math.sin(t * 3 + e.uid) * 2.5;
+    ctx.beginPath(); ctx.moveTo(x - 11, y); ctx.lineTo(x - 9, y - 34); ctx.lineTo(x + 9, y - 34); ctx.lineTo(x + 11, y); ctx.closePath(); ctx.fillStyle = "#efe3c0"; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(x, y - 34 + bob, 36, 26, 0, Math.PI, TAU); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#d6f3ec"; for (const [dx, dy, r] of [[-18, -44, 5], [4, -54, 4], [19, -42, 5]]) { ctx.beginPath(); ctx.arc(x + dx, y + dy + bob, r, 0, TAU); ctx.fill(); }
+    eyeAt(x - 5, y - 18, 4.5); eyeAt(x + 5, y - 18, 4.5);
+  } else if (d.shape === "bloom" || d.shape === "matriarch") {
+    const big = d.shape === "matriarch", k = big ? 1.5 : 1, cy = y - 58 * k + Math.sin(t * 2 + e.uid) * 4;
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(x + s * 14 * k, cy + 34 * k, 6 * k, 13 * k, s * .6, 0, TAU); ctx.fillStyle = "#5a9a3a"; ctx.fill(); ctx.stroke(); }
+    if (big) for (let i = 0; i < 8; i++) {   // ring of pulsing buds
+      const a = i / 8 * TAU + t * .4, r = (5 + Math.sin(t * 4 + i) * 1.6) * k;
+      ctx.beginPath(); ctx.arc(x + Math.cos(a) * 47 * k, cy + Math.sin(a) * 47 * k, r, 0, TAU); ctx.fillStyle = "#e0709a"; ctx.fill(); ctx.stroke();
+    }
+    for (let i = 0; i < 6; i++) {
+      const a = i / 6 * TAU + Math.sin(t * 2 + i) * .12;
+      ctx.beginPath(); ctx.ellipse(x + Math.cos(a) * 24 * k, cy + Math.sin(a) * 24 * k, 17 * k, 11 * k, a, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(x, cy, 17 * k, 0, TAU); ctx.fillStyle = "#f2d04a"; ctx.fill(); ctx.stroke();
+    eyeAt(x - 7 * k, cy - 2 * k, 5 * k); eyeAt(x + 7 * k, cy - 2 * k, 5 * k);
+  } else if (d.shape === "hound") {
+    const br = Math.sin(t * 3 + e.uid) * 1.5;
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x + 36, y - 38); ctx.lineTo(x + 56, y - 46); ctx.lineTo(x + 52, y - 38); ctx.closePath(); ctx.fill(); ctx.stroke();   // tail
+    for (const dx of [-30, -14, 14, 28]) { ctx.fillStyle = "#58612e"; ctx.fillRect(x + dx - 4, y - 20, 9, 20); ctx.strokeRect(x + dx - 4, y - 20, 9, 20); }
+    ctx.beginPath(); ctx.ellipse(x + 6, y - 34, 40, 19 + br, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.fillRect(x - 56, y - 56, 34, 26); ctx.strokeRect(x - 56, y - 56, 34, 26);   // blocky head
+    ctx.fillStyle = "#58612e"; ctx.fillRect(x - 56, y - 32, 30, 9); ctx.strokeRect(x - 56, y - 32, 30, 9);   // jaw
+    ctx.fillStyle = "#f4f0d0"; for (const dx of [-52, -44, -36]) { ctx.beginPath(); ctx.moveTo(x + dx, y - 32); ctx.lineTo(x + dx + 3, y - 32); ctx.lineTo(x + dx + 1.5, y - 37); ctx.fill(); }
+    eyeAt(x - 38, y - 48, 5);
+    ctx.fillStyle = "#9be05a"; for (const dx of [-14, 4, 22]) { ctx.beginPath(); ctx.arc(x + dx, y - 51 + br, 5, 0, TAU); ctx.fill(); ctx.stroke(); }
+  } else if (d.shape === "hulk") {
+    const br = Math.sin(t * 2 + e.uid) * 2;
+    for (const s of [-1, 1]) {
+      ctx.beginPath(); ctx.ellipse(x + s * 62, y - 50, 17, 42, s * -.15, 0, TAU); ctx.fillStyle = "#4e5d31"; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x + s * 66, y - 12, 16, 0, TAU); ctx.fill(); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.ellipse(x, y - 66, 60, 54 + br, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x - 14, y - 96 + br, 19, 0, TAU); ctx.fillStyle = "#4e5d31"; ctx.fill(); ctx.stroke();
+    eyeAt(x - 21, y - 98 + br, 3.5); eyeAt(x - 8, y - 98 + br, 3.5);
+    for (const [dx, dy, r] of [[18, -90, 7], [-28, -58, 6], [28, -52, 8], [-6, -34, 5], [40, -74, 5]]) {   // pulsing pustules
+      const pu = .5 + .5 * Math.sin(t * 3 + dx);
+      ctx.beginPath(); ctx.arc(x + dx, y + dy, r + pu * 1.5, 0, TAU); ctx.fillStyle = `rgba(${150 + pu * 60 | 0},255,${100 + pu * 40 | 0},${.7 + pu * .3})`; ctx.fill(); ctx.stroke();
+    }
+  } else if (d.shape === "bat") {
+    const fl = Math.sin(t * 11 + e.uid * 2), cy = y - 38 + Math.sin(t * 2 + e.uid) * 4;
+    for (const s of [-1, 1]) {
+      ctx.save(); ctx.translate(x + s * 12, cy - 4); ctx.rotate(s * (-.35 + fl * .5));
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(s * 38, -12); ctx.lineTo(s * 34, 8); ctx.lineTo(s * 22, 3); ctx.lineTo(s * 12, 13); ctx.closePath();
+      ctx.fillStyle = "#54467a"; ctx.fill(); ctx.stroke(); ctx.restore();
+    }
+    ctx.fillStyle = col; for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + s * 6, cy - 12); ctx.lineTo(x + s * 14, cy - 26); ctx.lineTo(x + s * 15, cy - 9); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(x, cy, 17, 0, TAU); ctx.fill(); ctx.stroke();
+    eyeAt(x - 6, cy - 3, 6); eyeAt(x + 6, cy - 3, 6);
+    ctx.fillStyle = "#fff"; for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + s * 5 - 2, cy + 9); ctx.lineTo(x + s * 5 + 2, cy + 9); ctx.lineTo(x + s * 5, cy + 15); ctx.fill(); }
+  } else if (d.shape === "grub") {
+    const seg = [[34, 16, 0], [10, 19, 1], [-14, 20, 2]];
+    for (const [dx, r, i] of seg) {
+      const sy = y - 24 - r * .2 - Math.max(0, Math.sin(t * 3 + i * 1.1 + e.uid)) * 4;
+      ctx.beginPath(); ctx.arc(x + dx, sy, r, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(x + dx, sy - 2, r * .55, r * .9, 0, Math.PI * 1.1, Math.PI * 1.9); ctx.fillStyle = "#8a7a56"; ctx.fill(); ctx.stroke();
+    }
+    const hx = x - 42, hy = y - 28;
+    ctx.beginPath(); ctx.arc(hx, hy, 21, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(hx - 10, hy + 2, 10, 0, TAU); ctx.fillStyle = "#3a2418"; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#fff"; for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; ctx.beginPath(); ctx.arc(hx - 10 + Math.cos(a) * 9, hy + 2 + Math.sin(a) * 9, 1.8, 0, TAU); ctx.fill(); }
+    eyeAt(hx + 4, hy - 14, 4);
+  } else if (d.shape === "weaver") {
+    ctx.lineCap = "round";
+    for (const s of [-1, 1]) for (let i = 0; i < 3; i++) {
+      const sw = Math.sin(t * 2.5 + i + e.uid) * 3, kx = x + s * (18 + i * 10), ky = y - 82 + i * 8, fx = x + s * (34 + i * 11) + sw;
+      ctx.strokeStyle = "rgba(236,242,222,.4)"; ctx.lineWidth = 1.5;   // pale thread from the knee to the ground
+      ctx.beginPath(); ctx.moveTo(kx, ky); ctx.quadraticCurveTo(kx + sw * 2, (ky + y) / 2, kx + sw, y + 2); ctx.stroke();
+      ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x + s * 8, y - 52 + i * 3); ctx.lineTo(kx, ky); ctx.lineTo(fx, y); ctx.stroke();
+    }
+    ctx.lineCap = "butt";
+    ctx.beginPath(); ctx.ellipse(x + 8, y - 54, 24, 18, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x - 18, y - 56, 13, 0, TAU); ctx.fill(); ctx.stroke();
+    eyeAt(x - 22, y - 59, 4); eyeAt(x - 13, y - 59, 4);
+  } else if (d.shape === "shaman") {
+    const pu = .5 + .5 * Math.sin(t * 3 + e.uid);
+    ctx.strokeStyle = "#6a4a2a"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x + 28, y); ctx.lineTo(x + 28, y - 74); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 24, y); ctx.lineTo(x - 14, y - 52); ctx.lineTo(x + 14, y - 52); ctx.lineTo(x + 24, y); ctx.closePath(); ctx.fillStyle = col; ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 3; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y - 62, 16, 0, TAU); ctx.fillStyle = "#3a2c4a"; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(x, y - 60, 9, 10, 0, 0, TAU); ctx.fillStyle = "#120c18"; ctx.fill();
+    ctx.fillStyle = "#e8ff7a"; for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(x + s * 4, y - 61, 2, 0, TAU); ctx.fill(); }
+    const gl = ctx.createRadialGradient(x, y - 80, 4, x, y - 80, 40); gl.addColorStop(0, `rgba(210,255,90,${.3 + pu * .35})`); gl.addColorStop(1, "rgba(210,255,90,0)");
+    ctx.fillStyle = gl; ctx.fillRect(x - 44, y - 124, 88, 88);
+    ctx.beginPath(); ctx.ellipse(x, y - 74, 26, 17, 0, Math.PI, TAU); ctx.closePath(); ctx.fillStyle = `rgb(${190 + pu * 30 | 0},${230 + pu * 20 | 0},${70 + pu * 20 | 0})`; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + 28, y - 76, 5 + pu * 1.5, 0, TAU); ctx.fillStyle = "#e8ff7a"; ctx.fill(); ctx.stroke();
+  } else if (d.shape === "lurker") {
+    const sink = e.block > 0 ? 14 : 0;
+    ctx.beginPath(); ctx.ellipse(x, y - 22 + sink, 68, 26, 0, Math.PI, TAU); ctx.lineTo(x + 68, y + 4); ctx.lineTo(x - 68, y + 4); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    for (const s of [-1, 1]) {
+      const sw = Math.sin(t * 2 + s + e.uid) * 4, ex = x + s * 24 + sw, ey = y - 66 + sink;
+      ctx.strokeStyle = "#2c4234"; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(x + s * 20, y - 40 + sink); ctx.lineTo(ex, ey); ctx.stroke();
+      eyeAt(ex, ey, 8);
+    }
+    ctx.strokeStyle = "#1a2a20"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x - 54, y - 18 + sink); ctx.quadraticCurveTo(x, y - 4 + sink, x + 54, y - 18 + sink); ctx.stroke();
+    ctx.fillStyle = "#e8e4d0"; for (let i = -4; i <= 4; i++) { const tx = x + i * 11, ty = y - 11 + sink - Math.abs(i) * 1.4; ctx.beginPath(); ctx.moveTo(tx - 2, ty - 1); ctx.lineTo(tx + 2, ty - 1); ctx.lineTo(tx, ty + 5); ctx.fill(); }
   } else {
     ctx.beginPath(); ctx.moveTo(x - 80, y - 70); ctx.lineTo(x + 70, y - 90); ctx.lineTo(x + 95, y - 25); ctx.lineTo(x - 90, y - 25); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = "#6a3a20"; ctx.fillRect(x - 70, y - 25, 34, 30); ctx.fillRect(x + 40, y - 25, 34, 30);
@@ -1382,6 +1639,7 @@ function drawEnemy(e) {
   hpBar(e, e.x, e.y + 14, Math.max(80, d.w * .9));
   statusRow(e, e.x, e.y + 44);
   T(d.n, e.x, e.y + 66, 12, "#cfd6e2", "center", true);
+  if (d.onDeath && over(e.x - 60, e.y + 57, 120, 18)) setTip([{ t: d.n, d: `On death: ${d.onDeath.n}. ${describeMove(d.onDeath)}` }], e.x + 66, e.y + 50);
   const info = intentInfo(e), iy = e.y - enemyTop(e) - 28;
   const parts = info.kinds.length; ctx.font = `bold 20px ${FONT}`;
   const wTot = parts * 26 + (info.num ? ctx.measureText(info.num).width + 22 : 0);
@@ -1393,10 +1651,20 @@ function drawEnemy(e) {
 function describeMove(m, num) {
   const p = [];
   if (m.dmg) p.push(`Attacks for ${num}.`);
+  if (m.drain) p.push("Heals for unblocked damage.");
+  if (m.perSpore) p.push(`+${m.perSpore} per Spore card you hold.`);
   if (m.block) p.push(`Gains ${m.block} Block.`);
   if (m.allyBlock) p.push(`Gives ${m.allyBlock} Block to its ally.`);
   if (m.apply) p.push("Applies " + Object.keys(m.apply).map(k => `${m.apply[k]} ${STATUS[k].n}`).join(", ") + ".");
   if (m.str) p.push(`Gains ${m.str} Strength.`);
+  if (m.heal) p.push(`Heals ${m.heal}.`);
+  if (m.allyStr) p.push(`Gives ${m.allyStr} Strength to its allies.`);
+  if (m.addDisc) p.push("Shuffles " + Object.keys(m.addDisc).map(k => `${m.addDisc[k]} ${CARDS[k].n}`).join(", ") + " into your discard pile.");
+  if (m.thornsTemp) p.push(`Gains ${m.thornsTemp} Thorns this round.`);
+  if (m.summon) {
+    const cnt = {}; m.summon.forEach(id => { cnt[id] = (cnt[id] || 0) + 1; });
+    p.push("Summons " + Object.keys(cnt).map(id => cnt[id] > 1 ? `${cnt[id]} ${ENEMIES[id].n}s` : `a ${ENEMIES[id].n}`).join(" and ") + ".");
+  }
   return p.join(" ");
 }
 function drawPlayer() {
@@ -1683,7 +1951,33 @@ function oreHud(x, y) {
   });
 }
 const MAP_ICON = { battle: 0, elite: 1, event: 2, camp: 3, trader: 4, cache: 5, cu: 6, ag: 7, au: 8, pod: 9, boss: 10 };
+// translucent green wash plus pale puffs; px,py is the tile's top-left, seed keeps each tile's puffs fixed
+function sporeOverlay(px, py, size, seed) {
+  const pu = .5 + .5 * Math.sin(S.time * 2 + seed * 6), n = 5 + (hash(seed + 3.3) * 3 | 0);
+  ctx.fillStyle = `rgba(90,200,80,${.22 + pu * .1})`; ctx.fillRect(px + 1, py + 1, size - 2, size - 2);
+  for (let k = 0; k < n; k++) {
+    const sx = px + 5 + hash(seed * 19 + k * 3.1) * (size - 10), sy = py + 5 + hash(seed * 7 + k * 5.7) * (size - 10), r = (1.8 + hash(seed + k * 9.1) * 2.6) * (size / 52) + pu * .8;
+    ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.fillStyle = `rgba(190,255,170,${.45 + pu * .25})`; ctx.fill();
+  }
+}
+// canvas vial for the Spore Antidote until assets/map-antidote.png exists
+function drawAntidote(cx, cy, r, alpha) {
+  const im = artReady("mapAntidote");
+  ctx.save(); ctx.globalAlpha *= alpha;
+  if (im) { const sz = r * 2.4; ctx.drawImage(im, cx - sz / 2, cy - sz / 2, sz, sz); ctx.restore(); return; }
+  ctx.translate(cx, cy); const s = r / 15;
+  ctx.lineWidth = 2; ctx.strokeStyle = "#0d0f14";
+  ctx.beginPath(); ctx.moveTo(-4 * s, -13 * s); ctx.lineTo(4 * s, -13 * s); ctx.lineTo(4 * s, -6 * s); ctx.lineTo(11 * s, 8 * s); ctx.quadraticCurveTo(13 * s, 14 * s, 7 * s, 14 * s);
+  ctx.lineTo(-7 * s, 14 * s); ctx.quadraticCurveTo(-13 * s, 14 * s, -11 * s, 8 * s); ctx.lineTo(-4 * s, -6 * s); ctx.closePath();
+  ctx.fillStyle = "#cdf3f0"; ctx.fill();
+  ctx.save(); ctx.clip(); ctx.fillStyle = "#3ed36a"; ctx.fillRect(-14 * s, 0, 28 * s, 16 * s); ctx.restore();
+  ctx.stroke();
+  ctx.fillStyle = "#b08a5a"; ctx.fillRect(-5 * s, -17 * s, 10 * s, 4 * s); ctx.strokeRect(-5 * s, -17 * s, 10 * s, 4 * s);
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.5 * s; ctx.beginPath(); ctx.moveTo(-4 * s, 7 * s); ctx.lineTo(4 * s, 7 * s); ctx.moveTo(0, 3 * s); ctx.lineTo(0, 11 * s); ctx.stroke();
+  ctx.restore();
+}
 function drawTileIcon(c, cx, cy, r, alpha = 1) {
+  if (c === "antidote") { drawAntidote(cx, cy, r, alpha); return; }
   const mi = MAP_ICON[c];
   if (mi !== undefined && artReady("mapIcons")) {
     const sz = r * 2.4; ctx.globalAlpha *= alpha;
@@ -1704,7 +1998,7 @@ function drawTileIcon(c, cx, cy, r, alpha = 1) {
 function mapHud() {
   const m = run.map;
   T(ZONES[run.zone - 1], 730, 40, 26, "#fff", "center", true);
-  T("Dig toward the Sentinel's lair", 730, 64, 13, "rgba(255,255,255,.55)", "center");
+  T(ZONE_GOAL[run.zone - 1] || "", 730, 64, 13, "rgba(255,255,255,.55)", "center");
   T(`HP ${run.hp}/${run.maxhp}`, 540, 100, 17, "#ff8a7a", "left", true);
   scrapText(660, 100, run.scrap);
   oreHud(540, 132);
@@ -1718,15 +2012,27 @@ function mapHud() {
   if (a > 0) { rp(540, 188, Math.max(10, 386 * a / 8), 16, 6); ctx.fillStyle = a >= 6 ? "#ff4a3a" : "#c8402e"; ctx.fill(); }
   ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 1.5; rp(540, 188, 386, 16, 6); ctx.stroke();
   if (over(540, 170, 386, 36)) setTip([{ t: "Hive Alert", d: "Every dig raises it. Each time it reaches a multiple of 8, an Ambush strikes on your next dig into plain dirt or an ore vein." }], 560, 214);
+  if (hasSpores()) {
+    if (run.antidote) T("Antidote active: spores are harmless", 540, 216, 13, "#7affc0", "left", true);
+    else T(`Spores spread in ${m.sporeIn} dig${m.sporeIn === 1 ? "" : "s"}`, 540, 216, 13, "#8fe06a", "left", true);
+  }
   drawRelicRow(526, 236);
   // legend
   T("Legend", 540, 276, 14, "#cfc6bb", "left", true);
   const leg = ["battle", "elite", "event", "camp", "trader", "cache", "cu", "ag", "au", "boss"];
+  if (hasSpores()) leg.push("spore", "antidote");
+  const rowH = leg.length > 10 ? 28 : 34;
   leg.forEach((c, i) => {
-    const lx = 548 + (i % 2) * 200, ly = 306 + ((i / 2) | 0) * 34;
-    drawTileIcon(c, lx + 12, ly, 13);
-    T(NODE_INFO[c].n, lx + 32, ly + 1, 13, "#d8d0c8");
+    const lx = 548 + (i % 2) * 200, ly = 306 + ((i / 2) | 0) * rowH;
+    if (c === "spore") {
+      rp(lx - 1, ly - 13, 26, 26, 5); ctx.fillStyle = "#7a4a2a"; ctx.fill(); sporeOverlay(lx - 1, ly - 13, 26, 5.5);
+      T("Spored tile", lx + 32, ly + 1, 13, "#d8d0c8");
+    } else { drawTileIcon(c, lx + 12, ly, 13); T(NODE_INFO[c].n, lx + 32, ly + 1, 13, "#d8d0c8"); }
   });
+  if (run.zone === 1 && m.px === 4 && m.py === 0 && !run.shipRest) {
+    const full = run.hp >= run.maxhp;
+    btn(605, 526, 250, 30, full ? "Already at full HP" : "Rest in Ship: full heal", shipRest, { off: full, size: 14, bd: "#8aff9a" });
+  }
   T("Move: click a tunnel tile, or arrows / WASD / D-pad.", 540, 474, 13, "#b8aa9a");
   T("Select an un-dug tile, then click it again or press A (Enter) to dig.", 540, 494, 13, "#b8aa9a");
   T("Bedrock can't be dug. The lair opens from the camp above it.", 540, 514, 13, "#b8aa9a");
@@ -1766,6 +2072,7 @@ function drawMap() {
       ctx.fillStyle = `rgb(${118 + h * 16 | 0},${74 + h * 12 | 0},${42 + h * 8 | 0})`; ctx.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
       ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.fillRect(px + 1, py + TILE - 8, TILE - 2, 7);
     }
+    if (t.spore && !t.dug) sporeOverlay(px, py, TILE, x * 31 + y * 17);
     const reopen = t.dug && t.c === "trader";
     if (t.c && t.k !== "bedrock") {
       const ia = t.used ? .4 : t.dug && !reopen ? .5 : 1, ar = artReady("mapIcons");
@@ -1785,11 +2092,16 @@ function drawMap() {
     if (reach || t.dug) hit(px, py, TILE, TILE, () => clickTile(x, y));
     if (over(px, py, TILE, TILE)) hoverTile = { t, x, y, can, reach, reopen };
   }
-  // start tile: the player's landed ship (Stage 5 sheet frame 1, cropped above the engine flames)
-  const ship = artReady("ship");
-  if (ship) { const sh = TILE * 1.6, sw = sh * 116 / 150; ctx.drawImage(ship, 0, 0, 116, 150, GX + 4.5 * TILE - sw / 2, GY + TILE - 2 - sh, sw, sh); }
-  else drawTileIcon("pod", GX + 4 * TILE + TILE / 2, GY + TILE / 2, 20);
-  if (over(GX + 4 * TILE, GY, TILE, TILE)) hoverTile = { ship: true, x: 4, y: 0 };
+  // start tile: Zone 1 shows the player's landed ship (Stage 5 sheet frame 1, cropped above the engine flames); later zones show the tunnel mouth
+  const ship = artReady("ship"), sx0 = GX + 4 * TILE;
+  if (run.zone > 1) {
+    const mx = sx0 + TILE / 2, my = GY + TILE / 2 + 2;
+    ctx.fillStyle = "#07050a"; ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(mx, my, 17, 12, 0, 0, TAU); ctx.fill();
+    for (let k = 0; k < 11; k++) { const a = k / 11 * TAU + .3; ctx.beginPath(); ctx.arc(mx + Math.cos(a) * 19, my + Math.sin(a) * 14, 5 + hash(k * 3.1) * 2, 0, TAU); ctx.fillStyle = hash(k * 7.7) < .5 ? "#7a7268" : "#625b52"; ctx.fill(); ctx.stroke(); }
+  } else if (ship) { const sh = TILE * 1.6, sw = sh * 116 / 150; ctx.drawImage(ship, 0, 0, 116, 150, GX + 4.5 * TILE - sw / 2, GY + TILE - 2 - sh, sw, sh); }
+  else drawTileIcon("pod", sx0 + TILE / 2, GY + TILE / 2, 20);
+  if (over(sx0, GY, TILE, TILE)) hoverTile = { ship: run.zone === 1, tunnel: run.zone > 1, x: 4, y: 0 };
   // boss lair: always visible
   const lx = GX + 4 * TILE, ly = GY + 10 * TILE, lcx = lx + TILE / 2, lcy = ly + TILE / 2;
   const glow = ctx.createRadialGradient(lcx, lcy, 4, lcx, lcy, 52); glow.addColorStop(0, "rgba(255,90,40,.9)"); glow.addColorStop(1, "rgba(255,60,20,0)");
@@ -1800,7 +2112,7 @@ function drawMap() {
   ctx.fillStyle = "#2a0c08"; ctx.beginPath(); ctx.ellipse(lcx, lcy + 2, 13, 11, 0, 0, TAU); ctx.fill();
   ctx.fillStyle = "#ffe8c0"; for (let k = 0; k < 5; k++) { const tx = lcx - 12 + k * 6; ctx.beginPath(); ctx.moveTo(tx, lcy - 8); ctx.lineTo(tx + 3, lcy - 8); ctx.lineTo(tx + 1.5, lcy - 1); ctx.fill(); }
   }
-  T(ENEMIES.sentinel.n, lcx, ly + TILE + 14, 13, "#ff9a7a", "center", true);
+  T(bossName(), lcx, ly + TILE + 14, 13, "#ff9a7a", "center", true);
   if (canReach(4, 10)) {
     ctx.strokeStyle = `rgba(255,226,122,${canDig(4, 10) ? .6 + .4 * Math.sin(S.time * 5) : .3})`; ctx.lineWidth = 3; ctx.strokeRect(lx + 2, ly + 2, TILE - 4, TILE - 4);
     hit(lx, ly, TILE, TILE, () => clickTile(4, 10));
@@ -1821,10 +2133,13 @@ function drawMap() {
   for (const f of S.mfloats) { ctx.globalAlpha = clamp(1.2 - f.t, 0, 1); T(f.text, f.x, f.y - 10 - f.t * 36, 16, f.col, "center", true); ctx.globalAlpha = 1; }
   if (hoverTile) {
     const ht = hoverTile, rev = isRevealed(ht.x, ht.y);
-    if (ht.ship) setTip([{ t: "Your Ship", d: "Your landing site. Dig down from here toward the Sentinel's lair." }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
+    if (ht.ship) setTip([{ t: "Your Ship", d: run.shipRest ? "Already rested this run." : "Rest here once per run for a full heal." }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
+    else if (ht.tunnel) setTip([{ t: "Tunnel", d: "The shaft you came down from the Landing Zone." }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
     else if (rev) {
-      const name = ht.lair ? ENEMIES.sentinel.n + " (Boss)" : ht.t.k === "bedrock" ? "Bedrock" : ht.t.c ? NODE_INFO[ht.t.c].n : "Dirt";
-      const d = ht.can ? "Click to select, click again (or press A) to dig." : ht.reach ? "Click to walk over and select it." : ht.reopen ? "Click to walk over and trade." : ht.t.k === "bedrock" ? "Can't be dug." : ht.t.dug ? (ht.t.used ? "Used. Click to walk here." : "Click to walk here.") : ht.lair ? "Dig the camp tile above it first." : "Not next to a tunnel.";
+      const name = ht.lair ? bossName() + " (Boss)" : ht.t.k === "bedrock" ? "Bedrock" : ht.t.c ? NODE_INFO[ht.t.c].n : "Dirt";
+      let d = ht.can ? "Click to select, click again (or press A) to dig." : ht.reach ? "Click to walk over and select it." : ht.reopen ? "Click to walk over and trade." : ht.t.k === "bedrock" ? "Can't be dug." : ht.t.dug ? (ht.t.used ? "Used. Click to walk here." : "Click to walk here.") : ht.lair ? "Dig the camp tile above it first." : "Not next to a tunnel.";
+      if (ht.t.c === "antidote" && !ht.t.dug) d = "Removes all Spore cards from your deck, stops the spread, and makes spored tiles harmless to dig. " + d;
+      if (ht.t.spore && !ht.t.dug) d += run.antidote ? " Spored: harmless now. Digging here cleanses it." : " Spored: digging here adds a Spore card to your deck.";
       setTip([{ t: name, d }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
     }
   }
@@ -1855,7 +2170,8 @@ function drawReward() {
     });
     return;
   }
-  T(p.ambush ? "Ambush Survived" : "Battle Won", 480, 80, 32, "#8dff95", "center", true);
+  T(p.ambush ? "Ambush Survived" : p.nextZone ? "Boss Defeated" : "Battle Won", 480, 80, 32, "#8dff95", "center", true);
+  const leave = () => p.nextZone ? enterZone(run.zone + 1) : completeNode();
   T(`+${p.scrap} Scrap`, 480, 114, 20, "#ffe27a", "center", true);
   oreGainText(p.ore, 480, 140);
   if (p.relic) { drawRelic(p.relic, 360, 172, 18); T(`Relic gained: ${RELICS[p.relic].n}`, 390, 172, 16, "#d8c8ff", "left", true); }
@@ -1868,10 +2184,10 @@ function drawReward() {
     const card = { id, up: false }, x = x0 + i * sp, y = 350, hv = over(x - 72, y - 102, 144, 204);
     drawCard(card, x, y - (hv ? 10 : 0), hv ? 1.3 : 1.2);
     if (hv) hovTip = [card, x + 90, y - 60];
-    hit(x - 72, y - 102, 144, 204, () => { addCard(id); completeNode(); });
+    hit(x - 72, y - 102, 144, 204, () => { addCard(id); leave(); });
   });
   if (hovTip) setTip(cardTips(hovTip[0]), hovTip[1], hovTip[2]);
-  btn(380, 540, 200, 48, "Skip", () => completeNode(), { size: 18 });
+  btn(380, 540, 200, 48, p.nextZone ? "Descend" : "Skip", leave, { size: 18 });
 }
 function mapHud2() { T(`HP ${run.hp}/${run.maxhp}`, 14, 20, 17, "#ff8a7a", "left", true); scrapText(150, 20, run.scrap); oreHud(280, 20); drawRelicRow(14, 56); btn(806, 10, 92, 28, `Deck ${run.deck.length}`, openDeck, { size: 13, icon: [5, 2] }); }
 function drawCamp() {
@@ -2031,8 +2347,8 @@ function drawCache() {
 }
 function drawRunEnd() {
   const e = S.end; panelBg(e.win ? "#10240f" : "#240f0f", "#060606");
-  T(e.win ? "Landing Sentinel Down" : "Run Over", 480, 110, 44, e.win ? "#8dff95" : "#ff8a7a", "center", true);
-  if (e.win) T("Victory! Zone 2 coming soon.", 480, 165, 22, "#ffe27a", "center", true);
+  T(e.win ? "Thornback Down" : "Run Over", 480, 110, 44, e.win ? "#8dff95" : "#ff8a7a", "center", true);
+  if (e.win) T("Victory! Zone 3 coming soon.", 480, 165, 22, "#ffe27a", "center", true);
   T(`Scrap kept: ${e.scrap}${e.win ? "   Victory bonus: +200" : ""}`, 480, 230, 18, "#ffe27a", "center", true);
   if (e.oreScrap > 0) {
     T(`Leftover ore smelted: +${e.oreScrap} Scrap`, 480, 262, 18, "#ffd9a0", "center", true);
@@ -2126,6 +2442,7 @@ function bootFight(key) {
   const k = key.toLowerCase();
   let enc, kind = "battle";
   if (k.includes("sentinel")) { enc = ["sentinel"]; kind = "boss"; }
+  else if (k.includes("thornback")) { enc = ["thornback"]; kind = "boss"; }
   else if (k.includes("drone")) { enc = ["droneA", "droneB"]; kind = "elite"; }
   else enc = key.split(",").filter(id => ENEMIES[id]);
   if (!enc || !enc.length) enc = ["crawler", "spitter"];
@@ -2135,5 +2452,5 @@ function bootFight(key) {
 if (save.run && !(save.run.map && save.run.map.tiles && save.run.ore)) { save.run = null; writeSave(); S.toast = { text: "Old run discarded after update", t: 6 }; }
 if (params.has("fight")) bootFight(params.get("fight"));
 requestAnimationFrame(frame);
-window.__s6 = { get run() { return run; }, get C() { return C; }, S, CARDS, RELICS, ENEMIES, save, playCard, endTurn, canAct, finishChoose, costOf, padMove, padA, padB, digTile, canDig, canReach, clickTile, moveDir, confirmMap, updateMap, tileAt, openTrader, openPending, completeNode, draw, canPay, D, gainOre, step: dt => { S.time += dt; if (C) updateCombat(dt); updateMap(dt); pollPad(dt); } };
+window.__s6 = { get run() { return run; }, get C() { return C; }, S, CARDS, RELICS, ENEMIES, save, playCard, endTurn, canAct, finishChoose, costOf, padMove, padA, padB, digTile, canDig, canReach, clickTile, moveDir, confirmMap, updateMap, tileAt, openTrader, openPending, completeNode, enterZone, shipRest, draw, canPay, D, gainOre, step: dt => { S.time += dt; if (C) updateCombat(dt); updateMap(dt); pollPad(dt); } };
 })();
