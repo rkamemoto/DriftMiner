@@ -54,7 +54,7 @@ Art files already exist and are registered (`e_sporeMother`, `e_stalker`, `e_lee
 | `thornback` | Thornback (boss) | 220 | Passive **Thorns 3**. **Spike Volley** `{ dmg: 5, hits: 4 }` → **Spore Cloud** `{ addDisc: { spore: 2 } }` → **Curl** `{ block: 30, thornsTemp: 2 }` → **Crush** `{ dmg: 28 }` |
 
 ### 2.2 New Zone 2 monsters (placeholder art)
-Four new spore-themed monsters. **No art files exist for these.** Register their ART keys anyway (add the ids to the `for (const id of [...]) ART_FILES["e_" + id]` list) so art can be dropped into `assets/enemy-<id>.png` later. Until then they draw with the new canvas shapes in §2.3.
+Ten new spore-themed monsters, added to the roster above (not replacing it). **No art files exist for these.** Register their ART keys anyway (add the ids to the `for (const id of [...]) ART_FILES["e_" + id]` list) so art can be dropped into `assets/enemy-<id>.png` later. Until then they draw with the new canvas shapes in §2.3.
 
 | id | Name | HP | Moves (cycle in order) | Notes |
 |---|---|---|---|---|
@@ -62,6 +62,12 @@ Four new spore-themed monsters. **No art files exist for these.** Register their
 | `bloomshade` | Bloomshade | 26–30 | **Pollen** `{ apply: { vuln: 2 } }` → **Choke** `{ dmg: 4, perSpore: 2 }` | Flyer (`fly: 1`). Choke deals 4 **+2 per Spore card** you hold across hand, draw and discard piles, which makes spore build-up dangerous. |
 | `rotHound` | Rot Hound | 30–34 | **Maul** `{ dmg: 7, hits: 2 }` → **Lick Wounds** `{ heal: 8, block: 5 }` | A plain bruiser that rewards burst damage. |
 | `rotHulk` | Rot Hulk (elite) | 100 | **Fungal Slam** `{ dmg: 18 }` → **Rot Spray** `{ addDisc: { spore: 2 }, apply: { weak: 2 } }` → **Regrow** `{ heal: 15, block: 10 }` | A second elite option alongside the Brood Knight. |
+| `sporeBat` | Spore Bat | 14–18 | **Screech** `{ apply: { weak: 1 } }` → **Swoop** `{ dmg: 4, hits: 2 }` | Flyer, small (`w: 70, h: 56`). Usually comes in pairs, so area damage pays off. |
+| `burrowGrub` | Burrow Grub | 24–28 | **Harden** `{ block: 12 }` → **Gnaw** `{ dmg: 9 }` | Passive `thorns: 1` (reuses §3.3). Armoured: punishes many small hits. |
+| `mycelidWeaver` | Mycelid Weaver | 28–32 | **Knit** `{ allyBlock: 8 }` → **Spore Lash** `{ dmg: 6, addDisc: { spore: 1 } }` | Support: shields its allies, so kill it first. |
+| `glowcap` | Glowcap Shaman | 30–34 | **Blessing** `{ allyStr: 2 }` → **Spark** `{ dmg: 5, apply: { rad: 2 } }` | Support: buffs allies' Strength and irradiates you. Needs the new `allyStr` field (§3). |
+| `mireLurker` | Mire Lurker | 44–48 | **Submerge** `{ block: 14 }` → **Ambush Bite** `{ dmg: 16 }` → **Drag** `{ dmg: 6, apply: { vuln: 1 } }` | Heavy solo normal; telegraphed big hit. |
+| `bloomMatriarch` | Bloom Matriarch (elite) | 95 | **Pollen Storm** `{ apply: { weak: 2, vuln: 2 } }` → **Strangle** `{ dmg: 8, perSpore: 3 }` → **Overgrow** `{ heal: 12, allyBlock: 10 }`. Once at ≤50% HP: `overdrive: { n: "Seed the Wind", summon: ["bloomshade"], banner: "The Matriarch blooms!" }` | Third elite option. Rewards keeping Spore cards out of your deck. |
 
 ### 2.3 Placeholder shapes
 Add these `shape` values to `drawEnemyBody`'s canvas fallback, in the same style as the existing shapes (3px dark outline, flat fills, two cartoon eyes, a little idle motion from `S.time`):
@@ -72,13 +78,21 @@ Add these `shape` values to `drawEnemyBody`'s canvas fallback, in the same style
 | `bloom` | Bloomshade | A hovering flower: 6 magenta petals (`#d05aa8`) around a yellow centre with eyes, two drooping leaves below; the petals sway. |
 | `hound` | Rot Hound | A low four-legged body in mossy green-brown (`#6f7a3a`), a blocky head with a jaw, green fungus tufts along the back. |
 | `hulk` | Rot Hulk | A big hunched mound (`#5a6a3a`) with two thick arms, glowing green pustules that pulse, small eyes. Larger than normals (`w: 150, h: 140`). |
+| `bat` | Spore Bat | A round furry body (`#6a5a8a`) with two flapping membrane wings (animate the wing angle), big eyes, small fangs. |
+| `grub` | Burrow Grub | A fat segmented larva in pale tan (`#c8b48a`) with darker armour plates on each segment and a round mouth ringed with teeth. |
+| `weaver` | Mycelid Weaver | A spindly spider-like body (`#8a9a6a`) on six thin legs, with faint pale threads drawn from its legs to the ground that sway. |
+| `shaman` | Glowcap Shaman | A small hooded figure (`#4a3a5a` robe) wearing a glowing yellow-green mushroom cap; the cap's glow pulses. |
+| `lurker` | Mire Lurker | A wide flat swamp creature (`#3e5a4a`): mostly a dark mound with two eye-stalks and a long jaw line; it sinks lower while it has Block. |
+| `matriarch` | Bloom Matriarch | A larger version of `bloom` (`w: 150, h: 150`, deep crimson petals `#b0306a`) with a ring of smaller buds that pulse. |
 
 ### 2.4 `ENC.z2`
 ```
-easy:   [["stalker"], ["leech", "crawler"], ["puffcap", "puffcap"], ["bloomshade"]]
+easy:   [["stalker"], ["leech", "crawler"], ["puffcap", "puffcap"], ["bloomshade"], ["sporeBat", "sporeBat"], ["burrowGrub"]]
 normal: [["sporeMother"], ["stalker", "leech"], ["leech", "leech"], ["stalker", "crawler", "crawler"], ["sporeMother", "crawler"],
-         ["rotHound", "puffcap"], ["bloomshade", "puffcap", "puffcap"], ["rotHound", "bloomshade"]]
-elite:  [["broodKnight"], ["rotHulk"]]
+         ["rotHound", "puffcap"], ["bloomshade", "puffcap", "puffcap"], ["rotHound", "bloomshade"],
+         ["mireLurker"], ["mycelidWeaver", "rotHound"], ["glowcap", "stalker"], ["glowcap", "puffcap", "puffcap"],
+         ["sporeBat", "sporeBat", "bloomshade"], ["mycelidWeaver", "burrowGrub"]]
+elite:  [["broodKnight"], ["rotHulk"], ["bloomMatriarch"]]
 boss:   [["thornback"]]
 ```
 
@@ -96,6 +110,7 @@ All new move fields are handled in `execMove`, shown by `intentInfo` / `describe
 | `thornsTemp: n` | Adds n to the enemy's `e.thornsTemp` until the start of its next turn (clear it where `e.block = 0` is reset). | `buff` | `Gains n Thorns this round.` |
 | `perSpore: n` | Attack damage gets `+n` per `spore` card in `C.hand + C.draw + C.disc`, added to the base before Strength/Weak/Vulnerable. The intent number must show the final value (compute it in `intentInfo` too). | (attack) | append `+n per Spore card you hold.` |
 | `heal: n` | The enemy heals n (capped at max HP), with a green `+N` float. | `buff` | `Heals n.` |
+| `allyStr: n` | Every **other** living enemy gains n Strength (if it is alone, it buffs itself). Float `+n Str` on each. | `buff` | `Gives n Strength to its allies.` |
 | `def.onDeath` | A move-shaped object run once when the enemy dies (in `afterAction`, where `e.dead` is set). Support at least `addDisc`. Float its `n` ("Burst") on the enemy. Runs for summoned enemies too. | — | Shown in the enemy's name tooltip: `On death: …` |
 
 ### 3.1 Enemy layout with summons
@@ -204,6 +219,6 @@ Use `?seed=`, `?reveal=1`, `?zone=2` and `?ore=` to test quickly. Check each in 
 3. Zone 2 map: 3 spored tiles visible when revealed; the counter counts down; a spread happens every 3 digs; digging a spored tile adds a Spore card (check the deck viewer).
 4. Antidote is in rows 8–10, never spored, and reachable. Digging it removes all Spore cards and stops the spread; existing spore tiles stay visible, and digging one afterwards cleanses it with no Spore card added. The HUD line reads "Antidote active: spores are harmless".
 5. Each Zone 2 enemy: Spore Mother summons (4-enemy cap, slots re-space, summoned crawlers give no Copper); Leech heals only for unblocked damage; Brood Knight calls 2 crawlers once at half HP; Thornback's Thorns hurt per hit (not from Dog), Curl adds 2 Thorns until its next turn, Spore Cloud puts 2 Spore cards in the discard pile.
-6. New monsters draw with their placeholder shapes (no missing-image gaps): Puffcap adds a Spore on Spore Puff and another when it dies; Bloomshade's Choke intent number rises as Spore cards pile up; Rot Hound heals and blocks on Lick Wounds; Rot Hulk appears as an elite and its Rot Spray adds 2 Spore + 2 Weak.
+6. New monsters draw with their placeholder shapes (no missing-image gaps): Puffcap adds a Spore on Spore Puff and another when it dies; Bloomshade's Choke intent number rises as Spore cards pile up; Rot Hound heals and blocks on Lick Wounds; Rot Hulk appears as an elite and its Rot Spray adds 2 Spore + 2 Weak. Spore Bat wings flap; Burrow Grub shows Thorns 1 and hurts per hit; Mycelid Weaver's Knit blocks its allies; Glowcap's Blessing gives allies (not itself) +2 Strength and Spark applies Radiation; Mire Lurker cycles Submerge → Ambush Bite → Drag; Bloom Matriarch summons one Bloomshade once at half HP and its Strangle number rises with Spore cards.
 7. Kill Thornback → "Victory! Zone 3 coming soon." The run banks Scrap plus the win bonus, and Best zone shows 2.
 8. Zone 1 plays exactly as before apart from the ship rest and the boss reward.
