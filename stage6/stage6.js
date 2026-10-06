@@ -44,7 +44,7 @@ function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Mat
 const ART_ON = params.get("art") !== "0";
 const ART_FILES = {
   miner: "assets/miner-sheet.png", companions: "assets/companions-sheet.png",
-  tiles: "assets/tiles-sheet.png", mapIcons: "assets/map-icons-sheet.png", relics: "assets/relics-sheet.png", ui: "assets/ui-icons-sheet.png",
+  ship: "assets/player-ship-sheet.png", tiles: "assets/tiles-sheet.png", mapIcons: "assets/map-icons-sheet.png", relics: "assets/relics-sheet.png", ui: "assets/ui-icons-sheet.png",
   bg1: "assets/bg-zone1.webp", bg2: "assets/bg-zone2.webp", bg3: "assets/bg-zone3.webp",
   bgHub: "assets/bg-hub.webp", bgCamp: "assets/bg-camp.webp", bgBench: "assets/bg-workbench.webp", // NOTE: Codex swapped these two files (bg-event.webp holds the trader stall, bg-trader.webp the glyph stones); mapped by content until the files are swapped back
   bgTrader: "assets/bg-event.webp", bgEvent: "assets/bg-trader.webp",
@@ -64,7 +64,8 @@ function artReady(k) {
 // (blobs closer than `bridge` blocks of 4px count as one, so a weapon tip or shield edge stays with its pose)
 const SHEETS = { miner: { cols: 4, rows: 1, cw: 384, ch: 512, bridge: 5 }, companions: { cols: 4, rows: 1, cw: 256, ch: 256, bridge: 5 } };
 // icon sheets: the art leaks ~10px into the top of the row below, so rows after the first skip that strip
-const TOP_INSET = { mapIcons: 14, relics: 14, ui: 12 };
+// (the ui sheet was rebuilt clean by tools/clean_stage6_ui_icons.mjs and needs no inset)
+const TOP_INSET = { mapIcons: 14, relics: 14 };
 const cellCache = {};
 function buildCells(key) {
   if (cellCache[key] !== undefined) return cellCache[key];
@@ -1275,13 +1276,16 @@ function hpBar(u, cx, y, w) {
   ctx.lineWidth = 1.5; ctx.strokeStyle = "#0d0f14"; rp(cx - w / 2, y, w, 14, 5); ctx.stroke();
   T(`${Math.max(0, u.hp)}/${u.maxhp}`, cx, y + 7.5, 11, "#fff", "center", true);
   if (u.block > 0) {
-    const bx = cx - w / 2 - 14, by = y + 7;
-    if (!uiIcon(6, 0, bx, by + 1, 34)) {
+    const bx = cx - w / 2 - 18, by = y + 7;
+    if (!uiIcon(6, 0, bx, by + 1, 46)) {
     ctx.beginPath(); ctx.moveTo(bx - 11, by - 12); ctx.lineTo(bx + 11, by - 12); ctx.lineTo(bx + 11, by + 3); ctx.lineTo(bx, by + 14); ctx.lineTo(bx - 11, by + 3); ctx.closePath();
     ctx.fillStyle = "#3a78c8"; ctx.fill(); ctx.strokeStyle = "#cfe4ff"; ctx.lineWidth = 2; ctx.stroke();
     }
-    T(String(u.block), bx, by, 12, "#fff", "center", true);
-    if (over(bx - 12, by - 12, 24, 26)) setTip([{ t: "Block " + u.block, d: KW[0][2] }], bx + 16, by);
+    // dark outline so the number reads over the bright shield art
+    ctx.font = `bold 20px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.lineJoin = "round"; ctx.lineWidth = 4; ctx.strokeStyle = "#0d0f14"; ctx.strokeText(String(u.block), bx, by + 1);
+    T(String(u.block), bx, by + 1, 20, "#fff", "center", true);
+    if (over(bx - 16, by - 16, 32, 34)) setTip([{ t: "Block " + u.block, d: KW[0][2] }], bx + 16, by);
   }
 }
 
@@ -1542,7 +1546,8 @@ function drawCombat() {
   // energy / piles / end turn
   const og = ctx.createRadialGradient(66, 540, 4, 70, 548, 36); og.addColorStop(0, "#ffe9a0"); og.addColorStop(1, "#d98a20");
   if (!uiIcon(7, 0, 70, 548, 84)) { ctx.beginPath(); ctx.arc(70, 548, 34, 0, TAU); ctx.fillStyle = og; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "#0d0f14"; ctx.stroke(); }
-  T(`${C.energy}/3`, 70, 549, 24, "#2a1a08", "center", true);
+  // the orb's moons sit above it, so the sphere itself is ~2px below the icon centre
+  T(`${C.energy}/3`, 70, 551, 24, "#2a1a08", "center", true);
   if (over(36, 514, 68, 68)) setTip([{ t: "Energy", d: "Spent to play cards. Refills to 3 each turn." }], 110, 520);
   const pile = (label, arr, x, y, w, title, icon) => btn(x, y, w, 30, `${label} ${arr.length}`, () => openPile(title, arr), { size: 13, icon });
   pile("Draw", C.draw, 24, 598, 92, "Draw pile (random order)", [6, 2]);
@@ -1780,7 +1785,11 @@ function drawMap() {
     if (reach || t.dug) hit(px, py, TILE, TILE, () => clickTile(x, y));
     if (over(px, py, TILE, TILE)) hoverTile = { t, x, y, can, reach, reopen };
   }
-  drawTileIcon("pod", GX + 4 * TILE + TILE / 2, GY + TILE / 2, 20);
+  // start tile: the player's landed ship (Stage 5 sheet frame 1, cropped above the engine flames)
+  const ship = artReady("ship");
+  if (ship) { const sh = TILE * 1.6, sw = sh * 116 / 150; ctx.drawImage(ship, 0, 0, 116, 150, GX + 4.5 * TILE - sw / 2, GY + TILE - 2 - sh, sw, sh); }
+  else drawTileIcon("pod", GX + 4 * TILE + TILE / 2, GY + TILE / 2, 20);
+  if (over(GX + 4 * TILE, GY, TILE, TILE)) hoverTile = { ship: true, x: 4, y: 0 };
   // boss lair: always visible
   const lx = GX + 4 * TILE, ly = GY + 10 * TILE, lcx = lx + TILE / 2, lcy = ly + TILE / 2;
   const glow = ctx.createRadialGradient(lcx, lcy, 4, lcx, lcy, 52); glow.addColorStop(0, "rgba(255,90,40,.9)"); glow.addColorStop(1, "rgba(255,60,20,0)");
@@ -1802,13 +1811,18 @@ function drawMap() {
   let tx = run.map.px, ty = run.map.py;
   if (S.dig) { const k = ease(clamp(S.dig.t / (S.dig.dur || .2), 0, 1)); tx = lerp(S.dig.from.x, S.dig.to.x, k); ty = lerp(S.dig.from.y, S.dig.to.y, k); }
   const kx = GX + tx * TILE + TILE / 2, ky = GY + ty * TILE + TILE / 2;
-  ctx.fillStyle = "#e0902a"; ctx.fillRect(kx - 8, ky - 2, 16, 15); ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 2; ctx.strokeRect(kx - 8, ky - 2, 16, 15);
-  ctx.beginPath(); ctx.arc(kx, ky - 7, 9, 0, TAU); ctx.fillStyle = "#e8eef5"; ctx.fill(); ctx.stroke();
-  ctx.fillStyle = "#1a3a5a"; ctx.beginPath(); ctx.ellipse(kx + 3, ky - 7, 5, 4, 0, 0, TAU); ctx.fill();
+  // miner idle pose, feet near the tile bottom (cell feet sit at y≈455 of 512)
+  const ms = .115;
+  if (!drawCell("miner", 0, 0, 384, 512, kx - 192 * ms, ky + 22 - 455 * ms, 384 * ms, 512 * ms)) {
+    ctx.fillStyle = "#e0902a"; ctx.fillRect(kx - 8, ky - 2, 16, 15); ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 2; ctx.strokeRect(kx - 8, ky - 2, 16, 15);
+    ctx.beginPath(); ctx.arc(kx, ky - 7, 9, 0, TAU); ctx.fillStyle = "#e8eef5"; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#1a3a5a"; ctx.beginPath(); ctx.ellipse(kx + 3, ky - 7, 5, 4, 0, 0, TAU); ctx.fill();
+  }
   for (const f of S.mfloats) { ctx.globalAlpha = clamp(1.2 - f.t, 0, 1); T(f.text, f.x, f.y - 10 - f.t * 36, 16, f.col, "center", true); ctx.globalAlpha = 1; }
   if (hoverTile) {
     const ht = hoverTile, rev = isRevealed(ht.x, ht.y);
-    if (rev) {
+    if (ht.ship) setTip([{ t: "Your Ship", d: "Your landing site. Dig down from here toward the Sentinel's lair." }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
+    else if (rev) {
       const name = ht.lair ? ENEMIES.sentinel.n + " (Boss)" : ht.t.k === "bedrock" ? "Bedrock" : ht.t.c ? NODE_INFO[ht.t.c].n : "Dirt";
       const d = ht.can ? "Click to select, click again (or press A) to dig." : ht.reach ? "Click to walk over and select it." : ht.reopen ? "Click to walk over and trade." : ht.t.k === "bedrock" ? "Can't be dug." : ht.t.dug ? (ht.t.used ? "Used. Click to walk here." : "Click to walk here.") : ht.lair ? "Dig the camp tile above it first." : "Not next to a tunnel.";
       setTip([{ t: name, d }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
