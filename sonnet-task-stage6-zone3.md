@@ -180,6 +180,16 @@ boss:   [["turret", "homeCore", "turret"]]
 ```
 `bossName()` reads `ENC[...].boss[0][0]`, which would now be the turret. Make it find the first enemy with `boss: 1` in that list instead.
 
+### 6.6 Randomised roster per map (Zones 2 and 3)
+Not every monster should appear in every run. Each time a Zone 2 or Zone 3 map is generated, pick which monsters live there this time. Zone 1 is unchanged; it only has three regular monsters.
+
+- **Regular monsters:** the zone's monster pool is every id in its `easy` + `normal` lists, minus the always-allowed fillers `ALWAYS = ["crawler", "hiveLarva"]` (summon / pack filler). Pick a random subset of `ROSTER_SIZE = { 2: 7, 3: 7 }` ids with the seeded `rng`.
+- **Encounters:** keep only the `easy` and `normal` encounters whose ids are all in the subset or `ALWAYS`. The result must have at least **2 easy** and **3 normal** encounters; if not, re-pick the subset (up to 50 tries, then fall back to the full lists).
+- **Elites:** keep a random **2 of the 3** elite encounters.
+- **Unchanged:** `boss` and `patrol` lists (the boss is always the same; patrols are always Hive Guard squads). Summons still work for any id, even outside the roster (Spore Mother's Crawlers, Overseer's Workers, Larva hatchlings).
+- **Storage:** save the filtered lists on the map: `run.map.enc = { easy, normal, elite }`. `chooseEncounter` uses `run.map.enc` when present and falls back to `ENC["z" + run.zone]` otherwise, so old saves still work. Ambushes draw from the filtered `normal` list too.
+- **Feedback:** hovering the zone title in `mapHud` shows a tooltip **"Sightings"** listing the names of the monsters in this map's roster (regular + elites, alphabetical). Ids that come only from `ALWAYS` aren't listed.
+
 ---
 
 ## 7. Final boss: Home Base Core
@@ -209,7 +219,7 @@ Killing the Core wins the run (the remaining turrets and guards don't need to di
 ---
 
 ## 8. Save compatibility
-New fields (`overrideKey`, `hiveMap`, `t.hive`, `t.felt`, `map.patrols`) are absent on old saves and read as falsy or empty. Runs in Zones 1–2 continue unchanged; a run sitting at Thornback now continues to Zone 3 after the win.
+New fields (`overrideKey`, `hiveMap`, `t.hive`, `t.felt`, `map.patrols`, `map.enc`) are absent on old saves and read as falsy or empty. Runs in Zones 1–2 continue unchanged; a run sitting at Thornback now continues to Zone 3 after the win.
 
 ## 9. Out of scope
 - New cards, relics, events, or Forge items.
@@ -225,4 +235,5 @@ Use `?zone=3`, `?seed=`, `?reveal=1`, `?ore=` and `?deck=all` to test quickly. C
 4. Hive Map reveals the whole map, all patrols and their next steps. The Override Key appears in rows 8–10, is reachable, and removes the turrets from the Core fight with the "Turrets offline" banner.
 5. Each new monster draws with its placeholder shape and does what its row says: Larva Cluster hatches on turn 3 and dies; Sentry Eye zaps from your 4th card; Resin Spitter cuts next turn's Energy; Juggernaut's Block persists; Swarmer deaths buff the others; Overseer summons Workers; Wardens enrage when one dies; Mimic reflects last turn's damage.
 6. Core with turrets: the Core takes half damage while a turret lives; Phase 2 interrupts, summons 2 guards once and pulses Radiation each turn; Phase 3 adds 2 Strength per enemy turn; one big hit through two thresholds runs both phase starts; killing the Core shuts everything down and shows "Victory! The Home Base has fallen."
-7. Zones 1–2 play exactly as before.
+7. Randomised roster: two Zone 2 runs with different seeds have different "Sightings" lists; every fight on a map (battle, elite, ambush) uses only that map's roster; the same `?seed=` always gives the same roster; Zone 1 is unaffected.
+8. Zones 1–2 otherwise play exactly as before.
