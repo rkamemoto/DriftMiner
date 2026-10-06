@@ -508,7 +508,7 @@ const FORGE = [
 // ---------------------------------------------------------------- run state
 let run = null;               // save.run: plain data, persisted
 let C = null;                 // combat (not persisted)
-const S = { padMode: false, focusKey: null, fpt: null, screen: "hub", modal: null, time: 0, toast: null, end: null, confirmAbandon: 0, scroll: 0, dig: null, walk: null, face: null, mfloats: [], bench: { sel: [] } };
+const S = { dbg: { open: false, reveal: false }, padMode: false, focusKey: null, fpt: null, screen: "hub", modal: null, time: 0, toast: null, end: null, confirmAbandon: 0, scroll: 0, dig: null, walk: null, face: null, mfloats: [], bench: { sel: [] } };
 const hasRelic = id => !!run && run.relics.includes(id);
 function saveRun() { if (!run) return; run.rngState = rng.state; save.run = run; writeSave(); }
 function gainScrap(n) { run.scrap += n; return n; }
@@ -540,8 +540,9 @@ function newRun(seedOverride) {
     run.pending = { screen: "reward", locker: true, scrap: 0, cards: [], relicChoices: pool };
   }
   if (params.get("bench") === "1") run.pending = { screen: "bench" };
+  // debug only (?zone=2|3 together with ?debug=1 or ?fight=): skip ahead, keeping any Relic Locker choice first. A normal Make Landfall always starts in Zone 1.
   const zp = Number(params.get("zone"));
-  if (zp >= 2 && zp <= 3) { const pend = run.pending; enterZone(zp); run.pending = pend; }   // debug: skip ahead, keeping any Relic Locker choice first
+  if (zp >= 2 && zp <= 3 && (params.get("debug") === "1" || params.has("fight"))) { const pend = run.pending; enterZone(zp); run.pending = pend; }
   saveRun();
 }
 function enterZone(z) {
@@ -658,7 +659,7 @@ function genDigMap(zone = 1) {
   throw new Error("dig map generation failed");
 }
 function isRevealed(x, y) {
-  if (params.get("reveal") === "1") return true;
+  if (params.get("reveal") === "1" || S.dbg.reveal) return true;
   const t = tileAt(x, y);
   if (t.k === "lair" || t.dug) return true;
   if (run.zone === 3) {   // psionic fog: only felt bedrock, the Hive Map, a lit Beacon's radius 2, or (3rd Eye) radius 1 around tunnels
@@ -1035,11 +1036,11 @@ function completeNode() {
 }
 const oreScrapValue = r => ORE_KEYS.reduce((s, k) => s + r.ore[k] * ORE[k].scrap, 0);
 function endRun(win) {
-  const oreScrap = oreScrapValue(run), gain = run.scrap + oreScrap + (win ? 200 : 0);
+  const oreScrap = oreScrapValue(run), dbg = !!run.debug, gain = dbg ? 0 : run.scrap + oreScrap + (win ? 200 : 0);   // runs touched by the debug panel bank and count nothing
   save.bank += gain;
-  if (win) save.stats.wins++;
-  save.stats.bestZone = Math.max(save.stats.bestZone, run.zone);
-  S.end = { win, gain, seed: run.seed, scrap: run.scrap, ore: Object.assign({}, run.ore), oreScrap };
+  if (win && !dbg) save.stats.wins++;
+  if (!dbg) save.stats.bestZone = Math.max(save.stats.bestZone, run.zone);
+  S.end = { win, gain, seed: run.seed, scrap: run.scrap, ore: Object.assign({}, run.ore), oreScrap, debug: dbg };
   save.run = null; run = null; C = null; S.modal = null;
   S.screen = "runEnd";
   writeSave();
@@ -1468,6 +1469,8 @@ const M = { x: -1, y: -1 };
 let hits = [], prevHits = [], hitsOff = false, tip = null;
 const over = (x, y, w, h) => !hitsOff && M.x >= x && M.x <= x + w && M.y >= y && M.y <= y + h;
 function hit(x, y, w, h, fn, o) { if (!hitsOff) hits.push({ x, y, w, h, fn, k: o && o.k, nf: o && o.nf, fr: o && o.fr }); }
+// a do-nothing focus target: lets the controller / arrow keys land on tooltip-only things (status chips, intent icons, Block, relics)
+const tipHit = (x, y, w, h, key) => hit(x, y, w, h, () => { }, { k: key });
 function rp(x, y, w, h, r) {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
 }
@@ -1607,6 +1610,7 @@ function drawRelic(id, x, y, r, tipOn = true) {
   const ri = RELIC_ICON[id];
   if (art && ri !== undefined) drawCell("relics", ri % 5, (ri / 5) | 0, 128, 128, x - r * 1.05, y - r * 1.05, r * 2.1, r * 2.1);
   else T(initials(d.n), x, y + 1, r * .85, "#10141c", "center", true);
+  if (tipOn && S.screen === "combat") tipHit(x - r, y - r, r * 2, r * 2, "relic:" + id);   // reachable by controller in combat
   if (tipOn && over(x - r, y - r, r * 2, r * 2)) {
     const extra = id === "rocketR" && C ? ` (${C.atkN % 3}/3)` : "";
     setTip([{ t: d.n, d: d.d + extra }], x + r + 6, y + r);
@@ -1625,6 +1629,7 @@ function statusRow(u, cx, y) {
     ctx.beginPath(); ctx.arc(x, y, 12, 0, TAU); ctx.fillStyle = "#12161e"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = st.col; ctx.stroke();
     if (!st.ico || !uiIcon(st.ico[0], st.ico[1], x, y, 24)) T(st.l, x, y, st.l.length > 1 ? 10 : 12, st.col, "center", true);
     if (!st.nonum) T(String(n), x + 9, y + 10, 11, "#fff", "center", true);
+    tipHit(x - 12, y - 12, 24, 24, `st:${u.isP ? "p" : u.uid}:${k}`);
     if (over(x - 12, y - 12, 24, 24)) setTip([{ t: st.nonum ? st.n : `${st.n} ${n}`, d: st.d.replace(/\bN\b/, n) }], x + 16, y);
   });
 }
@@ -1644,6 +1649,7 @@ function hpBar(u, cx, y, w) {
     ctx.font = `bold 20px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.lineJoin = "round"; ctx.lineWidth = 4; ctx.strokeStyle = "#0d0f14"; ctx.strokeText(String(u.block), bx, by + 1);
     T(String(u.block), bx, by + 1, 20, "#fff", "center", true);
+    tipHit(bx - 16, by - 16, 32, 34, "blk:" + (u.isP ? "p" : u.uid));
     if (over(bx - 16, by - 16, 32, 34)) setTip([{ t: "Block " + u.block, d: KW[0][2] }], bx + 16, by);
   }
 }
@@ -1937,11 +1943,43 @@ function drawEnemy(e) {
   if (d.onDeath && over(e.x - 60, e.y + 57, 120, 18)) setTip([{ t: d.n, d: `On death: ${d.onDeath.n}. ${describeMove(d.onDeath)}` }], e.x + 66, e.y + 50);
   const info = intentInfo(e), iy = e.y - enemyTop(e) - 28;
   const parts = info.kinds.length; ctx.font = `bold 20px ${FONT}`;
-  const wTot = parts * 26 + (info.num ? ctx.measureText(info.num).width + 22 : 0);
+  const numW = info.num ? ctx.measureText(info.num).width : 0, wTot = parts * 26 + (info.num ? numW + 22 : 0);
   let ix = e.x - wTot / 2 + 13;
-  info.kinds.forEach(k => { drawIntentIcon(k, ix, iy); ix += 26; });
-  if (info.num) T(info.num, ix - 6, iy, 20, "#ff9a8a", "left", true);
-  if (over(e.x - 40, iy - 16, 80, 32)) setTip([{ t: info.m.n, d: describeMove(info.m, info.num) }], e.x + 44, iy);
+  // every icon (and the damage number) is its own tooltip / controller target: the move, then what that kind of effect does
+  info.kinds.forEach(k => {
+    drawIntentIcon(k, ix, iy);
+    tipHit(ix - 13, iy - 15, 26, 30, `int:${e.uid}:${k}`);
+    if (over(ix - 13, iy - 15, 26, 30)) setTip(intentTips(e, info, k), e.x + 44, iy);
+    ix += 26;
+  });
+  if (info.num) {
+    T(info.num, ix - 6, iy, 20, "#ff9a8a", "left", true);
+    tipHit(ix - 10, iy - 15, numW + 8, 30, `int:${e.uid}:num`);
+    if (over(ix - 10, iy - 15, numW + 8, 30)) setTip(intentTips(e, info, "attack"), e.x + 44, iy);
+  }
+}
+// tooltip blocks for one intent icon: the whole move first, then a plain-language note for that kind of effect
+function intentTips(e, info, kind) {
+  const m = info.m, out = [{ t: m.n, d: describeMove(m, info.num) }];
+  if (kind === "attack") {
+    const notes = [`Damage this turn: ${info.num}. Your Block absorbs it first, then your HP.`];
+    if (e.str) notes.push(`Includes ${e.str} Strength.`);
+    if (e.weak > 0) notes.push("Its Weak cuts this by 25%.");
+    if (C.P.vuln > 0) notes.push("Your Vulnerable adds 50%.");
+    out.push({ t: "Attack", d: notes.join(" ") });
+  } else if (kind === "block") out.push({ t: "Block", d: KW[0][2] });
+  else if (kind === "debuff") {
+    for (const k in m.apply || {}) out.push({ t: `${STATUS[k].n} ${m.apply[k]}`, d: STATUS[k].d.replace(/\bN\b/, m.apply[k]) });
+    for (const k in m.addDisc || {}) out.push({ t: `${CARDS[k].n} x${m.addDisc[k]}`, d: "Added to your discard pile. " + CARDS[k].tx([]) });
+    if (m.breakBlock) out.push({ t: "Armor melted", d: "Removes all your Block before the attack hits." });
+    if (m.drainEnergy) out.push({ t: "Energy drain", d: `You start your next turn with ${m.drainEnergy} less Energy.` });
+  } else if (kind === "buff") {
+    if (m.str || m.allyStr) out.push({ t: "Strength", d: STATUS.str.d });
+    if (m.thornsTemp) out.push({ t: "Thorns", d: STATUS.thorns.d.replace(/\bN\b/, m.thornsTemp) });
+    if (m.heal || m.healAlly) out.push({ t: "Heal", d: "Restores HP, up to the target's maximum." });
+  } else if (kind === "summon") out.push({ t: "Summon", d: "Brings new enemies into the fight (at most 4 at once). Summoned enemies drop nothing." });
+  else if (kind === "charging") out.push({ t: "Charging", d: "Nothing happens this turn, but a big attack follows. Get your Block up." });
+  return out;
 }
 function describeMove(m, num) {
   const p = [];
@@ -2005,6 +2043,7 @@ function drawPlayer() {
     }
     const ty = companions ? dy - 82 : dy - 42;
     T(String(C.comp.dog), dx, ty, 15, "#ffe0a8", "center", true);
+    tipHit(dx - 34, ty - 12, 70, dy - ty + 16, "comp:dog");
     if (over(dx - 34, ty - 12, 70, dy - ty + 16)) setTip([{ t: "Dog " + C.comp.dog, d: "At end of your turn, deals " + C.comp.dog + " to a random enemy." }], dx + 40, ty);
   }
   if (C.comp.mouse > 0) {
@@ -2018,6 +2057,7 @@ function drawPlayer() {
     }
     const ty = companions ? my - 82 : my - 30;
     T(String(C.comp.mouse), mx, ty, 15, "#ffe0a8", "center", true);
+    tipHit(mx - 34, ty - 12, 70, my - ty + 14, "comp:mouse");
     if (over(mx - 34, ty - 12, 70, my - ty + 14)) setTip([{ t: "Mouse " + C.comp.mouse, d: "At end of your turn, gives you " + C.comp.mouse + " Block." }], mx + 40, ty);
   }
 }
@@ -2057,6 +2097,7 @@ function drawCombat() {
     rp(14, cy - 11, w, 22, 8); ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
     if (hasI) uiIcon(ico[0], ico[1], 28, cy, 22);
     T(label, 14 + w / 2 + (hasI ? 10 : 0), cy + 1, 13, col, "center", true);
+    tipHit(14, cy - 11, w, 22, "hud:" + tipItem.t);
     if (over(14, cy - 11, w, 22)) setTip([tipItem], 14 + w + 8, cy);
     cy += 28;
   };
@@ -2207,7 +2248,7 @@ function buyForge(it) {
 }
 function startNewRun() {
   if (save.run && S.confirmAbandon <= 0) { S.confirmAbandon = 4; return; }
-  if (save.run) { save.bank += save.run.scrap + oreScrapValue(save.run); save.run = null; writeSave(); }
+  if (save.run) { if (!save.run.debug) save.bank += save.run.scrap + oreScrapValue(save.run); save.run = null; writeSave(); }
   newRun();
   openPending();
 }
@@ -2750,10 +2791,67 @@ function drawRunEnd() {
     T(`Leftover ore smelted: +${e.oreScrap} Scrap`, 480, 262, 18, "#ffd9a0", "center", true);
     T(ORE_KEYS.filter(k => e.ore[k]).map(k => `${e.ore[k]} ${ORE[k].n} (${ORE[k].scrap} each)`).join("   "), 480, 288, 14, "#cfc6bb", "center");
   } else T("No leftover ore to smelt.", 480, 262, 15, "#9a9088", "center");
-  T(`Scrap banked: ${e.gain}`, 480, 330, 22, "#ffe27a", "center", true);
+  T(e.debug ? "Debug run: nothing banked" : `Scrap banked: ${e.gain}`, 480, 330, 22, e.debug ? "#ff9ad0" : "#ffe27a", "center", true);
   T(`Total banked: ${save.bank}`, 480, 362, 16, "#d8d0c8", "center");
   T(`Seed: ${e.seed}`, 480, 396, 18, "#9ab", "center", true);
   btn(360, 450, 240, 56, "Return to the Forge", () => { S.screen = "hub"; }, { size: 18 });
+}
+
+// ---------------------------------------------------------------- DEBUG PANEL (temporary)
+// To remove it later: delete this block, the `if (DEBUG_PANEL) drawDebug();` line in draw(), `dbg` in S, `S.dbg.reveal` in isRevealed,
+// and the `run.debug` / `e.debug` / `save.run.debug` bits in endRun, startNewRun and drawRunEnd. Or just set DEBUG_PANEL to false.
+const DEBUG_PANEL = true;
+function dbgRun() {   // the run the panel works on (made or resumed if needed); any run it touches is flagged so it banks nothing
+  if (!run) {
+    if (save.run && !save.run.debug) { S.toast = { text: "Finish or abandon your saved run first", t: 2.5 }; return null; }
+    if (save.run) { run = save.run; rng = makeRng(run.seed); rng.state = run.rngState; }
+    else { newRun(); save.stats.runs--; run.pending = null; run.cur = null; S.end = null; }
+  }
+  run.debug = true; return run;
+}
+function dbgZone(z) { if (!dbgRun()) return; C = null; S.modal = null; enterZone(z); run.shipRest = false; saveRun(); }
+function dbgFight(kind, pickEnc) {
+  if (!dbgRun()) return;
+  C = null; S.modal = null; run.cur = null; run.queued = null;
+  run.pending = { screen: "combat", kind, enc: pickEnc() }; saveRun(); openPending();
+}
+function drawDebug() {
+  const d = S.dbg;
+  if (!d.open) { btn(896, 612, 60, 22, "Debug", () => { d.open = true; }, { size: 11, bg: "#3a1a3a", hi: "#5a2a5a", bd: "#ff9ad0" }); return; }
+  const X = 622, Y = 36, PW = 334, blocked = !run && !!save.run && !save.run.debug;
+  rp(X, Y, PW, 352, 10); ctx.fillStyle = "rgba(14,8,22,.94)"; ctx.fill(); ctx.strokeStyle = "#ff9ad0"; ctx.lineWidth = 2; ctx.stroke();
+  hit(X, Y, PW, 352, () => { });   // swallows clicks on the panel body
+  T("DEBUG PANEL", X + 12, Y + 17, 15, "#ff9ad0", "left", true);
+  btn(X + PW - 70, Y + 6, 60, 22, "Hide", () => { d.open = false; }, { size: 11 });
+  const bt = (i, y, label, fn, off) => btn(X + 10 + i * 108, y, 102, 24, label, fn, { size: 11, off, bd: "#b88ac8" });
+  const sec = (title, y) => T(title, X + 12, y, 12, "#cfc6bb", "left", true);
+  const R = fn => () => { if (dbgRun()) fn(); };
+  sec("Jump to zone (new run if none)", Y + 44);
+  [1, 2, 3].forEach((z, i) => bt(i, Y + 54, `Zone ${z}`, () => dbgZone(z), blocked));
+  sec("Run", Y + 90);
+  const hasRun = !!run;
+  bt(0, Y + 100, "Heal full", R(() => { run.hp = run.maxhp; if (C) C.P.hp = C.P.maxhp; }), !hasRun);
+  bt(1, Y + 100, "+200 Scrap", R(() => { run.scrap += 200; }), !hasRun);
+  bt(2, Y + 100, "+5 each ore", R(() => { for (const k of ORE_KEYS) run.ore[k] += 5; }), !hasRun);
+  bt(0, Y + 130, "All relics", R(() => { run.relics = RELIC_IDS.slice(); }), !hasRun);
+  bt(1, Y + 130, "Full deck", R(() => { run.deck = Object.keys(CARDS).filter(id => CARDS[id].t !== "status").map(id => ({ id, up: false })); }), !hasRun);
+  bt(2, Y + 130, `Reveal: ${d.reveal ? "ON" : "OFF"}`, () => { d.reveal = !d.reveal; });
+  bt(0, Y + 160, "Clear alert", R(() => { run.alert = 0; run.ambushDue = 0; }), !hasRun);
+  bt(1, Y + 160, `Key: ${hasRun && run.overrideKey ? "ON" : "OFF"}`, R(() => { run.overrideKey = !run.overrideKey; }), !hasRun);
+  bt(2, Y + 160, `Hive Map: ${hasRun && run.hiveMap ? "ON" : "OFF"}`, R(() => { run.hiveMap = !run.hiveMap; }), !hasRun);
+  sec("Start a fight now (current zone)", Y + 196);
+  bt(0, Y + 206, "Battle", () => dbgFight("battle", () => chooseEncounter("battle", 5)), blocked);
+  bt(1, Y + 206, "Elite", () => dbgFight("elite", () => chooseEncounter("elite", 5)), blocked);
+  bt(2, Y + 206, "Boss", () => dbgFight("boss", () => chooseEncounter("boss", 5)), blocked);
+  bt(0, Y + 236, "Ambush", () => dbgFight("ambush", () => chooseEncounter("battle", 9)), blocked);
+  bt(1, Y + 236, "Patrol", () => dbgFight("patrol", () => pick(ENC.z3.patrol)), blocked);
+  sec("In a fight", Y + 272);
+  const inFight = !!C && S.screen === "combat";
+  bt(0, Y + 282, "Kill all", R(() => { for (const e of C.enemies) e.hp = 0; }), !inFight);
+  bt(1, Y + 282, "Heal me", R(() => { C.P.hp = C.P.maxhp; run.hp = run.maxhp; }), !inFight);
+  bt(2, Y + 282, "+3 Energy", R(() => { C.energy += 3; }), !inFight);
+  T("Anything done here flags the run: it banks no", X + 12, Y + 322, 11, "#b8aab8");
+  T("Scrap and counts toward no wins or Best zone.", X + 12, Y + 337, 11, "#b8aab8");
 }
 
 // ---------------------------------------------------------------- frame / input
@@ -2785,6 +2883,7 @@ function draw() {
   drawScene();
   hitsOff = false;
   if (grid) { tip = null; drawGrid(grid, !!chooseG); }
+  if (DEBUG_PANEL) drawDebug();
   if (padNav) {
     const cur = resolveFocus(focusables(hits));
     if (cur) {
@@ -2849,5 +2948,5 @@ function bootFight(key) {
 if (save.run && !(save.run.map && save.run.map.tiles && save.run.ore)) { save.run = null; writeSave(); S.toast = { text: "Old run discarded after update", t: 6 }; }
 if (params.has("fight")) bootFight(params.get("fight"));
 requestAnimationFrame(frame);
-window.__s6 = { get run() { return run; }, get C() { return C; }, S, CARDS, RELICS, ENEMIES, save, playCard, endTurn, canAct, finishChoose, costOf, padMove, padA, padB, digTile, canDig, canReach, clickTile, moveDir, confirmMap, updateMap, tileAt, openTrader, openPending, completeNode, enterZone, shipRest, movePatrols, spawnPatrol, patrolAt, hunting, isRevealed, draw, canPay, D, gainOre, step: dt => { S.time += dt; if (C) updateCombat(dt); updateMap(dt); pollPad(dt); } };
+window.__s6 = { get hits() { return prevHits; }, get run() { return run; }, get C() { return C; }, S, CARDS, RELICS, ENEMIES, save, playCard, endTurn, canAct, finishChoose, costOf, padMove, padA, padB, digTile, canDig, canReach, clickTile, moveDir, confirmMap, updateMap, tileAt, openTrader, openPending, completeNode, enterZone, shipRest, movePatrols, spawnPatrol, patrolAt, hunting, isRevealed, draw, canPay, D, gainOre, step: dt => { S.time += dt; if (C) updateCombat(dt); updateMap(dt); pollPad(dt); } };
 })();
