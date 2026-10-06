@@ -48,11 +48,11 @@ const ART_FILES = {
   bg1: "assets/bg-zone1.webp", bg2: "assets/bg-zone2.webp", bg3: "assets/bg-zone3.webp",
   bgHub: "assets/bg-hub.webp", bgCamp: "assets/bg-camp.webp", bgBench: "assets/bg-workbench.webp", // NOTE: Codex swapped these two files (bg-event.webp holds the trader stall, bg-trader.webp the glyph stones); mapped by content until the files are swapped back
   bgTrader: "assets/bg-event.webp", bgEvent: "assets/bg-trader.webp",
-  mapAntidote: "assets/map-antidote.png", // no art yet: drawTileIcon draws a canvas vial until the file exists
+  mapAntidote: "assets/map-antidote.png", mapBeacon: "assets/map-beacon.png", mapOverrideKey: "assets/map-override-key.png", mapHiveMap: "assets/map-hive-map.png", // missing files fall back to canvas icons
   ev_probe: "assets/event-probe.png", ev_sporePool: "assets/event-sporePool.png", ev_mouse: "assets/event-mouse.png"
 };
 // enemies: key "e_<id>"; the Zone 2/3 files are registered now so Phase 2 picks them up
-for (const id of ["crawler", "spitter", "worm", "drone", "sentinel", "sporeMother", "stalker", "leech", "broodKnight", "thornback", "puffcap", "bloomshade", "rotHound", "rotHulk", "sporeBat", "burrowGrub", "mycelidWeaver", "glowcap", "mireLurker", "bloomMatriarch", "hiveGuard", "psionicDrone", "mimic", "warden", "homeCore", "turret"]) ART_FILES["e_" + id] = `assets/enemy-${id}.png`;
+for (const id of ["crawler", "spitter", "worm", "drone", "sentinel", "sporeMother", "stalker", "leech", "broodKnight", "thornback", "puffcap", "bloomshade", "rotHound", "rotHulk", "sporeBat", "burrowGrub", "mycelidWeaver", "glowcap", "mireLurker", "bloomMatriarch", "hiveWorker", "acidSprayer", "larvaCluster", "hiveLarva", "sentryEye", "spineLancer", "swarmer", "mindLeech", "resinSpitter", "hiveOverseer", "gateJuggernaut", "hiveGuard", "psionicDrone", "mimic", "warden", "homeCore", "turret"]) ART_FILES["e_" + id] = `assets/enemy-${id}.png`;
 for (const f of ["basic", "drill", "blaster", "bomb", "radiation", "sword", "companion", "uplink", "utility"]) ART_FILES["card_" + f] = `assets/cards-${f}.png`;
 const ART = {}, ART_FAIL = {};
 function loadArt(k) { const i = new Image(); i.onerror = () => { ART_FAIL[k] = true; }; i.src = ART_FILES[k]; ART[k] = i; return i; }
@@ -350,7 +350,10 @@ const STATUS = {
   vuln: { ico: [1, 0], l: "V", col: "#e08a3a", n: "Vulnerable", d: "Takes 50% more attack damage. -1 at end of turn." },
   str: { ico: [2, 0], l: "S", col: "#e05050", n: "Strength", d: "+1 damage per hit per stack." },
   rad: { ico: [3, 0], l: "R", col: "#66cc55", n: "Radiation", d: "Lose HP equal to stacks at start of turn (ignores Block), then -1." },
-  thorns: { l: "T", col: "#7fbf5a", n: "Thorns", d: "Whenever you hit this enemy with an attack, take N damage." }
+  thorns: { l: "T", col: "#7fbf5a", n: "Thorns", d: "Whenever you hit this enemy with an attack, take N damage." },
+  watch: { l: "Wa", col: "#e0607a", n: "Watch", d: "From your 4th card each turn, every card you play costs you N HP (ignores Block)." },
+  plated: { l: "P", col: "#9aa4b8", n: "Plated", d: "Its Block doesn't expire.", nonum: 1 },
+  shielded: { l: "Sh", col: "#5ad0ff", n: "Shielded", d: "Takes 50% damage while a Turret stands.", nonum: 1 }
 };
 const RELICS = {
   impactDrill: { n: "Impact Drill", d: "Start each combat with 2 Charge.", col: "#d9822b" },
@@ -411,6 +414,31 @@ const ENEMIES = {
     n: "Bloom Matriarch", hp: [95, 95], shape: "matriarch", col: "#b0306a", w: 150, h: 150,
     moves: [{ n: "Pollen Storm", apply: { weak: 2, vuln: 2 } }, { n: "Strangle", dmg: 8, perSpore: 3 }, { n: "Overgrow", heal: 12, allyBlock: 10 }],
     overdrive: { n: "Seed the Wind", summon: ["bloomshade"], banner: "The Matriarch blooms!" }
+  },
+  // Zone 3: Hive Gate
+  hiveGuard: { n: "Hive Guard", artScale: 1.4, hp: [50, 50], shape: "spiky", col: "#7a5a9a", w: 100, h: 75, moves: [{ n: "Guard", allBlock: 12 }, { n: "Spear", dmg: 14 }] },
+  psionicDrone: { n: "Psionic Drone", fly: 1, artScale: 1.3, hp: [32, 32], shape: "drone", col: "#a07ad8", w: 90, h: 90, moves: [{ n: "Static", apply: { weak: 2, vuln: 2 } }, { n: "Spike", dmg: 10 }] },
+  mimic: { n: "Mimic", artScale: 1.4, hp: [45, 45], shape: "blob", col: "#8a6a3a", w: 100, h: 80, moves: [{ n: "Reflect", reflect: 20 }, { n: "Bite", dmg: 13 }] },
+  warden: { n: "Warden", artScale: 1.2, hp: [70, 70], shape: "spiky", col: "#5a6a8a", w: 120, h: 110, bond: { str: 5, heal: 20, banner: "The Warden avenges its twin!" }, moves: [{ n: "Hammer", dmg: 15 }, { n: "Ward", allBlock: 15 }] },
+  hiveWorker: { n: "Hive Worker", artScale: 1.25, hp: [20, 24], shape: "worker", col: "#8a6a9a", w: 90, h: 70, moves: [{ n: "Repair", healAlly: 8 }, { n: "Pinch", dmg: 6 }] },
+  acidSprayer: { n: "Acid Sprayer", artScale: 1.4, hp: [28, 32], shape: "sprayer", col: "#5a8a5a", w: 100, h: 70, moves: [{ n: "Acid Jet", dmg: 6, apply: { vuln: 1 } }, { n: "Melt Armor", breakBlock: 1, dmg: 8 }] },
+  larvaCluster: { n: "Larva Cluster", artScale: 1.15, hp: [20, 22], shape: "larvaCluster", col: "#d8c8a8", w: 100, h: 80, moves: [{ n: "Pulse", block: 5 }, { n: "Pulse", block: 5 }, { n: "Hatch", summon: ["hiveLarva", "hiveLarva"], selfDestruct: 1 }] },
+  hiveLarva: { n: "Hive Larva", artScale: 1.2, hp: [8, 10], shape: "larva", col: "#e0d0b0", w: 50, h: 40, moves: [{ n: "Nibble", dmg: 3, hits: 2 }] },
+  sentryEye: { n: "Sentry Eye", artScale: 1.1, fly: 1, hp: [30, 34], shape: "eye", col: "#c8c0d8", w: 90, h: 90, watch: 3, moves: [{ n: "Focus", block: 8 }, { n: "Glare", dmg: 9 }] },
+  spineLancer: { n: "Spine Lancer", hp: [34, 38], shape: "lancer", col: "#6a4a7a", w: 90, h: 120, moves: [{ n: "Wind Up", charging: 1 }, { n: "Impale", dmg: 24 }] },
+  swarmer: { n: "Hive Swarmer", artScale: 1.2, hp: [10, 12], shape: "swarmer", col: "#9a5a7a", w: 50, h: 50, moves: [{ n: "Bite", dmg: 4 }], onDeath: { n: "Frenzy", allyStr: 1 } },
+  mindLeech: { n: "Mind Leech", artScale: 1.3, hp: [24, 28], shape: "mindLeech", col: "#7a4aa0", w: 90, h: 70, moves: [{ n: "Siphon", dmg: 6, drain: 1 }, { n: "Mind Fog", apply: { weak: 2 }, block: 6 }] },
+  resinSpitter: { n: "Resin Spitter", artScale: 1.2, hp: [26, 30], shape: "resin", col: "#c88a3a", w: 90, h: 80, moves: [{ n: "Gum Up", drainEnergy: 1 }, { n: "Spit", dmg: 8 }] },
+  hiveOverseer: { n: "Hive Overseer", hp: [110, 110], shape: "overseer", col: "#4a2a5a", w: 140, h: 160, moves: [{ n: "Summon Workers", summon: ["hiveWorker", "hiveWorker"] }, { n: "Psi Lash", dmg: 10, apply: { weak: 2 } }, { n: "Command", allyStr: 2, allBlock: 8 }] },
+  gateJuggernaut: { n: "Gate Juggernaut", artScale: 1.1, hp: [120, 120], shape: "juggernaut", col: "#3a3a4a", w: 170, h: 140, keepBlock: 1, moves: [{ n: "Plate Up", block: 15 }, { n: "Ram", dmg: 20 }, { n: "Grind", dmg: 6, hits: 3 }] },
+  turret: { n: "Turret", artScale: .9, hp: [40, 40], shape: "spiky", col: "#6a7080", w: 80, h: 90, noLoot: 1, moves: [{ n: "Laser", dmg: 8 }] },
+  homeCore: {
+    n: "Home Base Core", hp: [300, 300], shape: "boss", col: "#7a4aa0", w: 220, h: 200, artScale: .85, boss: 1, noLoot: 1, shieldedBy: "turret", endsFight: 1,
+    phases: [
+      { at: 300, moves: [{ n: "Charging", charging: 1 }, { n: "Beam", dmg: 30 }] },
+      { at: 200, moves: [{ n: "Pulse", dmg: 6, apply: { rad: 3 } }], banner: "Core breach: Phase 2", summon: ["hiveGuard", "hiveGuard"] },
+      { at: 100, moves: [{ n: "Hammer", dmg: 15 }, { n: "Barrage", dmg: 5, hits: 2 }], banner: "Core critical: Phase 3", turnStr: 2 }
+    ]
   }
 };
 const ENC = {
@@ -428,14 +456,37 @@ const ENC = {
       ["sporeBat", "sporeBat", "bloomshade"], ["mycelidWeaver", "burrowGrub"]],
     elite: [["broodKnight"], ["rotHulk"], ["bloomMatriarch"]],
     boss: [["thornback"]]
+  },
+  z3: {
+    easy: [["hiveGuard"], ["psionicDrone", "swarmer", "swarmer"], ["hiveWorker", "acidSprayer"], ["larvaCluster"], ["swarmer", "swarmer", "swarmer"]],
+    normal: [["hiveGuard", "psionicDrone"], ["mimic"], ["mimic", "hiveWorker"], ["spineLancer", "hiveWorker"], ["sentryEye", "acidSprayer"],
+      ["resinSpitter", "hiveGuard"], ["mindLeech", "mindLeech"], ["larvaCluster", "larvaCluster"], ["hiveGuard", "swarmer", "swarmer"],
+      ["sentryEye", "spineLancer"], ["psionicDrone", "resinSpitter"]],
+    elite: [["warden", "warden"], ["hiveOverseer"], ["gateJuggernaut"]],
+    patrol: [["hiveGuard", "hiveGuard"], ["hiveGuard", "swarmer", "swarmer"], ["hiveGuard", "hiveWorker"]],
+    boss: [["turret", "homeCore", "turret"]]
   }
 };
-const bossName = () => ENEMIES[ENC["z" + run.zone].boss[0][0]].n;
-const ZONE_GOAL = ["Dig toward the Sentinel's lair", "Dig toward the Thornback's den"];
+const bossName = () => ENEMIES[ENC["z" + run.zone].boss[0].find(id => ENEMIES[id].boss)].n;
+const ZONE_GOAL = ["Dig toward the Sentinel's lair", "Dig toward the Thornback's den", "Dig toward the Home Base Core"];
+const ALWAYS = ["crawler", "hiveLarva"], ROSTER_SIZE = { 2: 7, 3: 7 };
+// which monsters live on a Zone 2 / 3 map this time (seeded); the filtered lists are stored on the map as map.enc
+function pickRoster(zone) {
+  const z = ENC["z" + zone], ids = [...new Set([...z.easy, ...z.normal].flat())].filter(id => !ALWAYS.includes(id));
+  const ok = (list, set) => list.filter(enc => enc.every(id => set.has(id) || ALWAYS.includes(id)));
+  let easy = z.easy, normal = z.normal;
+  for (let i = 0; i < 50; i++) {
+    const set = new Set(shuffle(ids.slice()).slice(0, ROSTER_SIZE[zone])), e = ok(z.easy, set), n = ok(z.normal, set);
+    if (e.length >= 2 && n.length >= 3) { easy = e; normal = n; break; }
+  }
+  return { easy, normal, elite: shuffle(z.elite.slice()).slice(0, 2) };
+}
+const sightings = enc => [...new Set([...enc.easy, ...enc.normal, ...enc.elite].flat())].filter(id => !ALWAYS.includes(id)).map(id => ENEMIES[id].n).sort();
 const NODE_INFO = {
   battle: { n: "Battle", l: "B", col: "#d05a4a" }, elite: { n: "Elite Battle", l: "E", col: "#e0a030" }, boss: { n: "Boss", l: "!", col: "#e03030" },
   event: { n: "Event", l: "?", col: "#5aa7ff" }, camp: { n: "Field Camp", l: "C", col: "#58b447" }, trader: { n: "Salvage Trader", l: "$", col: "#e0c040" },
   cache: { n: "Relic Cache", l: "R", col: "#b070e0" }, antidote: { n: "Spore Antidote", l: "+", col: "#7affc0" },
+  beacon: { n: "Psionic Beacon", l: "*", col: "#9a7aff" }, overrideKey: { n: "Override Key", l: "K", col: "#ffcf4a" }, hiveMap: { n: "Hive Map", l: "M", col: "#5ad0ff" },
   cu: { n: "Copper Vein", l: "", col: "#d9822b" }, ag: { n: "Silver Vein", l: "", col: "#c8ccd2" }, au: { n: "Gold Vein", l: "", col: "#ffcc4a" }
 };
 const ORE = { cu: { n: "Copper", col: "#d9822b", scrap: 3, buy: 20, sell: 8 }, ag: { n: "Silver", col: "#c8ccd2", scrap: 10, buy: 60, sell: 25 }, au: { n: "Gold", col: "#ffcc4a", scrap: 30, buy: 150, sell: 70 } };
@@ -489,14 +540,15 @@ function newRun(seedOverride) {
     run.pending = { screen: "reward", locker: true, scrap: 0, cards: [], relicChoices: pool };
   }
   if (params.get("bench") === "1") run.pending = { screen: "bench" };
-  if (params.get("zone") === "2") { const pend = run.pending; enterZone(2); run.pending = pend; }   // debug: skip to Zone 2, keeping any Relic Locker choice first
+  const zp = Number(params.get("zone"));
+  if (zp >= 2 && zp <= 3) { const pend = run.pending; enterZone(zp); run.pending = pend; }   // debug: skip ahead, keeping any Relic Locker choice first
   saveRun();
 }
 function enterZone(z) {
   run.zone = z;
   const h = Math.min(Math.ceil(run.maxhp * .3), run.maxhp - run.hp); run.hp += h;
-  run.map = genDigMap(z); run.cur = null; run.pending = null;
-  run.alert = 0; run.ambushDue = 0; run.antidote = false;
+  run.map = genDigMap(z); run.cur = null; run.pending = null; run.queued = null;
+  run.alert = 0; run.ambushDue = 0; run.antidote = false; run.overrideKey = false; run.hiveMap = false;
   S.toast = { text: `${ZONES[z - 1]} — healed ${h} HP`, t: 3 };
   S.screen = "map"; S.face = null; S.walk = null; saveRun();
 }
@@ -550,6 +602,24 @@ function genDigMap(zone = 1) {
       if (!cand.length) continue;
       pick(cand).c = "antidote";
     }
+    if (zone === 3) {
+      // unique reachable tiles first (so nothing crowds them out): Override Key (rows 8-10), Hive Map (rows 3-6), 3 Beacons (rows 2-8, 3+ apart, none next to the Key)
+      const pickIdx = (minY, maxY, ok = () => true) => {
+        const cand = [];
+        tiles.forEach((t, i) => { const x = i % MW, y = (i / MW) | 0; if (t.k === "dirt" && !t.c && !protectedT(x, y) && seen.has(i) && y >= minY && y <= maxY && ok(x, y)) cand.push(i); });
+        return cand.length ? pick(cand) : -1;
+      };
+      const ki = pickIdx(8, 10), mi = ki < 0 ? -1 : (tiles[ki].c = "overrideKey", pickIdx(3, 6));
+      if (mi < 0) continue;
+      tiles[mi].c = "hiveMap";
+      const kx = ki % MW, ky = (ki / MW) | 0, beacons = [];
+      for (let b = 0; b < 3; b++) {
+        const i = pickIdx(2, 8, (x, y) => beacons.every(j => Math.abs(x - j % MW) + Math.abs(y - ((j / MW) | 0)) >= 3) && Math.max(Math.abs(x - kx), Math.abs(y - ky)) > 1);
+        if (i < 0) break;
+        tiles[i].c = "beacon"; beacons.push(i);
+      }
+      if (beacons.length < 3) continue;
+    }
     place("au", 2, 7, 9); place("ag", 4, 4, 9); place("elite", 2, 5, 9); place("trader", 1, 3, 7); place("camp", 1, 4, 7);
     place("cache", 1, 3, 9); place("event", 3, 0, 9); place("battle", 9, 1, 9); place("cu", 10, 0, 9);
     const map = { w: MW, h: MH, tiles, px: 4, py: 0 };
@@ -559,6 +629,30 @@ function genDigMap(zone = 1) {
       shuffle(cand).slice(0, 3).forEach(t => { t.spore = true; });
       map.sporeIn = 3;
     }
+    if (zone === 3) {
+      // two hive tunnels (random walks of 4-6 dirt tiles, no content) that patrols walk; the player digs them like plain dirt
+      const okH = (x, y) => y >= 2 && y <= 8 && (t => t.k === "dirt" && !t.c && !t.hive)(T_(x, y)) && !protectedT(x, y) && Math.abs(x - 4) + y > 2;
+      const carve = () => {
+        for (let tries = 0; tries < 40; tries++) {
+          const cand = []; tiles.forEach((t, i) => { if (okH(i % MW, (i / MW) | 0)) cand.push(i); });
+          if (!cand.length) return null;
+          const len = rr(4, 6), path = [pick(cand)];
+          while (path.length < len) {
+            const lx = path[path.length - 1] % MW, ly = (path[path.length - 1] / MW) | 0;
+            const opts = NB4.map(([dx, dy]) => [lx + dx, ly + dy]).filter(([a, b]) => inMap(a, b) && okH(a, b) && !path.includes(b * MW + a));
+            if (!opts.length) break;
+            const [a, b] = pick(opts); path.push(b * MW + a);
+          }
+          if (path.length >= 4) { path.forEach(i => { tiles[i].hive = true; }); return path; }
+        }
+        return null;
+      };
+      const t1 = carve(), t2 = t1 && carve();
+      if (!t2) continue;
+      map.patrols = [t1, t2].map((path, n) => { const i = pick(path); return { x: i % MW, y: (i / MW) | 0, id: n + 1, lastX: -1, lastY: -1 }; });
+      map.patrolSeq = 2;
+    }
+    if (zone >= 2) map.enc = pickRoster(zone);
     return map;
   }
   throw new Error("dig map generation failed");
@@ -567,15 +661,25 @@ function isRevealed(x, y) {
   if (params.get("reveal") === "1") return true;
   const t = tileAt(x, y);
   if (t.k === "lair" || t.dug) return true;
+  if (run.zone === 3) {   // psionic fog: only felt bedrock, the Hive Map, a lit Beacon's radius 2, or (3rd Eye) radius 1 around tunnels
+    if (t.felt || run.hiveMap) return true;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      if (!inMap(x + dx, y + dy)) continue;
+      const n = tileAt(x + dx, y + dy);
+      if (n.c === "beacon" && n.dug) return true;
+      if (n.dug && hasRelic("thirdEye") && Math.abs(dx) <= 1 && Math.abs(dy) <= 1) return true;
+    }
+    return false;
+  }
   const R = hasRelic("thirdEye") ? 2 : 1;
   for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) if (inMap(x + dx, y + dy) && tileAt(x + dx, y + dy).dug) return true;
   return false;
 }
 const NB4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-// a tile the tunnel network touches (can be reached by walking + digging)
+// a tile the tunnel network touches (can be reached by walking + digging); in Zone 3's fog hidden tiles next to a tunnel count too (they may turn out to be bedrock)
 function canReach(x, y) {
-  const t = tileAt(x, y);
-  if (t.dug || t.k === "bedrock" || !isRevealed(x, y)) return false;
+  const t = tileAt(x, y), fog = run.zone === 3, rev = isRevealed(x, y);
+  if (t.dug || (t.k === "bedrock" && !(fog && !rev)) || (!fog && !rev)) return false;
   if (t.k === "lair") return tileAt(4, 9).dug;
   return NB4.some(([dx, dy]) => inMap(x + dx, y + dy) && tileAt(x + dx, y + dy).dug);
 }
@@ -611,8 +715,8 @@ function rollCards(kind, n) {
 }
 
 function chooseEncounter(kind, row) {
-  const z = ENC["z" + run.zone];
-  return kind === "boss" ? pick(z.boss) : kind === "elite" ? pick(z.elite) : pick(row <= 3 ? z.easy : z.normal);
+  const z = ENC["z" + run.zone], e = run.map && run.map.enc || z;   // Zone 2/3 maps carry their own randomised roster
+  return kind === "boss" ? pick(z.boss) : kind === "elite" ? pick(e.elite) : pick(row <= 3 ? e.easy : e.normal);
 }
 function makeStock() {
   const cards = [];
@@ -663,13 +767,50 @@ function digAntidote(t, x, y) {
   S.toast = { text: n ? `Spore Antidote! Removed ${n} Spore card${n === 1 ? "" : "s"}. Spores no longer affect you.` : "Spore Antidote! No Spore cards to remove. Spores no longer affect you.", t: 4 };
   mapFloat(x, y, "Antidote", "#7affc0");
 }
+// Zone 3 patrols: Hive Guard squads that walk hive tunnels and the player's dug tiles, one step per dig
+const patrolAt = (x, y) => (run.map.patrols || []).find(p => p.x === x && p.y === y) || null;
+const walkableP = (x, y) => inMap(x, y) && (t => (t.hive || t.dug) && t.k !== "lair")(tileAt(x, y));
+function patrolPath(p) {   // shortest walkable route from the patrol to the player, as steps without the start, or null
+  const m = run.map, start = p.y * MW + p.x, goal = m.py * MW + m.px, prev = new Map([[start, -1]]), q = [start];
+  while (q.length) {
+    const k = q.shift();
+    if (k === goal) { const path = []; for (let c = k; c !== start; c = prev.get(c)) path.unshift({ x: c % MW, y: (c / MW) | 0 }); return path; }
+    for (const [dx, dy] of NB4) { const nx = (k % MW) + dx, ny = ((k / MW) | 0) + dy, nk = ny * MW + nx; if (walkableP(nx, ny) && !prev.has(nk)) { prev.set(nk, k); q.push(nk); } }
+  }
+  return null;
+}
+const hunting = p => { const pa = patrolPath(p); return !!pa && pa.length > 0 && pa.length <= 6; };
+function movePatrols() {
+  const m = run.map, occ = new Set(m.patrols.map(p => p.y * MW + p.x));
+  for (const p of m.patrols) {
+    const path = patrolPath(p);
+    let to = null;
+    if (path && path.length && path.length <= 6) to = path[0];
+    else {
+      const opts = NB4.map(([dx, dy]) => ({ x: p.x + dx, y: p.y + dy })).filter(o => walkableP(o.x, o.y)), fresh = opts.filter(o => !(o.x === p.lastX && o.y === p.lastY));
+      const pool = fresh.length ? fresh : opts; if (pool.length) to = pick(pool);
+    }
+    if (!to || occ.has(to.y * MW + to.x)) continue;   // stuck, or another patrol is there: wait
+    occ.delete(p.y * MW + p.x); p.lastX = p.x; p.lastY = p.y; p.x = to.x; p.y = to.y; occ.add(to.y * MW + to.x);
+  }
+}
+function spawnPatrol() {
+  const m = run.map; if (m.patrols.length >= 3) return;
+  const cand = []; m.tiles.forEach((t, i) => { const x = i % MW, y = (i / MW) | 0; if (t.hive && !patrolAt(x, y) && Math.abs(x - m.px) + Math.abs(y - m.py) >= 4) cand.push({ x, y }); });
+  if (cand.length) { const c = pick(cand); m.patrols.push({ x: c.x, y: c.y, id: ++m.patrolSeq, lastX: -1, lastY: -1 }); }
+}
+const patrolFight = p => ({ screen: "combat", kind: "patrol", enc: pick(ENC.z3.patrol), patrolId: p.id });
 function digTile(x, y) {
   if (S.dig || S.modal || !canDig(x, y)) return;
   const t = tileAt(x, y), from = { x: run.map.px, y: run.map.py };
+  if (t.k === "bedrock") { t.felt = true; S.face = null; mapFloat(x, y, "Solid rock", "#b8aab0"); saveRun(); return; }   // hidden by Zone 3's fog: bumped, nothing is spent
   t.dug = true; run.map.px = x; run.map.py = y;
   run.alert++; if (run.alert % 8 === 0) run.ambushDue++;
   run.cur = { x, y };
   const c = t.c;
+  if (c === "overrideKey") { run.overrideKey = true; t.used = true; mapFloat(x, y, "Override Key", "#ffcf4a"); S.toast = { text: "Override Key! The Core's turrets will be offline.", t: 4 }; }
+  if (c === "hiveMap") { run.hiveMap = true; t.used = true; mapFloat(x, y, "Hive Map", "#5ad0ff"); S.toast = { text: "Hive Map! The whole Gate is revealed, patrols included.", t: 4 }; }
+  if (c === "beacon") { t.used = true; mapFloat(x, y, "Beacon lit", "#b8a0ff"); }
   if (t.spore) {
     t.spore = false;
     if (run.antidote) mapFloat(x, y, "Cleansed", "#7affc0");
@@ -686,6 +827,16 @@ function digTile(x, y) {
   if (!run.pending && (!c || ORE_KEYS.includes(c)) && run.ambushDue > 0) {
     run.ambushDue--;
     run.pending = { screen: "combat", kind: "ambush", enc: chooseEncounter("battle", 9) };
+  }
+  if (run.zone === 3) {
+    const stood = patrolAt(x, y);   // dug onto a patrol's tile, or one steps onto ours after the dig
+    movePatrols();
+    if (run.alert % 8 === 0) spawnPatrol();
+    const touch = stood || patrolAt(x, y);
+    if (touch) {   // the patrol fight comes first, then whatever the tile held
+      run.queued = run.pending; run.pending = patrolFight(touch);
+      if (!run.queued) run.cur = null;
+    }
   }
   if (!run.pending) run.cur = null;
   saveRun();
@@ -737,7 +888,11 @@ function updateMap(dt) {
   if (S.dig) { S.dig.t += dt; if (S.dig.t >= (S.dig.dur || .2)) { S.dig = null; if (run && run.pending) openPending(); } }
   if (!S.dig && S.walk && run && S.screen === "map") {
     const st = S.walk.path.shift();
-    if (st) { const from = { x: run.map.px, y: run.map.py }; run.map.px = st.x; run.map.py = st.y; S.dig = { t: 0, from, to: st, dur: .1 }; }
+    if (st) {
+      const from = { x: run.map.px, y: run.map.py }; run.map.px = st.x; run.map.py = st.y; S.dig = { t: 0, from, to: st, dur: .1 };
+      const pt = run.zone === 3 && patrolAt(st.x, st.y);
+      if (pt) { S.walk = null; run.cur = null; run.pending = patrolFight(pt); saveRun(); }   // walked into a patrol
+    }
     else { const th = S.walk.then; S.walk = null; saveRun(); if (th) th(); }
   }
   if (S.mfloats.length) { for (const f of S.mfloats) f.t += dt; S.mfloats = S.mfloats.filter(f => f.t < 1.2); }
@@ -872,6 +1027,7 @@ function openPending() {
   else S.screen = p.screen;
 }
 function completeNode() {
+  if (run.queued) { run.pending = run.queued; run.queued = null; S.modal = null; saveRun(); openPending(); return; }   // a patrol fight came first: now the tile's own content
   if (run.cur) { const t = tileAt(run.cur.x, run.cur.y); if (t.c !== "trader") t.used = true; run.cur = null; }
   run.pending = null;
   S.modal = null; S.screen = "map";
@@ -904,10 +1060,21 @@ const val = n => typeof n === "function" ? n() : n;
 const SLOTS = [null, [700], [620, 800], [520, 670, 820], [450, 580, 710, 840]];
 const mkEnemy = (id, uid, x) => {
   const d = ENEMIES[id], hp = rr(d.hp[0], d.hp[1]);
-  return { id, def: d, hp, maxhp: hp, block: 0, str: 0, weak: 0, vuln: 0, rad: 0, mi: 0, override: null, dead: false, fade: 1, hitT: 0, lungeT: 0, x, tx: x, y: 325, odDone: false, uid };
+  return { id, def: d, hp, maxhp: hp, block: 0, str: 0, weak: 0, vuln: 0, rad: 0, mi: 0, override: null, dead: false, fade: 1, hitT: 0, lungeT: 0, x, tx: x, y: 325, odDone: false, uid, phase: 0, dmgTaken: 0 };
 };
+// x positions for a line-up: fixed slots by count, but a wide boss (the Home Base Core) gets room (3 enemies: turret, Core, turret use [545, 720, 895], tuned from the brief's 560/880 for the art widths)
+function slotsFor(L) {
+  const n = L.length;
+  if (!L.some(e => e.def.boss && e.def.w >= 200)) return SLOTS[n];
+  if (n === 3 && L[1].def.boss) return [545, 720, 895];
+  const pos = []; let x = 0;
+  L.forEach((e, i) => { if (i) x += (L[i - 1].def.w + e.def.w) / 2 + 8; pos.push(x); });
+  const mid = (pos[0] + pos[n - 1]) / 2, shift = Math.min(0, 880 - (700 + pos[n - 1] - mid));
+  return pos.map(p => 700 + p - mid + shift);
+}
 // spreads the living enemies over the slots for their count; updateCombat eases x toward tx
-function relayout() { const L = livingEnemies(), xs = SLOTS[L.length]; if (xs) L.forEach((e, i) => { e.tx = xs[i]; }); }
+function relayout() { const L = livingEnemies(), xs = slotsFor(L); if (xs) L.forEach((e, i) => { e.tx = xs[i]; }); }
+const isShielded = e => !e.isP && !!e.def.shieldedBy && C.enemies.some(o => alive(o) && o.id === e.def.shieldedBy);
 function summonEnemies(src, ids) {
   const fresh = [];
   for (const id of ids) {
@@ -923,19 +1090,21 @@ const baseDmg = m => m.dmg + (m.perSpore || 0) * sporeCount();
 function healEnemy(e, n) { const h = Math.min(n, e.maxhp - e.hp); e.hp += h; if (h > 0) addFloat(e, `+${h}`, "#6aff8a"); }
 function addToDisc(id, n) { for (let i = 0; i < n; i++) C.disc.push({ id, up: false, uid: C.uid++, appear: 1 }); addFloat(C.P, `+${n} ${CARDS[id].n}`, "#8fe06a"); }
 
-function startCombat(encIds, kind) {
-  const xs = SLOTS[encIds.length];
+function startCombat(allIds, kind) {
+  const encIds = kind === "boss" && run.zone === 3 && run.overrideKey ? allIds.filter(id => id !== "turret") : allIds;   // the Override Key takes the turrets offline
+  const xs = slotsFor(encIds.map(id => ({ def: ENEMIES[id] })));
   C = {
     kind, over: null, overT: 0, phase: "busy", turn: 0, Q: [], timer: .4, ins: -1, floats: [], sel: -1, choose: null, flash: 0, hoverCard: -1,
     P: { isP: true, hp: run.hp, maxhp: run.maxhp, block: 0, str: 0, weak: 0, vuln: 0, rad: 0, hitT: 0, pose: 0, poseT: 0 },
     enemies: [], draw: [], hand: [], disc: [], exh: [], energy: 0, nextEnergy: 0, charge: 0, heat: 0,
-    comp: { dog: 0, mouse: 0 }, pw: {}, pwv: {}, swordN: 0, atkN: 0, uid: 1, banner: null, dogT: 0, mouseT: 0, oreGain: { cu: 0, ag: 0, au: 0 }
+    comp: { dog: 0, mouse: 0 }, pw: {}, pwv: {}, swordN: 0, atkN: 0, played: 0, uid: 1, banner: null, dogT: 0, mouseT: 0, oreGain: { cu: 0, ag: 0, au: 0 }
   };
   encIds.forEach((id, i) => C.enemies.push(mkEnemy(id, i, xs[i])));
   for (const c of run.deck) C.draw.push(Object.assign(JSON.parse(JSON.stringify(c)), { uid: C.uid++, appear: 1 }));
   shuffle(C.draw);
   S.screen = "combat"; S.modal = null;
-  if (kind === "ambush") { C.banner = { t: 1.6, text: "AMBUSH!" }; C.timer = 1.4; }
+  if (kind === "ambush" || kind === "patrol") { C.banner = { t: 1.6, text: kind === "patrol" ? "PATROL!" : "AMBUSH!" }; C.timer = 1.4; }
+  else if (encIds.length < allIds.length) { C.banner = { t: 1.6, text: "Turrets offline" }; C.timer = 1.4; }
   if (hasRelic("impactDrill")) C.charge = 2;
   if (hasRelic("dogR")) C.comp.dog = 3;
   if (hasRelic("mouseR")) C.comp.mouse = 3;
@@ -960,6 +1129,7 @@ function applyStatus(u, key, n) {
 }
 // raw damage to hp after block; returns hp actually lost
 function takeDamage(t, n, pierce) {
+  if (isShielded(t)) n = Math.floor(n / 2);   // the Core takes half while a Turret stands, from every source
   if (n <= 0 && !pierce) { addFloat(t, "0", "#aab"); return 0; }
   let blocked = 0;
   if (!pierce && t.block > 0) { blocked = Math.min(t.block, n); t.block -= blocked; n -= blocked; }
@@ -976,10 +1146,12 @@ function calcDmg(src, tgt, base, mult = 1) {
 // player attack hit on enemy t (x = card context for bonus/double)
 function strike(t, n, raw, x) {
   if (!alive(t)) return 0;
-  if (raw) return takeDamage(t, n, false);
+  if (raw) { t.dmgTaken = (t.dmgTaken || 0) + n; return takeDamage(t, n, false); }
   let first = 0;
   if (x && x.fz && x.fz.first) { first = x.fz.first; x.fz.first = 0; }
-  const lost = takeDamage(t, calcDmg(C.P, t, n + (x ? x.bonus : 0) + first, x && x.dbl ? 2 : 1), false), th = thornsOf(t);
+  const dmg = calcDmg(C.P, t, n + (x ? x.bonus : 0) + first, x && x.dbl ? 2 : 1);
+  t.dmgTaken = (t.dmgTaken || 0) + dmg;   // the Mimic reflects what you dealt last turn
+  const lost = takeDamage(t, dmg, false), th = thornsOf(t);
   if (th > 0) act(() => takeDamage(C.P, th, false), .15);   // every card hit pays Thorns (Dog / relic damage is raw and doesn't)
   return lost;
 }
@@ -1073,6 +1245,9 @@ function playCard(idx, target) {
     C.pwv[card.id] = (C.pwv[card.id] || 0) + (cardVals(card)[0] || 0);
     addFloat(C.P, d.n, "#ffe27a");
   } else act(() => { (isExh(card) ? C.exh : C.disc).push(card); }, 0);
+  // Sentry Eyes zap you for every card played after the 3rd each turn, through Block
+  C.played++;
+  if (C.played > 3) act(() => { for (const e of livingEnemies()) if (e.def.watch) takeDamage(C.P, e.def.watch, true); }, .15);
   return true;
 }
 function addHeat(n) {
@@ -1087,7 +1262,7 @@ function addHeat(n) {
 }
 
 function startPlayerTurn() {
-  act(() => { C.turn++; C.phase = "busy"; C.P.block = 0; C.sel = -1; C.swordN = 0; if (C.turn > 1) C.banner = { t: 1.1, text: "Your Turn" }; }, .05);
+  act(() => { C.turn++; C.phase = "busy"; C.P.block = 0; C.sel = -1; C.swordN = 0; C.played = 0; for (const e of C.enemies) e.dmgTaken = 0; if (C.turn > 1) C.banner = { t: 1.1, text: "Your Turn" }; }, .05);
   act(() => { if (C.P.rad > 0) { takeDamage(C.P, C.P.rad, true); C.P.rad--; } }, .2);
   act(() => {
     if (C.pw.perpetual) { C.charge += C.pw.perpetual; addFloat(C.P, `+${C.pw.perpetual} Charge`, "#ffa44a"); }
@@ -1095,7 +1270,7 @@ function startPlayerTurn() {
   }, .1);
   act(() => { drawCards(5 + (C.turn === 1 && hasRelic("thirdEye") ? 2 : 0)); }, .3);
   act(() => {
-    C.energy = 3 + (C.turn === 1 && hasRelic("burstR") ? 1 : 0) + C.nextEnergy; C.nextEnergy = 0;
+    C.energy = Math.max(0, 3 + (C.turn === 1 && hasRelic("burstR") ? 1 : 0) + C.nextEnergy); C.nextEnergy = 0;
     if (C.turn === 1 && hasRelic("flareR")) for (const e of livingEnemies()) applyStatus(e, "vuln", 1);
   }, .1);
   act(() => { if (!C.over) C.phase = "player"; }, 0);
@@ -1121,24 +1296,31 @@ function endTurn() {
   act(() => { if (C.pw.fallout) for (const e of livingEnemies()) applyStatus(e, "rad", C.pwv.fallout); }, .25);
   act(() => { C.P.weak = Math.max(0, C.P.weak - 1); C.P.vuln = Math.max(0, C.P.vuln - 1); C.banner = { t: 1.1, text: "Enemy Turn" }; }, .3);
   // all enemy Block / temp Thorns expire together as the phase starts, so a support's ally Block (Knit, Shield Ally) survives whoever acts after it
-  act(() => { for (const e of C.enemies) { e.block = 0; e.thornsTemp = 0; } }, 0);
+  act(() => { for (const e of C.enemies) { if (!e.def.keepBlock) e.block = 0; e.thornsTemp = 0; } }, 0);
   for (const e of C.enemies) {
-    act(() => { if (!alive(e)) return; if (e.rad > 0) { takeDamage(e, e.rad, true); e.rad--; } }, .15);
+    act(() => {
+      if (!alive(e)) return;
+      if (e.rad > 0) { takeDamage(e, e.rad, true); e.rad--; }
+      const ph = e.def.phases && e.def.phases[e.phase];
+      if (ph && ph.turnStr && alive(e)) applyStatus(e, "str", ph.turnStr);   // Core Phase 3 grows stronger every enemy phase
+    }, .15);
     act(() => { if (alive(e)) execMove(e); }, .3);
     act(() => {
       if (!alive(e)) return;
       e.weak = Math.max(0, e.weak - 1); e.vuln = Math.max(0, e.vuln - 1);
-      if (e.override) e.override = null; else e.mi = (e.mi + 1) % e.def.moves.length;
+      if (e.override) e.override = null; else e.mi = (e.mi + 1) % movesOf(e).length;
     }, .05);
   }
   startPlayerTurn();
 }
 
-const moveOf = e => e.override || e.def.moves[e.mi];
+const movesOf = e => e.def.phases ? e.def.phases[e.phase].moves : e.def.moves;
+const moveOf = e => e.override || movesOf(e)[e.mi];
 function execMove(e) {
   const m = moveOf(e);
   e.lungeT = .4;
   addFloat(e, m.n, "#ffd9a0");
+  if (m.breakBlock) act(() => { if (alive(e) && C.P.block > 0) { C.P.block = 0; addFloat(C.P, "Armor melted", "#ff9a6a"); } }, .15);
   if (m.dmg) for (let h = 0; h < (m.hits || 1); h++) act(() => {
     if (!alive(e)) return;
     const lost = takeDamage(C.P, calcDmg(e, C.P, baseDmg(m)), false);
@@ -1161,21 +1343,43 @@ function execMove(e) {
     if (m.addDisc) for (const k in m.addDisc) addToDisc(k, m.addDisc[k]);
     if (m.thornsTemp) { e.thornsTemp = (e.thornsTemp || 0) + m.thornsTemp; addFloat(e, `+${m.thornsTemp} Thorns`, STATUS.thorns.col); }
     if (m.summon) summonEnemies(e, m.summon);
+    if (m.allBlock) for (const o of livingEnemies()) { o.block += m.allBlock; addFloat(o, `+${m.allBlock} Block`, "#9cc8ff"); }
+    if (m.reflect) { const b = Math.min(e.dmgTaken || 0, m.reflect); if (b > 0) { e.block += b; addFloat(e, `+${b} Block`, "#9cc8ff"); } }
+    if (m.healAlly) { const al = livingEnemies().filter(o => o !== e); healEnemy((al.length ? al : [e]).reduce((a, b) => b.hp < a.hp ? b : a), m.healAlly); }
+    if (m.drainEnergy) { C.nextEnergy -= m.drainEnergy; addFloat(C.P, `-${m.drainEnergy} Energy next turn`, "#ffe27a"); }
   }, .1);
+  if (m.selfDestruct) act(() => { if (alive(e)) { e.dead = true; e.hp = 0; addFloat(e, "Burst", "#ffd24a"); } }, .15);   // no loot, no onDeath
 }
-// enemies with an overdrive (Sentinel, Brood Knight, Bloom Matriarch) swap it in once at half HP, without losing their place in the cycle
+// enemies with an overdrive (Sentinel, Brood Knight, Bloom Matriarch) swap it in once at half HP, without losing their place in the cycle;
+// phased enemies (the Home Base Core) switch move list at each HP threshold, interrupting the current intent
 function refreshIntents() {
-  for (const e of C.enemies) if (alive(e) && e.def.overdrive && !e.odDone && e.hp <= e.maxhp / 2) {
-    e.odDone = true; e.override = e.def.overdrive;
-    C.banner = { t: 1.2, text: e.def.overdrive.banner || "Overdrive!" };
+  for (const e of C.enemies) {
+    if (!alive(e)) continue;
+    if (e.def.overdrive && !e.odDone && e.hp <= e.maxhp / 2) {
+      e.odDone = true; e.override = e.def.overdrive;
+      C.banner = { t: 1.2, text: e.def.overdrive.banner || "Overdrive!" };
+    }
+    const ph = e.def.phases;
+    while (ph && e.phase + 1 < ph.length && e.hp <= ph[e.phase + 1].at) {
+      const p = ph[++e.phase];
+      e.mi = 0; e.override = null; C.banner = { t: 1.4, text: p.banner };
+      if (p.summon) summonEnemies(e, p.summon);
+    }
   }
 }
 function afterAction() {
   for (const e of C.enemies) if (!e.dead && e.hp <= 0) {
     e.dead = true; e.hp = 0; addFloat(e, "Defeated", "#ffd24a");
-    if (!e.summoned) gainOre("cu", 1);
+    if (!e.summoned && !e.def.noLoot) gainOre("cu", 1);
     const od = e.def.onDeath;
-    if (od) { addFloat(e, od.n, "#8fe06a"); for (const k in od.addDisc) addToDisc(k, od.addDisc[k]); }
+    if (od) {
+      addFloat(e, od.n, "#8fe06a");
+      for (const k in od.addDisc) addToDisc(k, od.addDisc[k]);
+      if (od.allyStr) for (const o of livingEnemies()) { o.str += od.allyStr; addFloat(o, `+${od.allyStr} Str`, STATUS.str.col); }
+    }
+    const b = e.def.bond, kin = b ? livingEnemies().filter(o => o.id === e.id) : [];   // Wardens avenge each other
+    if (kin.length) { for (const o of kin) { o.str += b.str; healEnemy(o, b.heal); addFloat(o, `+${b.str} Str`, STATUS.str.col); } C.banner = { t: 1.4, text: b.banner }; }
+    if (e.def.endsFight) for (const o of C.enemies) if (!o.dead) { o.dead = true; o.hp = 0; addFloat(o, "Shut down", "#9ad0ff"); }   // the Core falls: everything else powers down, no loot
   }
   refreshIntents();
   if (C.P.hp <= 0) { C.P.hp = 0; C.over = "lost"; C.overT = 1; C.Q.length = 0; C.choose = null; return; }
@@ -1217,7 +1421,8 @@ function onWin() {
   if (kind === "boss") gainOre("au", 1);
   const oreG = Object.assign({}, C.oreGain);
   C = null;
-  if (kind === "boss" && run.zone >= 2) { run.scrap += 75; endRun(true); return; }   // the last zone's boss ends the run
+  if (kind === "patrol" && run.pending && run.pending.patrolId != null) run.map.patrols = run.map.patrols.filter(p => p.id !== run.pending.patrolId);   // the squad is gone
+  if (kind === "boss" && run.zone >= 3) { run.scrap += 75; endRun(true); return; }   // the last zone's boss (the Home Base Core) ends the run
   const scrap = gainScrap(kind === "elite" ? rr(30, 40) : kind === "boss" ? 75 : kind === "ambush" ? rr(10, 20) : rr(15, 25));
   const pend = { screen: "reward", scrap, cards: kind === "ambush" ? [] : rollCards(kind, save.forge.survey ? 4 : 3), relic: null, ore: oreG, ambush: kind === "ambush", nextZone: kind === "boss" };
   if (kind === "elite" || kind === "boss") { const pool = unownedRelics(); if (pool.length) { pend.relic = pick(pool); grantRelic(pend.relic); } }
@@ -1411,15 +1616,16 @@ function drawRelicRow(x, y) {
   run.relics.forEach((id, i) => drawRelic(id, x + 14 + i * 30, y, 13));
 }
 function statusRow(u, cx, y) {
-  const sv = k => k === "thorns" ? thornsOf(u) : u[k];
-  const keys = ["str", "weak", "vuln", "rad", "thorns"].filter(k => sv(k) > 0);
+  // passives (Thorns, Watch, Plated, Shielded) are computed from the enemy's definition, not stored as stacks
+  const sv = k => k === "thorns" ? thornsOf(u) : k === "watch" ? (u.isP ? 0 : u.def.watch || 0) : k === "plated" ? (u.isP || !u.def.keepBlock ? 0 : 1) : k === "shielded" ? (isShielded(u) ? 1 : 0) : u[k];
+  const keys = ["str", "weak", "vuln", "rad", "thorns", "watch", "plated", "shielded"].filter(k => sv(k) > 0);
   const x0 = cx - (keys.length - 1) * 15;
   keys.forEach((k, i) => {
     const st = STATUS[k], x = x0 + i * 30, n = sv(k);
     ctx.beginPath(); ctx.arc(x, y, 12, 0, TAU); ctx.fillStyle = "#12161e"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = st.col; ctx.stroke();
-    if (!st.ico || !uiIcon(st.ico[0], st.ico[1], x, y, 24)) T(st.l, x, y, 12, st.col, "center", true);
-    T(String(n), x + 9, y + 10, 11, "#fff", "center", true);
-    if (over(x - 12, y - 12, 24, 24)) setTip([{ t: `${st.n} ${n}`, d: st.d }], x + 16, y);
+    if (!st.ico || !uiIcon(st.ico[0], st.ico[1], x, y, 24)) T(st.l, x, y, st.l.length > 1 ? 10 : 12, st.col, "center", true);
+    if (!st.nonum) T(String(n), x + 9, y + 10, 11, "#fff", "center", true);
+    if (over(x - 12, y - 12, 24, 24)) setTip([{ t: st.nonum ? st.n : `${st.n} ${n}`, d: st.d.replace(/\bN\b/, n) }], x + 16, y);
   });
 }
 function hpBar(u, cx, y, w) {
@@ -1466,10 +1672,11 @@ function intentInfo(e) {
   const m = moveOf(e), kinds = [];
   let num = "";
   if (m.dmg) { const d = calcDmg(e, C.P, baseDmg(m)); kinds.push("attack"); num = m.hits > 1 ? `${d}×${m.hits}` : String(d); }
-  if (m.block || m.allyBlock) kinds.push("block");
-  if (m.apply || m.addDisc) kinds.push("debuff");
-  if (m.str || m.heal || m.allyStr || m.thornsTemp) kinds.push("buff");
+  if (m.block || m.allyBlock || m.allBlock || m.reflect) kinds.push("block");
+  if (m.apply || m.addDisc || m.breakBlock || m.drainEnergy) kinds.push("debuff");
+  if (m.str || m.heal || m.allyStr || m.thornsTemp || m.healAlly) kinds.push("buff");
   if (m.summon) kinds.push("summon");
+  if (m.charging) kinds.push("charging");
   return { m, kinds, num };
 }
 const enemyArtKey = id => "e_" + (id.startsWith("drone") ? "drone" : id);
@@ -1616,6 +1823,94 @@ function drawEnemyBody(e, x, y) {
     }
     ctx.strokeStyle = "#1a2a20"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x - 54, y - 18 + sink); ctx.quadraticCurveTo(x, y - 4 + sink, x + 54, y - 18 + sink); ctx.stroke();
     ctx.fillStyle = "#e8e4d0"; for (let i = -4; i <= 4; i++) { const tx = x + i * 11, ty = y - 11 + sink - Math.abs(i) * 1.4; ctx.beginPath(); ctx.moveTo(tx - 2, ty - 1); ctx.lineTo(tx + 2, ty - 1); ctx.lineTo(tx, ty + 5); ctx.fill(); }
+  } else if (d.shape === "worker") {
+    const bob = Math.sin(t * 5 + e.uid) * 1.5;
+    ctx.lineCap = "round";
+    for (const dx of [-14, 0, 14]) { const sw = Math.sin(t * 6 + dx) * 3; ctx.beginPath(); ctx.moveTo(x + dx, y - 22); ctx.lineTo(x + dx - 6 + sw, y - 9); ctx.lineTo(x + dx - 8 + sw, y); ctx.stroke(); }
+    ctx.lineCap = "butt";
+    ctx.beginPath(); ctx.ellipse(x + 24, y - 28, 19, 14, 0, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(x + 2, y - 28 + bob, 13, 11, 0, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x - 26, y - 32 + bob, 13, 0, TAU); ctx.fill(); ctx.stroke();
+    eyeAt(x - 29, y - 36 + bob, 4.5);
+    const gl = ctx.createRadialGradient(x - 44, y - 22, 1, x - 44, y - 22, 14); gl.addColorStop(0, "rgba(255,200,80,.9)"); gl.addColorStop(1, "rgba(255,170,40,0)");
+    ctx.fillStyle = gl; ctx.fillRect(x - 60, y - 38, 32, 32);
+    ctx.beginPath(); ctx.arc(x - 44, y - 22, 8, 0, TAU); ctx.fillStyle = "#f0a830"; ctx.fill(); ctx.stroke();   // amber resin blob
+  } else if (d.shape === "sprayer") {
+    const pu = .5 + .5 * Math.sin(t * 3 + e.uid);
+    for (const dx of [-24, -4, 18]) { ctx.fillStyle = "#3e6a3e"; ctx.fillRect(x + dx - 3, y - 14, 7, 14); ctx.strokeRect(x + dx - 3, y - 14, 7, 14); }
+    ctx.beginPath(); ctx.ellipse(x, y - 32, 42, 24, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 4, y - 54); ctx.lineTo(x - 4, y - 12); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + 14, y - 56, 13 + pu * 2, 0, TAU); ctx.fillStyle = `rgb(${130 + pu * 40 | 0},255,${80 + pu * 30 | 0})`; ctx.fill(); ctx.stroke();   // swollen acid sac
+    ctx.beginPath(); ctx.arc(x - 38, y - 32, 12, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#3a3a44"; ctx.fillRect(x - 62, y - 36, 24, 8); ctx.strokeRect(x - 62, y - 36, 24, 8);   // nozzle snout
+    eyeAt(x - 36, y - 40, 4);
+  } else if (d.shape === "larvaCluster") {
+    const sw = 1 + e.mi * .07 + Math.sin(t * 2 + e.uid) * .02;   // swells toward the hatch
+    ctx.save(); ctx.translate(x, y); ctx.scale(sw, sw);
+    [[-26, -14, 17], [4, -12, 19], [30, -14, 16], [-12, -40, 17], [16, -40, 18], [2, -62, 15]].forEach(([dx, dy, r], i) => {
+      ctx.globalAlpha = e.fade * .92; ctx.beginPath(); ctx.ellipse(dx, dy, r, r * 1.12, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+      ctx.globalAlpha = e.fade; ctx.fillStyle = "#4a3a4a"; ctx.beginPath(); ctx.ellipse(dx + Math.sin(t * 4 + i * 2) * 3, dy + Math.cos(t * 3 + i) * 3, r * .4, r * .55, Math.sin(t + i), 0, TAU); ctx.fill();   // something wriggles inside
+    });
+    ctx.restore();
+  } else if (d.shape === "larva") {
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x + 12 - i * 12, y - 10 - Math.max(0, Math.sin(t * 5 + i)) * 3, 9 - i, 0, TAU); ctx.fillStyle = i % 2 ? "#d0c0a0" : col; ctx.fill(); ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(x - 16, y - 10, 4, 0, TAU); ctx.fillStyle = "#3a1a1a"; ctx.fill();
+    eyeAt(x - 9, y - 18, 3);
+  } else if (d.shape === "eye") {
+    const by = y - 58 + Math.sin(t * 2.5 + e.uid) * 5, off = clamp((200 - x) / 40, -1, 1) * 9;   // the iris tracks the player
+    ctx.lineCap = "round"; ctx.strokeStyle = "#8a7aa0"; ctx.lineWidth = 4;
+    for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(x + i * 9, by + 26); ctx.quadraticCurveTo(x + i * 12 + Math.sin(t * 3 + i) * 5, by + 40, x + i * 10 + Math.sin(t * 2 + i) * 6, by + 52); ctx.stroke(); }
+    ctx.lineCap = "butt"; ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(x, by, 30, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + off, by, 17, 0, TAU); ctx.fillStyle = "#d02a2a"; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + off, by, 7, 0, TAU); ctx.fillStyle = "#111"; ctx.fill();
+  } else if (d.shape === "lancer") {
+    const ch = moveOf(e).charging, kick = ch ? Math.sin(t * 20) * 1.5 : 0;
+    ctx.beginPath(); ctx.ellipse(x + 6, y - 58, 17, 38, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x - 2, y - 104, 13, 0, TAU); ctx.fill(); ctx.stroke();
+    eyeAt(x - 7, y - 106, 4.5);
+    ctx.lineCap = "round"; ctx.lineWidth = 5; ctx.strokeStyle = "#0d0f14";
+    for (const dx of [-6, 14]) { ctx.beginPath(); ctx.moveTo(x + dx, y - 26); ctx.lineTo(x + dx - 6, y - 12); ctx.lineTo(x + dx - 4, y); ctx.stroke(); }
+    const ax = ch ? x + 20 + kick : x - 56, ay = ch ? y - 104 : y - 70;   // the spike arm pulls back while winding up
+    ctx.beginPath(); ctx.moveTo(x - 2, y - 82); ctx.lineTo(ax, ay); ctx.stroke(); ctx.strokeStyle = "#e8e0f0"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x - 2, y - 82); ctx.lineTo(ax, ay); ctx.stroke();
+    ctx.lineCap = "butt"; ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 3;
+  } else if (d.shape === "swarmer") {
+    const fl = Math.abs(Math.sin(t * 40 + e.uid));
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(x + s * 6, y - 32 - fl * 4, 15, 7 + fl * 6, s * -.5, 0, TAU); ctx.fillStyle = "rgba(230,200,240,.7)"; ctx.fill(); ctx.stroke(); }
+    ctx.beginPath(); ctx.ellipse(x, y - 22 + Math.sin(t * 6 + e.uid) * 2, 12, 15, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    eyeAt(x - 4, y - 26, 4);
+  } else if (d.shape === "mindLeech") {
+    const sg = [[30, 20, 14], [12, 28, 16], [-8, 30, 15], [-24, 40, 13], [-38, 52, 11]];
+    sg.forEach(([dx, dy, r], i) => { const sy = y - dy - Math.sin(t * 3 + i * .8) * 2; ctx.beginPath(); ctx.arc(x + 4 - dx + 20, sy, r, 0, TAU); ctx.fillStyle = i % 2 ? "#6a3a90" : col; ctx.fill(); ctx.stroke(); });
+    const pu = .5 + .5 * Math.sin(t * 4 + e.uid);
+    ctx.beginPath(); ctx.arc(x - 28, y - 62, 11 + pu, 0, TAU); ctx.fillStyle = `rgb(${220 + pu * 30 | 0},${150 + pu * 40 | 0},255)`; ctx.fill(); ctx.stroke();   // glowing brain bulb
+    ctx.strokeStyle = "#7a4aa0"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x - 28, y - 62, 6, .3, 4); ctx.stroke(); ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 3;
+    eyeAt(x - 30, y - 46, 4);
+  } else if (d.shape === "resin") {
+    ctx.beginPath(); ctx.arc(x + 6, y - 34, 30, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x - 26, y - 44, 15, 0, TAU); ctx.fillStyle = "#8a5a2a"; ctx.fill(); ctx.stroke();
+    eyeAt(x - 30, y - 50, 5);
+    ctx.strokeStyle = "#e0a040"; ctx.lineWidth = 3;
+    for (let i = 0; i < 3; i++) { const sw = Math.sin(t * 2 + i) * 2, ln = 14 + i * 7 + Math.max(0, Math.sin(t * 1.5 + i * 2)) * 8; ctx.beginPath(); ctx.moveTo(x - 36 + i * 5, y - 34); ctx.lineTo(x - 36 + i * 5 + sw, y - 34 + ln); ctx.stroke(); ctx.beginPath(); ctx.arc(x - 36 + i * 5 + sw, y - 34 + ln + 2, 2.5, 0, TAU); ctx.fillStyle = "#e0a040"; ctx.fill(); }
+    ctx.strokeStyle = "#0d0f14";
+  } else if (d.shape === "overseer") {
+    const pu = .5 + .5 * Math.sin(t * 3 + e.uid);
+    ctx.beginPath(); ctx.moveTo(x - 48, y); ctx.lineTo(x - 22, y - 116); ctx.lineTo(x + 22, y - 116); ctx.lineTo(x + 48, y); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.lineCap = "round"; ctx.lineWidth = 5; for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + s * 20, y - 104); ctx.lineTo(x + s * 54, y - 126 - Math.sin(t * 2 + s) * 4); ctx.stroke(); } ctx.lineCap = "butt"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(x, y - 132, 17, 21, 0, 0, TAU); ctx.fillStyle = "#6a4a7a"; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#6a4a7a"; for (const dx of [-12, 0, 12]) { ctx.beginPath(); ctx.moveTo(x + dx - 5, y - 148); ctx.lineTo(x + dx, y - 166 + Math.abs(dx) * .4); ctx.lineTo(x + dx + 5, y - 148); ctx.fill(); ctx.stroke(); }   // crest
+    eyeAt(x - 7, y - 134, 4.5); eyeAt(x + 7, y - 134, 4.5);
+    const gl = ctx.createRadialGradient(x, y - 84, 2, x, y - 84, 26); gl.addColorStop(0, `rgba(235,140,255,${.5 + pu * .4})`); gl.addColorStop(1, "rgba(235,140,255,0)");
+    ctx.fillStyle = gl; ctx.fillRect(x - 30, y - 114, 60, 60);
+    ctx.beginPath(); ctx.moveTo(x, y - 96); ctx.lineTo(x + 9, y - 84); ctx.lineTo(x, y - 72); ctx.lineTo(x - 9, y - 84); ctx.closePath(); ctx.fillStyle = "#f0a0ff"; ctx.fill(); ctx.stroke();   // psionic gem
+  } else if (d.shape === "juggernaut") {
+    const b = clamp(e.block / 20, 0, 1), plate = `rgb(${110 + b * 90 | 0},${110 + b * 90 | 0},${130 + b * 90 | 0})`;   // plates brighten with Block
+    for (const dx of [-56, -22, 14, 48]) { ctx.fillStyle = "#2a2a34"; ctx.fillRect(x + dx, y - 22, 12, 22); ctx.strokeRect(x + dx, y - 22, 12, 22); }
+    ctx.beginPath(); ctx.ellipse(x + 6, y - 62, 82, 54, 0, Math.PI, TAU); ctx.lineTo(x + 88, y - 22); ctx.lineTo(x - 76, y - 22); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.ellipse(x + 6, y - 22, 80 - i * 18, 52 - i * 9, 0, Math.PI * 1.08, Math.PI * 1.92); ctx.strokeStyle = plate; ctx.lineWidth = 7; ctx.stroke(); ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 3; }
+    ctx.beginPath(); ctx.arc(x - 84, y - 40, 17, 0, TAU); ctx.fillStyle = "#2c2c38"; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#e0d8c0"; for (const dy of [-10, 6]) { ctx.beginPath(); ctx.moveTo(x - 94, y - 40 + dy); ctx.lineTo(x - 114, y - 46 + dy); ctx.lineTo(x - 96, y - 34 + dy); ctx.fill(); ctx.stroke(); }
+    eyeAt(x - 82, y - 46, 5);
   } else {
     ctx.beginPath(); ctx.moveTo(x - 80, y - 70); ctx.lineTo(x + 70, y - 90); ctx.lineTo(x + 95, y - 25); ctx.lineTo(x - 90, y - 25); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = "#6a3a20"; ctx.fillRect(x - 70, y - 25, 34, 30); ctx.fillRect(x + 40, y - 25, 34, 30);
@@ -1650,11 +1945,17 @@ function drawEnemy(e) {
 }
 function describeMove(m, num) {
   const p = [];
+  if (m.breakBlock) p.push("Removes all your Block.");
+  if (m.charging) p.push("Winding up a big attack.");
   if (m.dmg) p.push(`Attacks for ${num}.`);
   if (m.drain) p.push("Heals for unblocked damage.");
   if (m.perSpore) p.push(`+${m.perSpore} per Spore card you hold.`);
   if (m.block) p.push(`Gains ${m.block} Block.`);
   if (m.allyBlock) p.push(`Gives ${m.allyBlock} Block to its ally.`);
+  if (m.allBlock) p.push(`Gives ${m.allBlock} Block to all enemies.`);
+  if (m.reflect) p.push(`Gains Block equal to the damage you dealt it last turn (max ${m.reflect}).`);
+  if (m.healAlly) p.push(`Heals its most wounded ally for ${m.healAlly}.`);
+  if (m.drainEnergy) p.push(`You start your next turn with ${m.drainEnergy} less Energy.`);
   if (m.apply) p.push("Applies " + Object.keys(m.apply).map(k => `${m.apply[k]} ${STATUS[k].n}`).join(", ") + ".");
   if (m.str) p.push(`Gains ${m.str} Strength.`);
   if (m.heal) p.push(`Heals ${m.heal}.`);
@@ -1665,6 +1966,7 @@ function describeMove(m, num) {
     const cnt = {}; m.summon.forEach(id => { cnt[id] = (cnt[id] || 0) + 1; });
     p.push("Summons " + Object.keys(cnt).map(id => cnt[id] > 1 ? `${cnt[id]} ${ENEMIES[id].n}s` : `a ${ENEMIES[id].n}`).join(" and ") + ".");
   }
+  if (m.selfDestruct) p.push("Then it bursts.");
   return p.join(" ");
 }
 function drawPlayer() {
@@ -1976,8 +2278,64 @@ function drawAntidote(cx, cy, r, alpha) {
   ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.5 * s; ctx.beginPath(); ctx.moveTo(-4 * s, 7 * s); ctx.lineTo(4 * s, 7 * s); ctx.moveTo(0, 3 * s); ctx.lineTo(0, 11 * s); ctx.stroke();
   ctx.restore();
 }
-function drawTileIcon(c, cx, cy, r, alpha = 1) {
+// Zone 3's one-off tiles: art file if present, else a canvas icon
+function uniqueArt(key, cx, cy, r) { const im = artReady(key); if (!im) return false; const sz = r * 2.4; ctx.drawImage(im, cx - sz / 2, cy - sz / 2, sz, sz); return true; }
+function drawBeacon(cx, cy, r, alpha, lit) {
+  ctx.save(); ctx.globalAlpha *= alpha;
+  const s = r / 15, pu = .5 + .5 * Math.sin(S.time * 3 + cx);
+  if (lit) { const gl = ctx.createRadialGradient(cx, cy - 3 * s, 2, cx, cy - 3 * s, 28 * s); gl.addColorStop(0, `rgba(170,130,255,${.55 + pu * .3})`); gl.addColorStop(1, "rgba(170,130,255,0)"); ctx.fillStyle = gl; ctx.fillRect(cx - 30 * s, cy - 32 * s, 60 * s, 60 * s); }
+  if (!uniqueArt("mapBeacon", cx, cy, r)) {
+    ctx.translate(cx, cy); ctx.lineWidth = 2; ctx.strokeStyle = "#0d0f14";
+    ctx.beginPath(); ctx.moveTo(-10 * s, 14 * s); ctx.lineTo(10 * s, 14 * s); ctx.lineTo(6 * s, 8 * s); ctx.lineTo(-6 * s, 8 * s); ctx.closePath(); ctx.fillStyle = "#2a2438"; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -15 * s); ctx.lineTo(8 * s, -3 * s); ctx.lineTo(0, 8 * s); ctx.lineTo(-8 * s, -3 * s); ctx.closePath(); ctx.fillStyle = lit ? "#d8c4ff" : "#7a5ad0"; ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.beginPath(); ctx.moveTo(-2 * s, -10 * s); ctx.lineTo(-5 * s, -3 * s); ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawKeyIcon(cx, cy, r, alpha) {
+  ctx.save(); ctx.globalAlpha *= alpha;
+  if (!uniqueArt("mapOverrideKey", cx, cy, r)) {
+    const s = r / 15; ctx.translate(cx, cy); ctx.lineWidth = 2; ctx.strokeStyle = "#0d0f14";
+    rp(-13 * s, -9 * s, 26 * s, 18 * s, 3 * s); ctx.fillStyle = "#ffcf4a"; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#6a4a10"; ctx.fillRect(-13 * s, -4 * s, 26 * s, 4 * s);
+    ctx.fillStyle = "#5aff7a"; ctx.beginPath(); ctx.arc(8 * s, 4.5 * s, 2.6 * s, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#b8901c"; ctx.fillRect(-10 * s, 3 * s, 9 * s, 3.5 * s);
+  }
+  ctx.restore();
+}
+function drawHiveMapIcon(cx, cy, r, alpha) {
+  ctx.save(); ctx.globalAlpha *= alpha;
+  if (!uniqueArt("mapHiveMap", cx, cy, r)) {
+    const s = r / 15, pu = .5 + .5 * Math.sin(S.time * 4); ctx.translate(cx, cy); ctx.lineWidth = 2;
+    ctx.fillStyle = "rgba(40,140,190,.55)"; ctx.fillRect(-13 * s, -13 * s, 26 * s, 26 * s);
+    ctx.strokeStyle = "rgba(120,220,255,.6)"; ctx.lineWidth = 1.2; ctx.beginPath();
+    for (const k of [-4.3, 4.3]) { ctx.moveTo(k * s, -13 * s); ctx.lineTo(k * s, 13 * s); ctx.moveTo(-13 * s, k * s); ctx.lineTo(13 * s, k * s); }
+    ctx.stroke(); ctx.strokeStyle = "#5ad0ff"; ctx.lineWidth = 2; ctx.strokeRect(-13 * s, -13 * s, 26 * s, 26 * s);
+    ctx.beginPath(); ctx.arc(3 * s, -3 * s, (3 + pu * 1.5) * s, 0, TAU); ctx.fillStyle = "#e8fbff"; ctx.fill();
+  }
+  ctx.restore();
+}
+function drawPatrolIcon(cx, cy, hgt) {
+  const key = "e_hiveGuard", img = artReady(key);
+  if (img) { const tb = trimBox(key, img), sc = hgt / tb.h, w = tb.w * sc; ctx.drawImage(img, tb.x, tb.y, tb.w, tb.h, cx - w / 2, cy - hgt / 2, w, hgt); return; }
+  const s = hgt / 44; ctx.save(); ctx.translate(cx, cy); ctx.lineWidth = 2; ctx.strokeStyle = "#0d0f14";
+  ctx.beginPath(); ctx.arc(0, 2 * s, 17 * s, Math.PI, TAU); ctx.lineTo(15 * s, 18 * s); ctx.lineTo(-15 * s, 18 * s); ctx.closePath(); ctx.fillStyle = "#2a2236"; ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, -18 * s); ctx.lineTo(4 * s, -26 * s); ctx.lineTo(-4 * s, -26 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#ff3a3a"; ctx.beginPath(); ctx.ellipse(0, 3 * s, 10 * s, 3.5 * s, 0, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+function hiveVeins(px, py, size, seed) {
+  ctx.strokeStyle = "rgba(170,105,230,.42)"; ctx.lineWidth = 1.6 * size / 52;
+  for (let k = 0; k < 3; k++) {
+    const a = hash(seed + k * 4.1), b = hash(seed * 2 + k * 7.3);
+    ctx.beginPath(); ctx.moveTo(px + a * size, py); ctx.bezierCurveTo(px + b * size, py + size * .35, px + (1 - a) * size, py + size * .65, px + b * size * .8 + size * .1, py + size); ctx.stroke();
+  }
+}
+function drawTileIcon(c, cx, cy, r, alpha = 1, lit = false) {
   if (c === "antidote") { drawAntidote(cx, cy, r, alpha); return; }
+  if (c === "beacon") { drawBeacon(cx, cy, r, alpha, lit); return; }
+  if (c === "overrideKey") { drawKeyIcon(cx, cy, r, alpha); return; }
+  if (c === "hiveMap") { drawHiveMapIcon(cx, cy, r, alpha); return; }
   const mi = MAP_ICON[c];
   if (mi !== undefined && artReady("mapIcons")) {
     const sz = r * 2.4; ctx.globalAlpha *= alpha;
@@ -1998,6 +2356,7 @@ function drawTileIcon(c, cx, cy, r, alpha = 1) {
 function mapHud() {
   const m = run.map;
   T(ZONES[run.zone - 1], 730, 40, 26, "#fff", "center", true);
+  if (m.enc && over(590, 22, 280, 36)) setTip([{ t: "Sightings", d: sightings(m.enc).join(", ") }], 560, 66);   // this map's monster roster
   T(ZONE_GOAL[run.zone - 1] || "", 730, 64, 13, "rgba(255,255,255,.55)", "center");
   T(`HP ${run.hp}/${run.maxhp}`, 540, 100, 17, "#ff8a7a", "left", true);
   scrapText(660, 100, run.scrap);
@@ -2016,18 +2375,25 @@ function mapHud() {
     if (run.antidote) T("Antidote active: spores are harmless", 540, 216, 13, "#7affc0", "left", true);
     else T(`Spores spread in ${m.sporeIn} dig${m.sporeIn === 1 ? "" : "s"}`, 540, 216, 13, "#8fe06a", "left", true);
   }
+  if (run.zone === 3) {
+    const vis = (m.patrols || []).filter(p => isRevealed(p.x, p.y));
+    T(vis.length || run.hiveMap ? `Patrols: ${vis.length} (hunting: ${vis.filter(hunting).length})` : "Patrols: ?", 540, 216, 13, "#ff6a5a", "left", true);
+  }
   drawRelicRow(526, 236);
-  // legend
+  // legend (Zone 2 adds spores and the Antidote; Zone 3 adds five entries and goes to 3 columns)
   T("Legend", 540, 276, 14, "#cfc6bb", "left", true);
   const leg = ["battle", "elite", "event", "camp", "trader", "cache", "cu", "ag", "au", "boss"];
   if (hasSpores()) leg.push("spore", "antidote");
-  const rowH = leg.length > 10 ? 28 : 34;
+  if (run.zone === 3) leg.push("beacon", "overrideKey", "hiveMap", "patrol", "hive");
+  const cols = run.zone === 3 ? 3 : 2, rowH = run.zone === 3 ? 34 : leg.length > 10 ? 28 : 34, fs = run.zone === 3 ? 12 : 13, ir = run.zone === 3 ? 11 : 13;
   leg.forEach((c, i) => {
-    const lx = 548 + (i % 2) * 200, ly = 306 + ((i / 2) | 0) * rowH;
+    const lx = cols === 3 ? 544 + (i % 3) * 130 : 548 + (i % 2) * 200, ly = 306 + ((i / cols) | 0) * rowH;
     if (c === "spore") {
       rp(lx - 1, ly - 13, 26, 26, 5); ctx.fillStyle = "#7a4a2a"; ctx.fill(); sporeOverlay(lx - 1, ly - 13, 26, 5.5);
-      T("Spored tile", lx + 32, ly + 1, 13, "#d8d0c8");
-    } else { drawTileIcon(c, lx + 12, ly, 13); T(NODE_INFO[c].n, lx + 32, ly + 1, 13, "#d8d0c8"); }
+      T("Spored tile", lx + 32, ly + 1, fs, "#d8d0c8");
+    } else if (c === "patrol") { drawPatrolIcon(lx + 11, ly, 24); T("Hive Patrol", lx + 28, ly + 1, fs, "#d8d0c8"); }
+    else if (c === "hive") { rp(lx - 1, ly - 11, 24, 24, 5); ctx.fillStyle = "#7a4a2a"; ctx.fill(); hiveVeins(lx - 1, ly - 11, 24, 3.7); T("Hive tunnel", lx + 28, ly + 1, fs, "#d8d0c8"); }
+    else { drawTileIcon(c, lx + 12, ly, ir); T(NODE_INFO[c].n, lx + (cols === 3 ? 28 : 32), ly + 1, fs, "#d8d0c8"); }
   });
   if (run.zone === 1 && m.px === 4 && m.py === 0 && !run.shipRest) {
     const full = run.hp >= run.maxhp;
@@ -2055,10 +2421,22 @@ function drawMap() {
       else if (t.dug && t.k !== "bedrock") { ctx.fillStyle = "rgba(210,130,60,.14)"; ctx.fillRect(px, py, TILE, TILE); ctx.strokeStyle = "rgba(0,0,0,.65)"; ctx.lineWidth = 2; ctx.strokeRect(px + 3, py + 3, TILE - 6, TILE - 6); }
     }
     if (!rev) {
-      if (tilesArt) continue;
-      ctx.fillStyle = `rgb(${26 + h * 14 | 0},${21 + h * 10 | 0},${19 + h * 8 | 0})`; ctx.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
-      ctx.fillStyle = "rgba(255,255,255,.05)";
-      for (let k = 0; k < 4; k++) ctx.fillRect(px + 6 + hash(x * 7 + y * 13 + k) * (TILE - 14), py + 6 + hash(x * 11 + y * 5 + k * 3) * (TILE - 14), 2, 2);
+      if (!tilesArt) {
+        ctx.fillStyle = `rgb(${26 + h * 14 | 0},${21 + h * 10 | 0},${19 + h * 8 | 0})`; ctx.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
+        ctx.fillStyle = "rgba(255,255,255,.05)";
+        for (let k = 0; k < 4; k++) ctx.fillRect(px + 6 + hash(x * 7 + y * 13 + k) * (TILE - 14), py + 6 + hash(x * 11 + y * 5 + k * 3) * (TILE - 14), 2, 2);
+      }
+      if (run.zone === 3 && canReach(x, y)) {   // fog frontier: next to a tunnel, contents unknown (it may even be bedrock)
+        const can = canDig(x, y), face = S.face && S.face.x === x && S.face.y === y, pr = .5 + .5 * Math.sin(S.time * 5);
+        ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = can ? `rgba(205,190,255,${.6 + pr * .4})` : "rgba(205,190,255,.38)"; ctx.lineWidth = can ? 2.5 : 1.5; ctx.strokeRect(px + 3, py + 3, TILE - 6, TILE - 6); ctx.restore();
+        if (face && can) {
+          ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 3; ctx.strokeRect(px + 1, py + 1, TILE - 2, TILE - 2);
+          ctx.beginPath(); ctx.arc(px + TILE - 12, py + 12, 9, 0, TAU); ctx.fillStyle = "#3aa04a"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "#0d0f14"; ctx.stroke();
+          T("A", px + TILE - 12, py + 13, 12, "#fff", "center", true);
+        }
+        hit(px, py, TILE, TILE, () => clickTile(x, y));
+        if (over(px, py, TILE, TILE)) hoverTile = { t, x, y, can, reach: true, fog: true };
+      }
       continue;
     }
     if (tilesArt) { /* tile art already drawn */ }
@@ -2073,11 +2451,12 @@ function drawMap() {
       ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.fillRect(px + 1, py + TILE - 8, TILE - 2, 7);
     }
     if (t.spore && !t.dug) sporeOverlay(px, py, TILE, x * 31 + y * 17);
+    if (t.hive) hiveVeins(px, py, TILE, x * 31 + y * 17);
     const reopen = t.dug && t.c === "trader";
     if (t.c && t.k !== "bedrock") {
-      const ia = t.used ? .4 : t.dug && !reopen ? .5 : 1, ar = artReady("mapIcons");
+      const beacon = t.c === "beacon", ia = beacon ? 1 : t.used ? .4 : t.dug && !reopen ? .5 : 1, ar = artReady("mapIcons");
       if (ar) { ctx.globalAlpha = ia; ctx.beginPath(); ctx.arc(cx, cy, 20, 0, TAU); ctx.fillStyle = "rgba(12,7,4,.55)"; ctx.fill(); ctx.globalAlpha = 1; }
-      drawTileIcon(t.c, cx, cy, ar ? 18 : 15, ia);
+      drawTileIcon(t.c, cx, cy, ar ? 18 : 15, ia, beacon && t.dug);   // a lit Beacon glows
     }
     const can = canDig(x, y), reach = canReach(x, y), face = S.face && S.face.x === x && S.face.y === y;
     if (reach) {
@@ -2119,6 +2498,20 @@ function drawMap() {
     if (S.face && S.face.x === 4 && S.face.y === 10 && canDig(4, 10)) { ctx.beginPath(); ctx.arc(lx + TILE - 12, ly + 12, 9, 0, TAU); ctx.fillStyle = "#3aa04a"; ctx.fill(); T("A", lx + TILE - 12, ly + 13, 12, "#fff", "center", true); }
   }
   if (over(lx, ly, TILE, TILE)) hoverTile = { t: tileAt(4, 10), x: 4, y: 10, can: canDig(4, 10), reach: canReach(4, 10), lair: true };
+  // Zone 3 patrols: only seen where the fog is lifted (the Hive Map shows them all, plus where they're heading)
+  if (run.zone === 3) for (const p of m.patrols || []) {
+    if (!isRevealed(p.x, p.y)) continue;
+    const pcx = GX + p.x * TILE + TILE / 2, pcy = GY + p.y * TILE + TILE / 2, hunt = hunting(p), gl = ctx.createRadialGradient(pcx, pcy + 14, 2, pcx, pcy + 14, 24);
+    gl.addColorStop(0, "rgba(255,50,40,.55)"); gl.addColorStop(1, "rgba(255,50,40,0)"); ctx.fillStyle = gl; ctx.fillRect(pcx - 26, pcy - 12, 52, 52);
+    drawPatrolIcon(pcx, pcy - 2, 44);
+    if (hunt) T("!", pcx + 15, pcy - 18, 18, Math.sin(S.time * 8) > 0 ? "#ff3a3a" : "#ff9a8a", "center", true);
+    if (run.hiveMap) {
+      const nx = hunt ? patrolPath(p)[0] : null;
+      if (nx) { const dx = nx.x - p.x, dy = nx.y - p.y, ax = pcx + dx * 24, ay = pcy + dy * 24; ctx.fillStyle = "rgba(255,120,100,.85)"; ctx.beginPath(); ctx.moveTo(ax + dx * 8, ay + dy * 8); ctx.lineTo(ax - dy * 6, ay + dx * 6); ctx.lineTo(ax + dy * 6, ay - dx * 6); ctx.closePath(); ctx.fill(); }
+      else T("?", pcx + 16, pcy - 16, 16, "rgba(255,200,190,.8)", "center", true);
+    }
+    if (over(pcx - 22, pcy - 24, 44, 48)) hoverTile = { patrol: true, x: p.x, y: p.y };
+  }
   // player token
   let tx = run.map.px, ty = run.map.py;
   if (S.dig) { const k = ease(clamp(S.dig.t / (S.dig.dur || .2), 0, 1)); tx = lerp(S.dig.from.x, S.dig.to.x, k); ty = lerp(S.dig.from.y, S.dig.to.y, k); }
@@ -2134,11 +2527,14 @@ function drawMap() {
   if (hoverTile) {
     const ht = hoverTile, rev = isRevealed(ht.x, ht.y);
     if (ht.ship) setTip([{ t: "Your Ship", d: run.shipRest ? "Already rested this run." : "Rest here once per run for a full heal." }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
-    else if (ht.tunnel) setTip([{ t: "Tunnel", d: "The shaft you came down from the Landing Zone." }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
+    else if (ht.tunnel) setTip([{ t: "Tunnel", d: `The shaft you came down from the ${ZONES[run.zone - 2]}.` }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
+    else if (ht.patrol) setTip([{ t: "Hive Patrol", d: "Moves one tile each time you dig. Hunts you within 6 tiles. Touching it starts a fight." }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
+    else if (ht.fog) setTip([{ t: "Unknown", d: "The psionic fog hides what's here. Dig to find out." }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
     else if (rev) {
       const name = ht.lair ? bossName() + " (Boss)" : ht.t.k === "bedrock" ? "Bedrock" : ht.t.c ? NODE_INFO[ht.t.c].n : "Dirt";
       let d = ht.can ? "Click to select, click again (or press A) to dig." : ht.reach ? "Click to walk over and select it." : ht.reopen ? "Click to walk over and trade." : ht.t.k === "bedrock" ? "Can't be dug." : ht.t.dug ? (ht.t.used ? "Used. Click to walk here." : "Click to walk here.") : ht.lair ? "Dig the camp tile above it first." : "Not next to a tunnel.";
-      if (ht.t.c === "antidote" && !ht.t.dug) d = "Removes all Spore cards from your deck, stops the spread, and makes spored tiles harmless to dig. " + d;
+      const desc = { antidote: "Removes all Spore cards from your deck, stops the spread, and makes spored tiles harmless to dig.", beacon: "Lights up the fog around it once dug.", overrideKey: "Shuts down the Home Base Core's turrets for the final fight.", hiveMap: "Reveals the entire map and all patrols." }[ht.t.c];
+      if (desc && !ht.t.dug) d = desc + " " + d;
       if (ht.t.spore && !ht.t.dug) d += run.antidote ? " Spored: harmless now. Digging here cleanses it." : " Spored: digging here adds a Spore card to your deck.";
       setTip([{ t: name, d }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
     }
@@ -2347,8 +2743,8 @@ function drawCache() {
 }
 function drawRunEnd() {
   const e = S.end; panelBg(e.win ? "#10240f" : "#240f0f", "#060606");
-  T(e.win ? "Thornback Down" : "Run Over", 480, 110, 44, e.win ? "#8dff95" : "#ff8a7a", "center", true);
-  if (e.win) T("Victory! Zone 3 coming soon.", 480, 165, 22, "#ffe27a", "center", true);
+  T(e.win ? "Home Base Core Down" : "Run Over", 480, 110, 44, e.win ? "#8dff95" : "#ff8a7a", "center", true);
+  if (e.win) T("Victory! The Home Base has fallen.", 480, 165, 22, "#ffe27a", "center", true);
   T(`Scrap kept: ${e.scrap}${e.win ? "   Victory bonus: +200" : ""}`, 480, 230, 18, "#ffe27a", "center", true);
   if (e.oreScrap > 0) {
     T(`Leftover ore smelted: +${e.oreScrap} Scrap`, 480, 262, 18, "#ffd9a0", "center", true);
@@ -2443,6 +2839,7 @@ function bootFight(key) {
   let enc, kind = "battle";
   if (k.includes("sentinel")) { enc = ["sentinel"]; kind = "boss"; }
   else if (k.includes("thornback")) { enc = ["thornback"]; kind = "boss"; }
+  else if (k.includes("homecore")) { enc = ["turret", "homeCore", "turret"]; kind = "boss"; }
   else if (k.includes("drone")) { enc = ["droneA", "droneB"]; kind = "elite"; }
   else enc = key.split(",").filter(id => ENEMIES[id]);
   if (!enc || !enc.length) enc = ["crawler", "spitter"];
@@ -2452,5 +2849,5 @@ function bootFight(key) {
 if (save.run && !(save.run.map && save.run.map.tiles && save.run.ore)) { save.run = null; writeSave(); S.toast = { text: "Old run discarded after update", t: 6 }; }
 if (params.has("fight")) bootFight(params.get("fight"));
 requestAnimationFrame(frame);
-window.__s6 = { get run() { return run; }, get C() { return C; }, S, CARDS, RELICS, ENEMIES, save, playCard, endTurn, canAct, finishChoose, costOf, padMove, padA, padB, digTile, canDig, canReach, clickTile, moveDir, confirmMap, updateMap, tileAt, openTrader, openPending, completeNode, enterZone, shipRest, draw, canPay, D, gainOre, step: dt => { S.time += dt; if (C) updateCombat(dt); updateMap(dt); pollPad(dt); } };
+window.__s6 = { get run() { return run; }, get C() { return C; }, S, CARDS, RELICS, ENEMIES, save, playCard, endTurn, canAct, finishChoose, costOf, padMove, padA, padB, digTile, canDig, canReach, clickTile, moveDir, confirmMap, updateMap, tileAt, openTrader, openPending, completeNode, enterZone, shipRest, movePatrols, spawnPatrol, patrolAt, hunting, isRevealed, draw, canPay, D, gainOre, step: dt => { S.time += dt; if (C) updateCombat(dt); updateMap(dt); pollPad(dt); } };
 })();
