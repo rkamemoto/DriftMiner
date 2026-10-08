@@ -12,7 +12,7 @@ git status --short
 echo.
 
 rem Stop if any new/changed file is too big for GitHub (100 MB limit)
-powershell -NoProfile -Command "$big = git ls-files -o -m --exclude-standard | Where-Object { (Test-Path -LiteralPath $_) -and (Get-Item -LiteralPath $_).Length -gt 95MB }; if ($big) { Write-Host 'These files are over 95 MB and GitHub will reject them:' -ForegroundColor Red; $big | ForEach-Object { Write-Host ('  ' + $_) -ForegroundColor Red }; Write-Host 'Export them smaller (e.g. MP3) or move them out of the folder, then run this again.'; exit 1 }"
+powershell -NoProfile -Command "$big = git ls-files -o -m --exclude-standard | Where-Object { (Test-Path -LiteralPath $_) -and (Get-Item -LiteralPath $_ -Force -ErrorAction SilentlyContinue).Length -gt 95MB }; if ($big) { Write-Host 'These files are over 95 MB and GitHub will reject them:' -ForegroundColor Red; $big | ForEach-Object { Write-Host ('  ' + $_) -ForegroundColor Red }; Write-Host 'Export them smaller (e.g. MP3) or move them out of the folder, then run this again.'; exit 1 }"
 if errorlevel 1 goto :done
 
 rem Add everything (new, changed, deleted)

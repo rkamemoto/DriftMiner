@@ -4,3 +4,5 @@ node_modules/
 
 # Local preview config: hardcodes this machine's node runtime and paths.
 .claude/launch.json
+tmp/
+desktop.ini
