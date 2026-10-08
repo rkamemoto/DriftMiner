@@ -12,14 +12,23 @@
       .s6-home { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center;
         background: rgba(8, 20, 28, .55); border: 1px solid rgba(104, 214, 199, .35); opacity: .45; transition: opacity .2s; }
       .s6-home:hover { opacity: 1; }
-      .s6-home svg { width: 18px; height: 18px; stroke: #68d6c7; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .s6-home, .s6-toggle { cursor: pointer; }
+      .s6-toggle { position: absolute; top: 50px; right: 10px; width: 34px; height: 34px; padding: 0; box-sizing: content-box; border-radius: 8px; display: grid; place-items: center;
+        background: rgba(8, 20, 28, .55); border: 1px solid rgba(104, 214, 199, .35); opacity: .45; transition: opacity .2s; }
+      .s6-toggle:hover { opacity: 1; }
+      .s6-music { top: 90px; }
+      .s6-toggle .off, .s6-toggle.muted .on { display: none; }
+      .s6-toggle.muted .off { display: inline; }
+      .s6-home svg, .s6-toggle svg { width: 18px; height: 18px; stroke: #68d6c7; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     </style>
   </head>
   <body class="stage-six">
     <main class="s6-shell">
       <canvas id="stageSixCanvas" width="960" height="640" aria-label="Landfall deckbuilder"></canvas>
       <a class="s6-home" href="../index.html" aria-label="Operations"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></a>
+      <button class="s6-toggle s6-sound" type="button" aria-label="Sound on or off (M)" title="Sound on/off (M)"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="on" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/><path class="off" d="M16 9l5 6M21 9l-5 6"/></svg></button>
+      <button class="s6-toggle s6-music" type="button" aria-label="Music on or off (N)" title="Music on/off (N)"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/><path class="off" d="M3 3l18 18"/></svg></button>
     </main>
-    <script src="stage6.js?v=40"></script>
+    <script src="stage6.js?v=59"></script>
   </body>
 </html>

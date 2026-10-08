@@ -1,5 +1,5 @@
 "use strict";
-// Drift Miner — Stage 6 "Landfall": turn-based deckbuilder. Phase 1 = Zone 1 only (ends at the Landing Sentinel).
+// Drift Miner — Stage 6 "Landfall": turn-based deckbuilder. Zones 1-2 are playable (the run ends at Thornback); Zone 3 is data still to come.
 (() => {
 const canvas = document.getElementById("stageSixCanvas");
 const ctx = canvas.getContext("2d");
@@ -25,6 +25,140 @@ function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)
 const save = loadSave();
 if (params.has("bank")) { save.bank = Math.max(0, Number(params.get("bank")) || 0); writeSave(); }
 
+// ---------------------------------------------------------------- sound (recorded effects in assets/audio: Kenney CC0 packs + Stage 4's alien screams)
+// Each sound lists takes, and one is picked at random per play. A take is one file, or several joined by " + " that play together;
+// "file@0.2" starts that layer 0.2 s late and "file~0.5" cuts a long recording to 0.5 s with a fade. Files without an extension are .ogg.
+// The audio context can only start after a click or key press, so sounds before that are silently dropped.
+const take = (base, ids) => ids.map(i => base + i);
+const SOUNDS = {
+  // interface
+  click: { v: .5, t: take("impactGeneric_light_00", [0, 1, 2, 3, 4]) },
+  select: { v: .7, t: take("card-slide-", [1, 2, 3, 4]) },
+  denied: { v: .8, t: take("impactSoft_medium_00", [0, 1, 2, 3, 4]) },
+  buy: { v: .8, t: take("chips-handle-", [1, 2, 4, 6]) },
+  // cards
+  cardDraw: { v: .6, t: take("card-slide-", [1, 2, 3, 4, 5, 6, 7, 8]) },
+  cardPlay: { v: .8, t: take("card-place-", [1, 2, 3, 4]) },
+  power: { v: .7, t: ["card-place-1 + forceField_000@0.05~0.7", "card-place-3 + forceField_001@0.05~0.7"] },
+  shuffle: { v: .7, t: ["card-shuffle~0.9"] },
+  cardAdd: { v: .8, t: take("cards-pack-take-out-", [1, 2]) },
+  upgrade: { v: .7, t: ["impactMetal_light_000 + impactMetal_light_002@0.14 + metalClick@0.3"] },
+  fuse: { v: .7, t: ["forceField_002~0.9 + impactMetal_heavy_001@0.35 + impactMetal_heavy_003@0.42"] },
+  // combat
+  hit: { v: .8, t: take("impactPunch_medium_00", [0, 1, 2, 3, 4]) },
+  hitHeavy: { v: 1, t: take("impactPunch_heavy_00", [0, 1, 2, 3, 4]) },
+  hurt: { v: .9, t: take("impactPlate_heavy_00", [0, 1, 2, 3, 4]) },
+  blocked: { v: .7, t: take("impactMetal_medium_00", [0, 1, 2, 3, 4]) },
+  block: { v: .6, t: take("impactPlate_light_00", [0, 1, 2, 3, 4]) },
+  lunge: { v: .7, t: take("cloth", [1, 2, 3, 4]) },
+  debuff: { v: .7, t: ["slime_000"] },
+  buff: { v: .7, t: ["clothBelt", "clothBelt2"] },
+  rad: { v: .5, t: ["computerNoise_000~0.45", "computerNoise_002~0.45"] },
+  heal: { v: .5, t: ["forceField_003~0.6", "forceField_004~0.6"] },
+  summon: { v: .8, t: ["doorOpen_000 + slime_000@0.15", "doorOpen_001 + slime_000@0.15"] },
+  overheat: { v: .6, t: ["thrusterFire_000~0.6", "thrusterFire_002~0.6"] },
+  enemyDeath: { v: .8, t: ["explosionCrunch_000 + slime_000", "explosionCrunch_001 + slime_000", "explosionCrunch_002 + slime_000"] },
+  bossDeath: { v: 1, t: ["lowFrequency_explosion_000 + alien-guttural-scream-v1.mp3@0.1"] },
+  yourTurn: { v: .8, t: take("card-fan-", [1, 2]) },
+  enemyTurn: { v: .45, t: ["impactBell_heavy_002", "impactBell_heavy_003"] },
+  alarm: { v: .8, t: ["lowFrequency_explosion_001 + forceField_002@0.1~0.8"] },
+  battleStart: { v: .8, t: take("drawKnife", [1, 2, 3]) },
+  ambush: { v: .9, t: ["explosionCrunch_003 + drawKnife2@0.25", "explosionCrunch_004 + drawKnife3@0.25"] },
+  bossIntro: { v: .9, t: ["alien-scream-A-roar.mp3 + lowFrequency_explosion_001"] },
+  // stingers: made with Google Flow Music, trimmed and faded (untouched originals in tmp/flow-originals/)
+  victory: { v: .75, t: ["stinger-victory.wav"] },
+  defeat: { v: .8, t: ["impactSoft_heavy_000 + stinger-defeat.wav@0.2"] },
+  runWin: { v: .85, t: ["stinger-runwin.wav"] },
+  relic: { v: .75, t: ["stinger-relic.wav"] },
+  rest: { v: .8, t: ["dropLeather + cloth2@0.25"] },
+  // dig map
+  dig: { v: .8, t: take("impactMining_00", [0, 1, 2, 3, 4]) },
+  bump: { v: .8, t: take("impactMetal_heavy_00", [0, 2, 4]) },
+  step: { v: .45, t: take("footstep0", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) },
+  ore_cu: { v: .8, t: take("chips-collide-", [1, 2, 3, 4]) },
+  ore_ag: { v: .7, t: take("impactMetal_light_00", [1, 3, 4]) },
+  ore_au: { v: .6, t: ["impactGlass_heavy_000", "impactGlass_heavy_002"] },
+  spore: { v: .8, t: ["slime_000"] },
+  sporeSpread: { v: .7, t: ["slime_001~1.0"] },
+  cleanse: { v: .5, t: ["forceField_004~0.5"] },
+  antidote: { v: .8, t: ["impactGlass_heavy_003 + forceField_003@0.1~0.7"] },
+  discover: { v: .8, t: ["metalLatch + handleSmallLeather@0.12"] },
+  zone: { v: .7, t: ["spaceEngineLow_000~1.4 + doorClose_000@1.0"] }
+};
+const MUTE_KEY = "driftMinerStage6Mute", MUSIC_OFF_KEY = "driftMinerStage6MusicOff";
+const stored = k => { try { return localStorage.getItem(k) === "1"; } catch (e) { return false; } };
+const Snd = { ctx: null, out: null, bufs: {}, last: {}, mute: stored(MUTE_KEY), musicOff: stored(MUSIC_OFF_KEY) };
+const SFX_GAP = { hit: 40, hitHeavy: 40, blocked: 50, block: 60, cardDraw: 30, step: 60, debuff: 60, buff: 60, heal: 60, rad: 120, click: 30 };
+const layersOf = tk => tk.split(" + ").map(s => { const m = /^([^@~]+)(?:@([\d.]+))?(?:~([\d.]+))?$/.exec(s.trim()); return { f: m[1], at: +(m[2] || 0), max: +(m[3] || 0) }; });
+const fileUrl = f => "assets/audio/" + f + (/\.\w+$/.test(f) ? "" : ".ogg");
+// files download as the page opens and are decoded once a gesture has started the audio context
+const sndFiles = new Set(Object.values(SOUNDS).flatMap(s => s.t.flatMap(tk => layersOf(tk).map(l => l.f))));
+const sndRaw = new Map([...sndFiles].map(f => [f, fetch(fileUrl(f)).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)]));
+function unlockAudio() {
+  if (Snd.ctx) return;
+  try {
+    Snd.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    Snd.out = Snd.ctx.createGain(); Snd.out.gain.value = .8;
+    Snd.out.connect(Snd.ctx.createDynamicsCompressor()).connect(Snd.ctx.destination);
+  } catch (e) { Snd.ctx = null; return; }
+  for (const [f, raw] of sndRaw) raw.then(b => b && Snd.ctx.decodeAudioData(b)).then(buf => { if (buf) Snd.bufs[f] = buf; }).catch(() => { /* a missing or broken file just stays silent */ });
+}
+function sfx(name, o = {}) {
+  const a = Snd.ctx, s = SOUNDS[name]; if (!a || Snd.mute || !s) return;
+  if (a.state === "suspended") a.resume();
+  const now = performance.now(), gap = o.delay ? 0 : SFX_GAP[name] || 0;   // a burst of the same sound in one instant plays once
+  if (gap && now - (Snd.last[name] || 0) < gap) return;
+  Snd.last[name] = now;
+  const rate = (o.rate || 1) * (1 + (o.vary || 0) * (Math.random() * 2 - 1)), layers = layersOf(s.t[Math.floor(Math.random() * s.t.length)]);
+  if (name === "victory" || name === "defeat" || name === "relic" || name === "runWin") {   // music dips for as long as the stinger lasts
+    const len = Math.max(0, ...layers.map(l => Snd.bufs[l.f] ? l.at + (l.max || Snd.bufs[l.f].duration) : 0));
+    Mus.duckT = Math.max(Mus.duckT, (len || 2.5) + (o.delay || 0));
+  }
+  for (const l of layers) {
+    const buf = Snd.bufs[l.f]; if (!buf) continue;
+    const src = a.createBufferSource(), g = a.createGain(), t0 = a.currentTime + (o.delay || 0) + l.at;
+    src.buffer = buf; src.playbackRate.value = rate;
+    g.gain.value = s.v * (o.vol || 1);
+    if (l.max) { g.gain.setValueAtTime(s.v * (o.vol || 1), t0 + l.max * .75); g.gain.linearRampToValueAtTime(0, t0 + l.max); }
+    src.connect(g).connect(Snd.out); src.start(t0);
+    if (l.max) src.stop(t0 + l.max + .02);
+  }
+}
+// background music: one looping track per situation, crossfaded on change and loaded on first use
+const MUSIC = { shaft: "drift-miner-deep-shaft-loop.wav", rush: "drift-miner-ore-rush-loop.wav", hive: "drift-miner-hive-gate-loop.wav" };
+const MUSIC_VOL = .35, MUSIC_FADE = .4;   // fade is the time constant: a crossfade takes about 3x this
+const Mus = { cur: null, bufs: {}, loading: {}, duckT: 0 };
+function musicFor() {
+  if (S.screen === "runEnd") return null;   // quiet, so the Run Won / Defeat stinger stands alone
+  if (S.screen === "combat") return "rush";
+  return run && run.zone === 3 ? "hive" : "shaft";
+}
+function updateMusic(dt) {
+  const a = Snd.ctx; if (!a) return;
+  const want = musicFor(), now = a.currentTime;
+  if (want && !Mus.bufs[want] && !Mus.loading[want]) {
+    Mus.loading[want] = fetch(fileUrl(MUSIC[want])).then(r => r.arrayBuffer()).then(b => a.decodeAudioData(b)).then(buf => { Mus.bufs[want] = buf; }).catch(() => { /* stays silent */ });
+  }
+  if (Mus.cur && Mus.cur.key !== want) { Mus.cur.g.gain.setTargetAtTime(0, now, MUSIC_FADE); Mus.cur.src.stop(now + MUSIC_FADE * 6); Mus.cur = null; }
+  if (!Mus.cur && want && Mus.bufs[want]) {
+    const src = a.createBufferSource(), g = a.createGain();
+    src.buffer = Mus.bufs[want]; src.loop = true; g.gain.value = 0;
+    src.connect(g).connect(Snd.out); src.start();
+    Mus.cur = { key: want, src, g, vol: 0 };
+  }
+  Mus.duckT = Math.max(0, Mus.duckT - dt);
+  const vol = Snd.mute || Snd.musicOff ? 0 : MUSIC_VOL * (Mus.duckT > 0 ? .3 : 1);
+  if (Mus.cur && Mus.cur.vol !== vol) { Mus.cur.g.gain.setTargetAtTime(vol, now, Mus.cur.vol < vol ? MUSIC_FADE : .08); Mus.cur.vol = vol; }
+}
+function setMute(m) {
+  Snd.mute = m; try { localStorage.setItem(MUTE_KEY, m ? "1" : "0"); } catch (e) { /* ignore */ }
+  const b = document.querySelector(".s6-sound"); if (b) b.classList.toggle("muted", m);
+}
+function setMusicOff(m) {
+  Snd.musicOff = m; try { localStorage.setItem(MUSIC_OFF_KEY, m ? "1" : "0"); } catch (e) { /* ignore */ }
+  const b = document.querySelector(".s6-music"); if (b) b.classList.toggle("muted", m);
+}
+
 // ---------------------------------------------------------------- seeded rng (mulberry32)
 function makeRng(seed) {
   let a = seed >>> 0;
@@ -44,14 +178,15 @@ function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Mat
 const ART_ON = params.get("art") !== "0";
 const ART_FILES = {
   miner: "assets/miner-sheet.png", companions: "assets/companions-sheet.png",
-  tiles: "assets/tiles-sheet.png", mapIcons: "assets/map-icons-sheet.png", relics: "assets/relics-sheet.png", ui: "assets/ui-icons-sheet.png",
+  ship: "assets/player-ship-sheet.png", tiles: "assets/tiles-sheet.png", mapIcons: "assets/map-icons-sheet.png", relics: "assets/relics-sheet.png", ui: "assets/ui-icons-sheet.png",
   bg1: "assets/bg-zone1.webp", bg2: "assets/bg-zone2.webp", bg3: "assets/bg-zone3.webp",
   bgHub: "assets/bg-hub.webp", bgCamp: "assets/bg-camp.webp", bgBench: "assets/bg-workbench.webp", // NOTE: Codex swapped these two files (bg-event.webp holds the trader stall, bg-trader.webp the glyph stones); mapped by content until the files are swapped back
   bgTrader: "assets/bg-event.webp", bgEvent: "assets/bg-trader.webp",
+  mapAntidote: "assets/map-antidote.png", mapBeacon: "assets/map-beacon.png", mapOverrideKey: "assets/map-override-key.png", mapHiveMap: "assets/map-hive-map.png", // missing files fall back to canvas icons
   ev_probe: "assets/event-probe.png", ev_sporePool: "assets/event-sporePool.png", ev_mouse: "assets/event-mouse.png"
 };
 // enemies: key "e_<id>"; the Zone 2/3 files are registered now so Phase 2 picks them up
-for (const id of ["crawler", "spitter", "worm", "drone", "sentinel", "sporeMother", "stalker", "leech", "broodKnight", "thornback", "hiveGuard", "psionicDrone", "mimic", "warden", "homeCore", "turret"]) ART_FILES["e_" + id] = `assets/enemy-${id}.png`;
+for (const id of ["crawler", "spitter", "worm", "drone", "sentinel", "sporeMother", "stalker", "leech", "broodKnight", "thornback", "puffcap", "bloomshade", "rotHound", "rotHulk", "sporeBat", "burrowGrub", "mycelidWeaver", "glowcap", "mireLurker", "bloomMatriarch", "hiveWorker", "acidSprayer", "larvaCluster", "hiveLarva", "sentryEye", "spineLancer", "swarmer", "mindLeech", "resinSpitter", "hiveOverseer", "gateJuggernaut", "hiveGuard", "psionicDrone", "mimic", "warden", "homeCore", "turret"]) ART_FILES["e_" + id] = `assets/enemy-${id}.png`;
 for (const f of ["basic", "drill", "blaster", "bomb", "radiation", "sword", "companion", "uplink", "utility"]) ART_FILES["card_" + f] = `assets/cards-${f}.png`;
 const ART = {}, ART_FAIL = {};
 function loadArt(k) { const i = new Image(); i.onerror = () => { ART_FAIL[k] = true; }; i.src = ART_FILES[k]; ART[k] = i; return i; }
@@ -60,11 +195,14 @@ function artReady(k) {
   const i = ART[k] || loadArt(k);
   return i.complete && i.naturalWidth > 0 ? i : null;
 }
+// still downloading (as opposed to missing): callers draw nothing rather than flash the canvas placeholder
+const artPending = k => ART_ON && !!ART_FILES[k] && !ART_FAIL[k] && !artReady(k);
 // sheets whose cells overlap or leak into neighbours are cleaned at load: each cell keeps only its own connected blob
 // (blobs closer than `bridge` blocks of 4px count as one, so a weapon tip or shield edge stays with its pose)
 const SHEETS = { miner: { cols: 4, rows: 1, cw: 384, ch: 512, bridge: 5 }, companions: { cols: 4, rows: 1, cw: 256, ch: 256, bridge: 5 } };
 // icon sheets: the art leaks ~10px into the top of the row below, so rows after the first skip that strip
-const TOP_INSET = { mapIcons: 14, relics: 14, ui: 12 };
+// (the ui sheet was rebuilt clean by tools/clean_stage6_ui_icons.mjs and needs no inset)
+const TOP_INSET = { mapIcons: 14, relics: 14 };
 const cellCache = {};
 function buildCells(key) {
   if (cellCache[key] !== undefined) return cellCache[key];
@@ -187,7 +325,7 @@ const RAR_ORD = { B: 0, C: 1, U: 2, R: 3, S: 4 };
 
 // v entries are numbers or [base, upgraded]; fx(x, v) queues actions through the primitives on x.
 const CARDS = {
-  strike: { n: "Strike", f: "basic", r: "B", c: 1, t: "attack", tg: 1, v: [[6, 9]], tx: v => `Deal ${v[0]}.`, fx: (x, v) => x.hit(x.t, v[0]) },
+  strike: { n: "Strike", f: "basic", r: "B", c: 1, t: "attack", tg: 1, v: [[5, 8]], tx: v => `Deal ${v[0]}.`, fx: (x, v) => x.hit(x.t, v[0]) },
   guard: { n: "Guard", f: "basic", r: "B", c: 1, t: "skill", v: [[5, 8]], tx: v => `Gain ${v[0]} Block.`, fx: (x, v) => x.block(v[0]) },
   // Drill
   pilotBore: { n: "Pilot Bore", f: "drill", r: "C", c: 1, t: "attack", tg: 1, v: [[6, 9]], tx: v => `Deal ${v[0]}. Gain 1 Charge. If this kills, Mine 1.`, fx: (x, v) => { const t = x.t; x.hit(t, v[0]); x.q(() => { if (t && t.hp <= 0) x.mine(1); }); x.charge(1); } },
@@ -324,6 +462,7 @@ function cardName(c) {
   return d.rec ? d.n + (c.fuse[0].up && c.fuse[1].up ? "+" : "") : `${pName(c.fuse[0])} + ${pName(c.fuse[1])}`;
 }
 const canUpgrade = c => halves(c).some(h => !h.up && CARDS[h.id].t !== "status");
+const upgradedPreview = c => c.fuse ? { fuse: c.fuse.map(h => ({ id: h.id, up: true })) } : { id: c.id, up: true };
 const upgradeCard = c => { halves(c).forEach(h => { h.up = true; }); };
 const isFusable = c => !c.fuse && !["power", "status"].includes(CARDS[c.id].t);
 const oreList = d => ["cu", "ag", "au"].filter(k => d.ore && d.ore[k]);
@@ -347,7 +486,11 @@ const STATUS = {
   weak: { ico: [0, 0], l: "W", col: "#a77ed4", n: "Weak", d: "Deals 25% less attack damage. -1 at end of turn." },
   vuln: { ico: [1, 0], l: "V", col: "#e08a3a", n: "Vulnerable", d: "Takes 50% more attack damage. -1 at end of turn." },
   str: { ico: [2, 0], l: "S", col: "#e05050", n: "Strength", d: "+1 damage per hit per stack." },
-  rad: { ico: [3, 0], l: "R", col: "#66cc55", n: "Radiation", d: "Lose HP equal to stacks at start of turn (ignores Block), then -1." }
+  rad: { ico: [3, 0], l: "R", col: "#66cc55", n: "Radiation", d: "Lose HP equal to stacks at start of turn (ignores Block), then -1." },
+  thorns: { l: "T", col: "#7fbf5a", n: "Thorns", d: "Whenever you hit this enemy with an attack, take N damage." },
+  watch: { l: "Wa", col: "#e0607a", n: "Watch", d: "From your 4th card each turn, every card you play costs you N HP (ignores Block)." },
+  plated: { l: "P", col: "#9aa4b8", n: "Plated", d: "Its Block doesn't expire.", nonum: 1 },
+  shielded: { l: "Sh", col: "#5ad0ff", n: "Shielded", d: "Takes 50% damage while a Turret stands.", nonum: 1 }
 };
 const RELICS = {
   impactDrill: { n: "Impact Drill", d: "Start each combat with 2 Charge.", col: "#d9822b" },
@@ -369,7 +512,8 @@ const RELIC_ICON = { impactDrill: 0, blasterR: 1, bombR: 2, dogR: 3, mouseR: 4, 
 const initials = n => n.split(/\s+/).map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
 // ---------------------------------------------------------------- data: enemies / encounters
-// move: dmg+hits attack, block (self), allyBlock, str (self buff), apply {status:n} on player
+// move: dmg+hits attack, block (self), allyBlock, str (self buff), apply {status:n} on player; also summon [ids], drain, addDisc {card:n},
+// thornsTemp, perSpore (+dmg per Spore card held), heal, allyStr. def: thorns (passive), onDeath (move-shaped), overdrive (half-HP swap-in move)
 const ENEMIES = {
   crawler: { n: "Spore Crawler", artScale: 1.45, hp: [12, 16], shape: "blob", col: "#a0b84a", w: 90, h: 64, moves: [{ n: "Bite", dmg: 5 }, { n: "Bite", dmg: 5 }, { n: "Spores", apply: { weak: 1 } }] },
   spitter: { n: "Acid Spitter", artScale: 1.5, hp: [20, 24], shape: "spiky", col: "#c8d040", w: 100, h: 90, moves: [{ n: "Spit", dmg: 8 }, { n: "Corrode", dmg: 3, apply: { vuln: 2 } }] },
@@ -380,6 +524,58 @@ const ENEMIES = {
     n: "Landing Sentinel", hp: [140, 140], shape: "boss", col: "#d0703a", w: 200, h: 190, boss: 1,
     moves: [{ n: "Scan", apply: { vuln: 2 } }, { n: "Cannon", dmg: 22 }, { n: "Sweep", dmg: 6, hits: 3 }, { n: "Fortify", block: 20, str: 2 }],
     overdrive: { n: "Overdrive", str: 3 }
+  },
+  // Zone 2: Spore Wilds
+  sporeMother: { n: "Spore Mother", artScale: 1.4, hp: [40, 44], shape: "blob", col: "#7a9a4a", w: 110, h: 100, moves: [{ n: "Spawn", summon: ["crawler"] }, { n: "Lash", dmg: 10 }] },
+  stalker: { n: "Stalker", artScale: 1.4, hp: [36, 40], shape: "spiky", col: "#8a5a9a", w: 100, h: 90, moves: [{ n: "Stalk", str: 3, block: 6 }, { n: "Pounce", dmg: 8 }] },
+  leech: { n: "Leech", artScale: 1.4, hp: [26, 30], shape: "worm", col: "#9a4a5a", w: 90, h: 70, moves: [{ n: "Drain", dmg: 7, drain: 1 }, { n: "Latch", apply: { weak: 2 } }] },
+  broodKnight: {
+    n: "Brood Knight", artScale: 1.25, hp: [90, 90], shape: "spiky", col: "#6a7a8a", w: 140, h: 130,
+    moves: [{ n: "Shield Bash", dmg: 12, block: 8 }, { n: "Rally", str: 2 }, { n: "Cleave", dmg: 20 }],
+    overdrive: { n: "Call the Brood", summon: ["crawler", "crawler"], banner: "The Brood answers!" }
+  },
+  thornback: {
+    n: "Thornback", hp: [220, 220], shape: "boss", col: "#5a7a3a", w: 200, h: 170, boss: 1, thorns: 3,
+    moves: [{ n: "Spike Volley", dmg: 5, hits: 4 }, { n: "Spore Cloud", addDisc: { spore: 2 } }, { n: "Curl", block: 30, thornsTemp: 2 }, { n: "Crush", dmg: 28 }]
+  },
+  puffcap: { n: "Puffcap", hp: [16, 20], shape: "mushroom", col: "#4fb3a0", w: 70, h: 60, moves: [{ n: "Spore Puff", addDisc: { spore: 1 } }, { n: "Headbutt", dmg: 6 }], onDeath: { n: "Burst", addDisc: { spore: 1 } } },
+  bloomshade: { n: "Bloomshade", fly: 1, hp: [26, 30], shape: "bloom", col: "#d05aa8", w: 90, h: 100, moves: [{ n: "Pollen", apply: { vuln: 2 } }, { n: "Choke", dmg: 4, perSpore: 2 }] },
+  rotHound: { n: "Rot Hound", hp: [30, 34], shape: "hound", col: "#6f7a3a", w: 110, h: 70, moves: [{ n: "Maul", dmg: 7, hits: 2 }, { n: "Lick Wounds", heal: 8, block: 5 }] },
+  rotHulk: { n: "Rot Hulk", hp: [100, 100], shape: "hulk", col: "#5a6a3a", w: 150, h: 140, moves: [{ n: "Fungal Slam", dmg: 18 }, { n: "Rot Spray", addDisc: { spore: 2 }, apply: { weak: 2 } }, { n: "Regrow", heal: 15, block: 10 }] },
+  sporeBat: { n: "Spore Bat", fly: 1, hp: [14, 18], shape: "bat", col: "#6a5a8a", w: 70, h: 56, moves: [{ n: "Screech", apply: { weak: 1 } }, { n: "Swoop", dmg: 4, hits: 2 }] },
+  burrowGrub: { n: "Burrow Grub", hp: [24, 28], shape: "grub", col: "#c8b48a", w: 110, h: 70, thorns: 1, moves: [{ n: "Harden", block: 12 }, { n: "Gnaw", dmg: 9 }] },
+  mycelidWeaver: { n: "Mycelid Weaver", hp: [28, 32], shape: "weaver", col: "#8a9a6a", w: 110, h: 90, moves: [{ n: "Knit", allyBlock: 8 }, { n: "Spore Lash", dmg: 6, addDisc: { spore: 1 } }] },
+  glowcap: { n: "Glowcap Shaman", hp: [30, 34], shape: "shaman", col: "#4a3a5a", w: 70, h: 100, moves: [{ n: "Blessing", allyStr: 2 }, { n: "Spark", dmg: 5, apply: { rad: 2 } }] },
+  mireLurker: { n: "Mire Lurker", hp: [44, 48], shape: "lurker", col: "#3e5a4a", w: 150, h: 70, moves: [{ n: "Submerge", block: 14 }, { n: "Ambush Bite", dmg: 16 }, { n: "Drag", dmg: 6, apply: { vuln: 1 } }] },
+  bloomMatriarch: {
+    n: "Bloom Matriarch", hp: [95, 95], shape: "matriarch", col: "#b0306a", w: 150, h: 150,
+    moves: [{ n: "Pollen Storm", apply: { weak: 2, vuln: 2 } }, { n: "Strangle", dmg: 8, perSpore: 3 }, { n: "Overgrow", heal: 12, allyBlock: 10 }],
+    overdrive: { n: "Seed the Wind", summon: ["bloomshade"], banner: "The Matriarch blooms!" }
+  },
+  // Zone 3: Hive Gate
+  hiveGuard: { n: "Hive Guard", artScale: 1.4, hp: [50, 50], shape: "spiky", col: "#7a5a9a", w: 100, h: 75, moves: [{ n: "Guard", allBlock: 12 }, { n: "Spear", dmg: 14 }] },
+  psionicDrone: { n: "Psionic Drone", fly: 1, artScale: 1.3, hp: [32, 32], shape: "drone", col: "#a07ad8", w: 90, h: 90, moves: [{ n: "Static", apply: { weak: 2, vuln: 2 } }, { n: "Spike", dmg: 10 }] },
+  mimic: { n: "Mimic", artScale: 1.4, hp: [45, 45], shape: "blob", col: "#8a6a3a", w: 100, h: 80, moves: [{ n: "Reflect", reflect: 20 }, { n: "Bite", dmg: 13 }] },
+  warden: { n: "Warden", artScale: 1.2, hp: [70, 70], shape: "spiky", col: "#5a6a8a", w: 120, h: 110, bond: { str: 5, heal: 20, banner: "The Warden avenges its twin!" }, moves: [{ n: "Hammer", dmg: 15 }, { n: "Ward", allBlock: 15 }] },
+  hiveWorker: { n: "Hive Worker", artScale: 1.25, hp: [20, 24], shape: "worker", col: "#8a6a9a", w: 90, h: 70, moves: [{ n: "Repair", healAlly: 8 }, { n: "Pinch", dmg: 6 }] },
+  acidSprayer: { n: "Acid Sprayer", artScale: 1.4, hp: [28, 32], shape: "sprayer", col: "#5a8a5a", w: 100, h: 70, moves: [{ n: "Acid Jet", dmg: 6, apply: { vuln: 1 } }, { n: "Melt Armor", breakBlock: 1, dmg: 8 }] },
+  larvaCluster: { n: "Larva Cluster", artScale: 1.15, hp: [20, 22], shape: "larvaCluster", col: "#d8c8a8", w: 100, h: 80, moves: [{ n: "Pulse", block: 5 }, { n: "Pulse", block: 5 }, { n: "Hatch", summon: ["hiveLarva", "hiveLarva"], selfDestruct: 1 }] },
+  hiveLarva: { n: "Hive Larva", artScale: 1.2, hp: [8, 10], shape: "larva", col: "#e0d0b0", w: 50, h: 40, moves: [{ n: "Nibble", dmg: 3, hits: 2 }] },
+  sentryEye: { n: "Sentry Eye", artScale: 1.1, fly: 1, hp: [30, 34], shape: "eye", col: "#c8c0d8", w: 90, h: 90, watch: 3, moves: [{ n: "Focus", block: 8 }, { n: "Glare", dmg: 9 }] },
+  spineLancer: { n: "Spine Lancer", hp: [34, 38], shape: "lancer", col: "#6a4a7a", w: 90, h: 120, moves: [{ n: "Wind Up", charging: 1 }, { n: "Impale", dmg: 24 }] },
+  swarmer: { n: "Hive Swarmer", artScale: 1.2, hp: [10, 12], shape: "swarmer", col: "#9a5a7a", w: 50, h: 50, moves: [{ n: "Bite", dmg: 4 }], onDeath: { n: "Frenzy", allyStr: 1 } },
+  mindLeech: { n: "Mind Leech", artScale: 1.3, hp: [24, 28], shape: "mindLeech", col: "#7a4aa0", w: 90, h: 70, moves: [{ n: "Siphon", dmg: 6, drain: 1 }, { n: "Mind Fog", apply: { weak: 2 }, block: 6 }] },
+  resinSpitter: { n: "Resin Spitter", artScale: 1.2, hp: [26, 30], shape: "resin", col: "#c88a3a", w: 90, h: 80, moves: [{ n: "Gum Up", drainEnergy: 1 }, { n: "Spit", dmg: 8 }] },
+  hiveOverseer: { n: "Hive Overseer", hp: [110, 110], shape: "overseer", col: "#4a2a5a", w: 140, h: 160, moves: [{ n: "Summon Workers", summon: ["hiveWorker", "hiveWorker"] }, { n: "Psi Lash", dmg: 10, apply: { weak: 2 } }, { n: "Command", allyStr: 2, allBlock: 8 }] },
+  gateJuggernaut: { n: "Gate Juggernaut", artScale: 1.1, hp: [120, 120], shape: "juggernaut", col: "#3a3a4a", w: 170, h: 140, keepBlock: 1, moves: [{ n: "Plate Up", block: 15 }, { n: "Ram", dmg: 20 }, { n: "Grind", dmg: 6, hits: 3 }] },
+  turret: { n: "Turret", artScale: .9, hp: [40, 40], shape: "spiky", col: "#6a7080", w: 80, h: 90, noLoot: 1, moves: [{ n: "Laser", dmg: 8 }] },
+  homeCore: {
+    n: "Home Base Core", hp: [300, 300], shape: "boss", col: "#7a4aa0", w: 220, h: 200, artScale: .85, boss: 1, noLoot: 1, shieldedBy: "turret", endsFight: 1,
+    phases: [
+      { at: 300, moves: [{ n: "Charging", charging: 1 }, { n: "Beam", dmg: 30 }] },
+      { at: 200, moves: [{ n: "Pulse", dmg: 6, apply: { rad: 3 } }], banner: "Core breach: Phase 2", summon: ["hiveGuard", "hiveGuard"] },
+      { at: 100, moves: [{ n: "Hammer", dmg: 15 }, { n: "Barrage", dmg: 5, hits: 2 }], banner: "Core critical: Phase 3", turnStr: 2 }
+    ]
   }
 };
 const ENC = {
@@ -388,12 +584,46 @@ const ENC = {
     normal: [["crawler", "crawler", "crawler"], ["worm", "crawler"], ["spitter", "spitter"], ["worm", "spitter"]],
     elite: [["droneA", "droneB"]],
     boss: [["sentinel"]]
+  },
+  z2: {
+    easy: [["stalker"], ["leech", "crawler"], ["puffcap", "puffcap"], ["bloomshade"], ["sporeBat", "sporeBat"], ["burrowGrub"]],
+    normal: [["sporeMother"], ["stalker", "leech"], ["leech", "leech"], ["stalker", "crawler", "crawler"], ["sporeMother", "crawler"],
+      ["rotHound", "puffcap"], ["bloomshade", "puffcap", "puffcap"], ["rotHound", "bloomshade"],
+      ["mireLurker"], ["mycelidWeaver", "rotHound"], ["glowcap", "stalker"], ["glowcap", "puffcap", "puffcap"],
+      ["sporeBat", "sporeBat", "bloomshade"], ["mycelidWeaver", "burrowGrub"]],
+    elite: [["broodKnight"], ["rotHulk"], ["bloomMatriarch"]],
+    boss: [["thornback"]]
+  },
+  z3: {
+    easy: [["hiveGuard"], ["psionicDrone", "swarmer", "swarmer"], ["hiveWorker", "acidSprayer"], ["larvaCluster"], ["swarmer", "swarmer", "swarmer"]],
+    normal: [["hiveGuard", "psionicDrone"], ["mimic"], ["mimic", "hiveWorker"], ["spineLancer", "hiveWorker"], ["sentryEye", "acidSprayer"],
+      ["resinSpitter", "hiveGuard"], ["mindLeech", "mindLeech"], ["larvaCluster", "larvaCluster"], ["hiveGuard", "swarmer", "swarmer"],
+      ["sentryEye", "spineLancer"], ["psionicDrone", "resinSpitter"]],
+    elite: [["warden", "warden"], ["hiveOverseer"], ["gateJuggernaut"]],
+    patrol: [["hiveGuard", "hiveGuard"], ["hiveGuard", "swarmer", "swarmer"], ["hiveGuard", "hiveWorker"]],
+    boss: [["turret", "homeCore", "turret"]]
   }
 };
+const bossName = () => ENEMIES[ENC["z" + run.zone].boss[0].find(id => ENEMIES[id].boss)].n;
+const ZONE_GOAL = ["Dig toward the Sentinel's lair", "Dig toward the Thornback's den", "Dig toward the Home Base Core"];
+const ALWAYS = ["crawler", "hiveLarva"], ROSTER_SIZE = { 2: 7, 3: 7 };
+// which monsters live on a Zone 2 / 3 map this time (seeded); the filtered lists are stored on the map as map.enc
+function pickRoster(zone) {
+  const z = ENC["z" + zone], ids = [...new Set([...z.easy, ...z.normal].flat())].filter(id => !ALWAYS.includes(id));
+  const ok = (list, set) => list.filter(enc => enc.every(id => set.has(id) || ALWAYS.includes(id)));
+  let easy = z.easy, normal = z.normal;
+  for (let i = 0; i < 50; i++) {
+    const set = new Set(shuffle(ids.slice()).slice(0, ROSTER_SIZE[zone])), e = ok(z.easy, set), n = ok(z.normal, set);
+    if (e.length >= 2 && n.length >= 3) { easy = e; normal = n; break; }
+  }
+  return { easy, normal, elite: shuffle(z.elite.slice()).slice(0, 2) };
+}
+const sightings = enc => [...new Set([...enc.easy, ...enc.normal, ...enc.elite].flat())].filter(id => !ALWAYS.includes(id)).map(id => ENEMIES[id].n).sort();
 const NODE_INFO = {
   battle: { n: "Battle", l: "B", col: "#d05a4a" }, elite: { n: "Elite Battle", l: "E", col: "#e0a030" }, boss: { n: "Boss", l: "!", col: "#e03030" },
   event: { n: "Event", l: "?", col: "#5aa7ff" }, camp: { n: "Field Camp", l: "C", col: "#58b447" }, trader: { n: "Salvage Trader", l: "$", col: "#e0c040" },
-  cache: { n: "Relic Cache", l: "R", col: "#b070e0" },
+  cache: { n: "Relic Cache", l: "R", col: "#b070e0" }, antidote: { n: "Spore Antidote", l: "+", col: "#7affc0" },
+  beacon: { n: "Psionic Beacon", l: "*", col: "#9a7aff" }, overrideKey: { n: "Override Key", l: "K", col: "#ffcf4a" }, hiveMap: { n: "Hive Map", l: "M", col: "#5ad0ff" },
   cu: { n: "Copper Vein", l: "", col: "#d9822b" }, ag: { n: "Silver Vein", l: "", col: "#c8ccd2" }, au: { n: "Gold Vein", l: "", col: "#ffcc4a" }
 };
 const ORE = { cu: { n: "Copper", col: "#d9822b", scrap: 3, buy: 20, sell: 8 }, ag: { n: "Silver", col: "#c8ccd2", scrap: 10, buy: 60, sell: 25 }, au: { n: "Gold", col: "#ffcc4a", scrap: 30, buy: 150, sell: 70 } };
@@ -415,7 +645,7 @@ const FORGE = [
 // ---------------------------------------------------------------- run state
 let run = null;               // save.run: plain data, persisted
 let C = null;                 // combat (not persisted)
-const S = { padMode: false, focusKey: null, fpt: null, screen: "hub", modal: null, time: 0, toast: null, end: null, confirmAbandon: 0, scroll: 0, dig: null, walk: null, face: null, mfloats: [], bench: { sel: [] } };
+const S = { dbg: { open: false, reveal: false }, padMode: false, focusKey: null, fpt: null, screen: "hub", modal: null, time: 0, toast: null, end: null, confirmAbandon: 0, scroll: 0, dig: null, walk: null, face: null, mfloats: [], bench: { sel: [] } };
 const hasRelic = id => !!run && run.relics.includes(id);
 function saveRun() { if (!run) return; run.rngState = rng.state; save.run = run; writeSave(); }
 function gainScrap(n) { run.scrap += n; return n; }
@@ -437,25 +667,36 @@ function newRun(seedOverride) {
     deck.push({ id: "pilotBore", up: false });
   }
   const maxhp = 70 + 5 * f.hp;
-  run = { seed, rngState: 0, zone: 1, map: null, cur: null, hp: maxhp, maxhp, deck, relics: [], scrap: 50 * f.supply, removals: 0, pending: null, alert: 0, ambushDue: 0, ore: { cu: 2 * f.satchel, ag: 0, au: 0 } };
+  run = { seed, rngState: 0, zone: 1, map: null, cur: null, hp: maxhp, maxhp, deck, relics: [], scrap: 50 * f.supply, removals: 0, pending: null, alert: 0, ambushDue: 0, shipRest: false, antidote: false, seenEvents: [], nextFight: null, ore: { cu: 2 * f.satchel, ag: 0, au: 0 } };
   if (params.has("ore")) { const n = Math.max(0, Number(params.get("ore")) || 0); run.ore = { cu: n, ag: n, au: n }; }
   if (params.get("relics") === "all") run.relics = RELIC_IDS.slice();
-  run.map = genDigMap();
+  run.map = genDigMap(1);
   save.stats.runs++;
   if (f.relicLocker && params.get("relics") !== "all") {
     const pool = shuffle(RELIC_IDS.slice()).slice(0, 3);
     run.pending = { screen: "reward", locker: true, scrap: 0, cards: [], relicChoices: pool };
   }
   if (params.get("bench") === "1") run.pending = { screen: "bench" };
+  // debug only (?zone=2|3 together with ?debug=1 or ?fight=): skip ahead, keeping any Relic Locker choice first. A normal Make Landfall always starts in Zone 1.
+  const zp = Number(params.get("zone"));
+  if (zp >= 2 && zp <= 3 && (params.get("debug") === "1" || params.has("fight"))) { const pend = run.pending; enterZone(zp); run.pending = pend; }
   saveRun();
+}
+function enterZone(z) {
+  run.zone = z;
+  const h = Math.min(Math.ceil(run.maxhp * .3), run.maxhp - run.hp); run.hp += h;
+  run.map = genDigMap(z); run.cur = null; run.pending = null; run.queued = null;
+  run.alert = 0; run.ambushDue = 0; run.antidote = false; run.overrideKey = false; run.hiveMap = false;
+  S.toast = { text: `${ZONES[z - 1]} — healed ${h} HP`, t: 3 }; sfx("zone");
+  S.screen = "map"; S.face = null; S.walk = null; saveRun();
 }
 
 // ---------------------------------------------------------------- dig map
 const MW = 9, MH = 11, TILE = 52, GX = 24, GY = 34;
 const tileAt = (x, y) => run.map.tiles[y * MW + x];
 const inMap = (x, y) => x >= 0 && y >= 0 && x < MW && y < MH;
-function genDigMap() {
-  const protectedT = (x, y) => x === 4 && (y === 0 || y === 9 || y === 10);
+const protectedT = (x, y) => x === 4 && (y === 0 || y === 9 || y === 10);
+function genDigMap(zone = 1) {
   for (let attempt = 0; attempt < 200; attempt++) {
     const tiles = [];
     for (let i = 0; i < MW * MH; i++) tiles.push({ k: "dirt", c: null, dug: false, used: false });
@@ -480,7 +721,7 @@ function genDigMap() {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const nx = x + dx, ny = y + dy;
         if (!inMap(nx, ny) || seen.has(ny * MW + nx) || T_(nx, ny).k === "bedrock") continue;
-        if (T_(nx, ny).k === "lair" && !(x === 4 && y === 9)) continue;
+        if (T_(nx, ny).k === "lair") { if (x === 4 && y === 9) seen.add(ny * MW + nx); continue; }   // the lair is reached but never walked through
         seen.add(ny * MW + nx); q.push([nx, ny]);
       }
     }
@@ -492,25 +733,91 @@ function genDigMap() {
         if (cand.length) pick(cand).c = c;
       }
     };
+    if (zone === 2) {
+      // the Spore Antidote: one empty, reachable dirt tile in the bottom third (placed first so nothing else crowds it out)
+      const cand = [];
+      tiles.forEach((t, i) => { const x = i % MW, y = (i / MW) | 0; if (t.k === "dirt" && !t.c && y >= 8 && !protectedT(x, y) && seen.has(i)) cand.push(t); });
+      if (!cand.length) continue;
+      pick(cand).c = "antidote";
+    }
+    if (zone === 3) {
+      // unique reachable tiles first (so nothing crowds them out): Override Key (rows 8-10), Hive Map (rows 3-6), 3 Beacons (rows 2-8, 3+ apart, none next to the Key)
+      const pickIdx = (minY, maxY, ok = () => true) => {
+        const cand = [];
+        tiles.forEach((t, i) => { const x = i % MW, y = (i / MW) | 0; if (t.k === "dirt" && !t.c && !protectedT(x, y) && seen.has(i) && y >= minY && y <= maxY && ok(x, y)) cand.push(i); });
+        return cand.length ? pick(cand) : -1;
+      };
+      const ki = pickIdx(8, 10), mi = ki < 0 ? -1 : (tiles[ki].c = "overrideKey", pickIdx(3, 6));
+      if (mi < 0) continue;
+      tiles[mi].c = "hiveMap";
+      const kx = ki % MW, ky = (ki / MW) | 0, beacons = [];
+      for (let b = 0; b < 3; b++) {
+        const i = pickIdx(2, 8, (x, y) => beacons.every(j => Math.abs(x - j % MW) + Math.abs(y - ((j / MW) | 0)) >= 3) && Math.max(Math.abs(x - kx), Math.abs(y - ky)) > 1);
+        if (i < 0) break;
+        tiles[i].c = "beacon"; beacons.push(i);
+      }
+      if (beacons.length < 3) continue;
+    }
     place("au", 2, 7, 9); place("ag", 4, 4, 9); place("elite", 2, 5, 9); place("trader", 1, 3, 7); place("camp", 1, 4, 7);
     place("cache", 1, 3, 9); place("event", 3, 0, 9); place("battle", 9, 1, 9); place("cu", 10, 0, 9);
-    return { w: MW, h: MH, tiles, px: 4, py: 0 };
+    const map = { w: MW, h: MH, tiles, px: 4, py: 0 };
+    if (zone === 2) {
+      // spore overlay flags: content stays on the tile underneath
+      const cand = []; tiles.forEach((t, i) => { const x = i % MW, y = (i / MW) | 0; if (t.k === "dirt" && !t.dug && y >= 2 && y <= 8 && !protectedT(x, y) && t.c !== "antidote") cand.push(t); });
+      shuffle(cand).slice(0, 3).forEach(t => { t.spore = true; });
+      map.sporeIn = 3;
+    }
+    if (zone === 3) {
+      // two hive tunnels (random walks of 4-6 dirt tiles, no content) that patrols walk; the player digs them like plain dirt
+      const okH = (x, y) => y >= 2 && y <= 8 && (t => t.k === "dirt" && !t.c && !t.hive)(T_(x, y)) && !protectedT(x, y) && Math.abs(x - 4) + y > 2;
+      const carve = () => {
+        for (let tries = 0; tries < 40; tries++) {
+          const cand = []; tiles.forEach((t, i) => { if (okH(i % MW, (i / MW) | 0)) cand.push(i); });
+          if (!cand.length) return null;
+          const len = rr(4, 6), path = [pick(cand)];
+          while (path.length < len) {
+            const lx = path[path.length - 1] % MW, ly = (path[path.length - 1] / MW) | 0;
+            const opts = NB4.map(([dx, dy]) => [lx + dx, ly + dy]).filter(([a, b]) => inMap(a, b) && okH(a, b) && !path.includes(b * MW + a));
+            if (!opts.length) break;
+            const [a, b] = pick(opts); path.push(b * MW + a);
+          }
+          if (path.length >= 4) { path.forEach(i => { tiles[i].hive = true; }); return path; }
+        }
+        return null;
+      };
+      const t1 = carve(), t2 = t1 && carve();
+      if (!t2) continue;
+      map.patrols = [t1, t2].map((path, n) => { const i = pick(path); return { x: i % MW, y: (i / MW) | 0, id: n + 1, lastX: -1, lastY: -1 }; });
+      map.patrolSeq = 2;
+    }
+    if (zone >= 2) map.enc = pickRoster(zone);
+    return map;
   }
   throw new Error("dig map generation failed");
 }
 function isRevealed(x, y) {
-  if (params.get("reveal") === "1") return true;
+  if (params.get("reveal") === "1" || S.dbg.reveal) return true;
   const t = tileAt(x, y);
-  if (t.k === "lair" || t.dug) return true;
+  if (t.k === "lair" || t.dug || t.seen) return true;   // t.seen: revealed by an event
+  if (run.zone === 3) {   // psionic fog: only felt bedrock, the Hive Map, a lit Beacon's radius 2, or (3rd Eye) radius 1 around tunnels
+    if (t.felt || run.hiveMap) return true;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      if (!inMap(x + dx, y + dy)) continue;
+      const n = tileAt(x + dx, y + dy);
+      if (n.c === "beacon" && n.dug) return true;
+      if (n.dug && hasRelic("thirdEye") && Math.abs(dx) <= 1 && Math.abs(dy) <= 1) return true;
+    }
+    return false;
+  }
   const R = hasRelic("thirdEye") ? 2 : 1;
   for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) if (inMap(x + dx, y + dy) && tileAt(x + dx, y + dy).dug) return true;
   return false;
 }
 const NB4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-// a tile the tunnel network touches (can be reached by walking + digging)
+// a tile the tunnel network touches (can be reached by walking + digging); in Zone 3's fog hidden tiles next to a tunnel count too (they may turn out to be bedrock)
 function canReach(x, y) {
-  const t = tileAt(x, y);
-  if (t.dug || t.k === "bedrock" || !isRevealed(x, y)) return false;
+  const t = tileAt(x, y), fog = run.zone === 3, rev = isRevealed(x, y);
+  if (t.dug || (t.k === "bedrock" && !(fog && !rev)) || (!fog && !rev)) return false;
   if (t.k === "lair") return tileAt(4, 9).dug;
   return NB4.some(([dx, dy]) => inMap(x + dx, y + dy) && tileAt(x + dx, y + dy).dug);
 }
@@ -545,7 +852,10 @@ function rollCards(kind, n) {
   return out;
 }
 
-const chooseEncounter = (kind, row) => kind === "boss" ? pick(ENC.z1.boss) : kind === "elite" ? pick(ENC.z1.elite) : pick(row <= 3 ? ENC.z1.easy : ENC.z1.normal);
+function chooseEncounter(kind, row) {
+  const z = ENC["z" + run.zone], e = run.map && run.map.enc || z;   // Zone 2/3 maps carry their own randomised roster
+  return kind === "boss" ? pick(z.boss) : kind === "elite" ? pick(e.elite) : pick(row <= 3 ? e.easy : e.normal);
+}
 function makeStock() {
   const cards = [];
   for (const [rar, n] of [["C", 3], ["U", 1], ["R", 1]]) {
@@ -560,7 +870,10 @@ const traderStock = () => tileAt(run.cur.x, run.cur.y).stock;
 function mapFloat(x, y, text, col) { S.mfloats.push({ x: GX + x * TILE + TILE / 2, y: GY + y * TILE + TILE / 2, text, col, t: 0 }); }
 function makePending(c, y) {
   if (["battle", "elite", "boss"].includes(c)) return { screen: "combat", kind: c, enc: chooseEncounter(c, y) };
-  if (c === "event") return { screen: "event", id: pick(Object.keys(EVENTS)), res: null };
+  if (c === "event") {   // only this zone's events, none twice in a run until the zone's list is used up
+    const seen = run.seenEvents = run.seenEvents || [], zone = Object.keys(EVENTS).filter(id => EVENTS[id].zone === run.zone), fresh = zone.filter(id => !seen.includes(id)), id = pick(fresh.length ? fresh : zone);
+    seen.push(id); return { screen: "event", id, res: null };
+  }
   if (c === "camp") return { screen: "camp" };
   if (c === "cache") {
     const pool = unownedRelics(), id = pool.length ? pick(pool) : null;
@@ -570,22 +883,102 @@ function makePending(c, y) {
   if (c === "trader") { const t = tileAt(run.cur.x, run.cur.y); if (!t.stock) t.stock = makeStock(); return { screen: "trader" }; }
   return null;
 }
+// Zone 2 spores: t.spore is an overlay flag only, the tile keeps its content
+const hasSpores = () => run.zone === 2;
+const canSpore = (x, y) => inMap(x, y) && (t => !t.dug && t.k === "dirt" && !t.spore && t.c !== "antidote" && !protectedT(x, y))(tileAt(x, y));
+function spreadSpores() {
+  const m = run.map, snap = [];
+  m.tiles.forEach((t, i) => { if (t.spore) snap.push([i % MW, (i / MW) | 0]); });
+  m.sporeIn = 3;
+  let total = snap.length;
+  const fresh = [], elig = (x, y) => NB4.map(([dx, dy]) => [x + dx, y + dy]).filter(([a, b]) => canSpore(a, b));
+  const infect = (a, b) => { tileAt(a, b).spore = true; fresh.push([a, b]); total++; };
+  for (const [x, y] of snap) if (total < 25 && rng.next() < .5) { const el = elig(x, y); if (el.length) { const [a, b] = pick(el); infect(a, b); } }
+  if (!fresh.length && total < 25) {   // every spread does something
+    const all = snap.flatMap(([x, y]) => elig(x, y));
+    if (all.length) { const [a, b] = pick(all); infect(a, b); }
+  }
+  S.toast = { text: "The spores spread", t: 2 }; sfx("sporeSpread", { delay: .15 });
+  for (const [a, b] of fresh) if (isRevealed(a, b)) mapFloat(a, b, "Spores!", "#8fe06a");
+}
+function digAntidote(t, x, y) {
+  run.antidote = true; t.used = true;
+  let n = 0;
+  for (let i = run.deck.length - 1; i >= 0; i--) if (run.deck[i].id === "spore") { run.deck.splice(i, 1); n++; }
+  S.toast = { text: n ? `Spore Antidote! Removed ${n} Spore card${n === 1 ? "" : "s"}. Spores no longer affect you.` : "Spore Antidote! No Spore cards to remove. Spores no longer affect you.", t: 4 };
+  mapFloat(x, y, "Antidote", "#7affc0"); sfx("antidote", { delay: .1 });
+}
+// Zone 3 patrols: Hive Guard squads that walk hive tunnels and the player's dug tiles, one step per dig
+const patrolAt = (x, y) => (run.map.patrols || []).find(p => p.x === x && p.y === y) || null;
+const walkableP = (x, y) => inMap(x, y) && (t => (t.hive || t.dug) && t.k !== "lair")(tileAt(x, y));
+function patrolPath(p) {   // shortest walkable route from the patrol to the player, as steps without the start, or null
+  const m = run.map, start = p.y * MW + p.x, goal = m.py * MW + m.px, prev = new Map([[start, -1]]), q = [start];
+  while (q.length) {
+    const k = q.shift();
+    if (k === goal) { const path = []; for (let c = k; c !== start; c = prev.get(c)) path.unshift({ x: c % MW, y: (c / MW) | 0 }); return path; }
+    for (const [dx, dy] of NB4) { const nx = (k % MW) + dx, ny = ((k / MW) | 0) + dy, nk = ny * MW + nx; if (walkableP(nx, ny) && !prev.has(nk)) { prev.set(nk, k); q.push(nk); } }
+  }
+  return null;
+}
+const hunting = p => { const pa = patrolPath(p); return !!pa && pa.length > 0 && pa.length <= 6; };
+function movePatrols() {
+  const m = run.map, occ = new Set(m.patrols.map(p => p.y * MW + p.x));
+  for (const p of m.patrols) {
+    const path = patrolPath(p);
+    let to = null;
+    if (path && path.length && path.length <= 6) to = path[0];
+    else {
+      const opts = NB4.map(([dx, dy]) => ({ x: p.x + dx, y: p.y + dy })).filter(o => walkableP(o.x, o.y)), fresh = opts.filter(o => !(o.x === p.lastX && o.y === p.lastY));
+      const pool = fresh.length ? fresh : opts; if (pool.length) to = pick(pool);
+    }
+    if (!to || occ.has(to.y * MW + to.x)) continue;   // stuck, or another patrol is there: wait
+    occ.delete(p.y * MW + p.x); p.lastX = p.x; p.lastY = p.y; p.x = to.x; p.y = to.y; occ.add(to.y * MW + to.x);
+  }
+}
+function spawnPatrol() {
+  const m = run.map; if (m.patrols.length >= 3) return;
+  const cand = []; m.tiles.forEach((t, i) => { const x = i % MW, y = (i / MW) | 0; if (t.hive && !patrolAt(x, y) && Math.abs(x - m.px) + Math.abs(y - m.py) >= 4) cand.push({ x, y }); });
+  if (cand.length) { const c = pick(cand); m.patrols.push({ x: c.x, y: c.y, id: ++m.patrolSeq, lastX: -1, lastY: -1 }); }
+}
+const patrolFight = p => ({ screen: "combat", kind: "patrol", enc: pick(ENC.z3.patrol), patrolId: p.id });
 function digTile(x, y) {
   if (S.dig || S.modal || !canDig(x, y)) return;
   const t = tileAt(x, y), from = { x: run.map.px, y: run.map.py };
-  t.dug = true; run.map.px = x; run.map.py = y;
+  if (t.k === "bedrock") { sfx("bump"); t.felt = true; S.face = null; mapFloat(x, y, "Solid rock", "#b8aab0"); saveRun(); return; }   // hidden by Zone 3's fog: bumped, nothing is spent
+  t.dug = true; run.map.px = x; run.map.py = y; sfx("dig", { vary: .08 });
   run.alert++; if (run.alert % 8 === 0) run.ambushDue++;
   run.cur = { x, y };
   const c = t.c;
+  if (c === "overrideKey" || c === "hiveMap" || c === "beacon") sfx("discover", { delay: .12 });
+  if (c === "overrideKey") { run.overrideKey = true; t.used = true; mapFloat(x, y, "Override Key", "#ffcf4a"); S.toast = { text: "Override Key! The Core's turrets will be offline.", t: 4 }; }
+  if (c === "hiveMap") { run.hiveMap = true; t.used = true; mapFloat(x, y, "Hive Map", "#5ad0ff"); S.toast = { text: "Hive Map! The whole Gate is revealed, patrols included.", t: 4 }; }
+  if (c === "beacon") { t.used = true; mapFloat(x, y, "Beacon lit", "#b8a0ff"); }
+  if (t.spore) {
+    t.spore = false;
+    if (run.antidote) { mapFloat(x, y, "Cleansed", "#7affc0"); sfx("cleanse", { delay: .08 }); }
+    else { addCard("spore"); sfx("spore", { delay: .08 }); mapFloat(x, y, "+1 Spore", "#8fe06a"); }
+  }
+  if (c === "antidote") digAntidote(t, x, y);
+  else if (hasSpores() && !run.antidote && --run.map.sporeIn <= 0) spreadSpores();
   if (ORE_KEYS.includes(c)) {
     const n = (c === "cu" ? rr(2, 3) : c === "ag" ? rr(1, 2) : 1) + (hasRelic("magnetR") ? 1 : 0);
-    gainOre(c, n); t.used = true; mapFloat(x, y, `+${n} ${ORE[c].n}`, ORE[c].col);
+    gainOre(c, n); t.used = true; sfx("ore_" + c, { delay: .12 }); mapFloat(x, y, `+${n} ${ORE[c].n}`, ORE[c].col);
   }
   run.pending = makePending(c, y);
   // an ambush only lands on plain dirt or ore veins, never on another content tile
   if (!run.pending && (!c || ORE_KEYS.includes(c)) && run.ambushDue > 0) {
     run.ambushDue--;
     run.pending = { screen: "combat", kind: "ambush", enc: chooseEncounter("battle", 9) };
+  }
+  if (run.zone === 3) {
+    const stood = patrolAt(x, y);   // dug onto a patrol's tile, or one steps onto ours after the dig
+    movePatrols();
+    if (run.alert % 8 === 0) spawnPatrol();
+    const touch = stood || patrolAt(x, y);
+    if (touch) {   // the patrol fight comes first, then whatever the tile held
+      run.queued = run.pending; run.pending = patrolFight(touch);
+      if (!run.queued) run.cur = null;
+    }
   }
   if (!run.pending) run.cur = null;
   saveRun();
@@ -625,12 +1018,24 @@ function confirmMap() {
   if (S.face && canDig(S.face.x, S.face.y)) { digTile(S.face.x, S.face.y); return; }
   const t = tileAt(m.px, m.py);
   if (t.dug && t.c === "trader") openTrader(m.px, m.py);
+  else if (m.px === 4 && m.py === 0 && !S.face) shipRest();
+}
+// Zone 1 ship: one free full heal per run
+function shipRest() {
+  if (run.zone !== 1 || run.shipRest || run.hp >= run.maxhp) return;
+  const h = run.maxhp - run.hp; run.hp = run.maxhp; run.shipRest = true;
+  S.toast = { text: `Rested aboard the ship: +${h} HP`, t: 2.5 }; sfx("rest"); saveRun();
 }
 function updateMap(dt) {
   if (S.dig) { S.dig.t += dt; if (S.dig.t >= (S.dig.dur || .2)) { S.dig = null; if (run && run.pending) openPending(); } }
   if (!S.dig && S.walk && run && S.screen === "map") {
     const st = S.walk.path.shift();
-    if (st) { const from = { x: run.map.px, y: run.map.py }; run.map.px = st.x; run.map.py = st.y; S.dig = { t: 0, from, to: st, dur: .1 }; }
+    if (st) {
+      sfx("step", { vary: .1 });
+      const from = { x: run.map.px, y: run.map.py }; run.map.px = st.x; run.map.py = st.y; S.dig = { t: 0, from, to: st, dur: .1 };
+      const pt = run.zone === 3 && patrolAt(st.x, st.y);
+      if (pt) { S.walk = null; run.cur = null; run.pending = patrolFight(pt); saveRun(); }   // walked into a patrol
+    }
     else { const th = S.walk.then; S.walk = null; saveRun(); if (th) th(); }
   }
   if (S.mfloats.length) { for (const f of S.mfloats) f.t += dt; S.mfloats = S.mfloats.filter(f => f.t < 1.2); }
@@ -713,7 +1118,7 @@ function padA() {
 function padB() {
   S.padMode = true;
   if (C && S.screen === "combat" && !S.modal && !C.choose && C.sel >= 0) { const sc = C.hand[C.sel]; C.sel = -1; if (sc) S.focusKey = "hand:" + sc.uid; return; }
-  if (S.modal) { if (S.modal.cancel) S.modal = null; return; }
+  if (S.modal) { if (S.modal.cancel) closeModal(); return; }
   if (C && C.choose) return;
   // B = return: leave the shop / workbench, or go back to the Forge from the run-end screen
   if (run && (S.screen === "trader" || S.screen === "bench")) completeNode();
@@ -723,6 +1128,7 @@ function padX() { if (run && S.screen !== "hub" && S.screen !== "runEnd" && !S.m
 const pad = { dir: null, t: 0, a: false, b: false, x: false, y: false };
 window.addEventListener("gamepadconnected", e => { S.toast = { text: "Controller connected: " + e.gamepad.id.slice(0, 44), t: 4 }; });
 window.addEventListener("gamepaddisconnected", () => { S.toast = { text: "Controller disconnected", t: 3 }; });
+const END_HOLD = .5;   // seconds Y must be held to end the turn
 function pollPad(dt) {
   if (!navigator.getGamepads) return;
   const gp = [...navigator.getGamepads()].find(g => g && g.connected);
@@ -742,12 +1148,12 @@ function pollPad(dt) {
   const a = b(0), bb = b(1), xx = b(2), yy = b(3);
   if (a && !pad.a) padA();
   if (bb && !pad.b) padB();
-  // X opens the deck. Y: holding it for 1 s in combat ends the turn (a bar fills across End Turn)
+  // X opens the deck. Y: holding it for END_HOLD s in combat ends the turn (a bar fills across End Turn)
   if (xx && !pad.x) padX();
   if (S.screen === "combat" && C && !S.modal && !C.choose) {
     if (yy) {
       if (!pad.y) { pad.yT = 0; pad.yFired = false; }
-      if (canAct() && !pad.yFired) { pad.yT += dt; S.endHold = clamp(pad.yT / 1, 0, 1); if (pad.yT >= 1) { pad.yFired = true; S.endHold = 0; S.padMode = true; endTurn(); } }
+      if (canAct() && !pad.yFired) { pad.yT += dt; S.endHold = clamp(pad.yT / END_HOLD, 0, 1); if (pad.yT >= END_HOLD) { pad.yFired = true; S.endHold = 0; S.padMode = true; endTurn(); } }
       else if (!canAct()) { pad.yT = 0; S.endHold = 0; }
     } else S.endHold = 0;
   } else S.endHold = 0;
@@ -765,6 +1171,7 @@ function openPending() {
   else S.screen = p.screen;
 }
 function completeNode() {
+  if (run.queued) { run.pending = run.queued; run.queued = null; S.modal = null; saveRun(); openPending(); return; }   // a patrol fight came first: now the tile's own content
   if (run.cur) { const t = tileAt(run.cur.x, run.cur.y); if (t.c !== "trader") t.used = true; run.cur = null; }
   run.pending = null;
   S.modal = null; S.screen = "map";
@@ -772,13 +1179,13 @@ function completeNode() {
 }
 const oreScrapValue = r => ORE_KEYS.reduce((s, k) => s + r.ore[k] * ORE[k].scrap, 0);
 function endRun(win) {
-  const oreScrap = oreScrapValue(run), gain = run.scrap + oreScrap + (win ? 200 : 0);
+  const oreScrap = oreScrapValue(run), dbg = !!run.debug, gain = dbg ? 0 : run.scrap + oreScrap + (win ? 200 : 0);   // runs touched by the debug panel bank and count nothing
   save.bank += gain;
-  if (win) save.stats.wins++;
-  save.stats.bestZone = Math.max(save.stats.bestZone, run.zone);
-  S.end = { win, gain, seed: run.seed, scrap: run.scrap, ore: Object.assign({}, run.ore), oreScrap };
+  if (win && !dbg) save.stats.wins++;
+  if (!dbg) save.stats.bestZone = Math.max(save.stats.bestZone, run.zone);
+  S.end = { win, gain, seed: run.seed, scrap: run.scrap, ore: Object.assign({}, run.ore), oreScrap, debug: dbg };
   save.run = null; run = null; C = null; S.modal = null;
-  S.screen = "runEnd";
+  S.screen = "runEnd"; sfx(win ? "runWin" : "defeat");
   writeSave();
 }
 
@@ -794,23 +1201,61 @@ function act(fn, d = .18) {
 }
 const val = n => typeof n === "function" ? n() : n;
 
-function startCombat(encIds, kind) {
-  const n = encIds.length;
-  const xs = n === 1 ? [700] : n === 2 ? [620, 800] : [520, 670, 820];
+const SLOTS = [null, [700], [620, 800], [520, 670, 820], [450, 580, 710, 840]];
+// monsters get tougher by zone: Zone 2 x1.3, Zone 3 x1.6 on HP and attack damage (bosses are hand-tuned and exempt)
+const ZONE_POWER = [1, 1.3, 1.6];
+const zonePower = d => d.boss || !run ? 1 : ZONE_POWER[run.zone - 1] || 1;
+const mkEnemy = (id, uid, x) => {
+  const d = ENEMIES[id], hp = Math.round(rr(d.hp[0], d.hp[1]) * zonePower(d));
+  return { id, def: d, hp, maxhp: hp, block: 0, str: 0, weak: 0, vuln: 0, rad: 0, mi: 0, override: null, dead: false, fade: 1, hitT: 0, lungeT: 0, x, tx: x, y: 325, odDone: false, uid, phase: 0, dmgTaken: 0 };
+};
+// x positions for a line-up: fixed slots by count, but a wide boss (the Home Base Core) gets room (3 enemies: turret, Core, turret use [545, 720, 895], tuned from the brief's 560/880 for the art widths)
+function slotsFor(L) {
+  const n = L.length;
+  if (!L.some(e => e.def.boss && e.def.w >= 200)) return SLOTS[n];
+  if (n === 3 && L[1].def.boss) return [545, 720, 895];
+  const pos = []; let x = 0;
+  L.forEach((e, i) => { if (i) x += (L[i - 1].def.w + e.def.w) / 2 + 8; pos.push(x); });
+  const mid = (pos[0] + pos[n - 1]) / 2, shift = Math.min(0, 880 - (700 + pos[n - 1] - mid));
+  return pos.map(p => 700 + p - mid + shift);
+}
+// spreads the living enemies over the slots for their count; updateCombat eases x toward tx
+function relayout() { const L = livingEnemies(), xs = slotsFor(L); if (xs) L.forEach((e, i) => { e.tx = xs[i]; }); }
+const isShielded = e => !e.isP && !!e.def.shieldedBy && C.enemies.some(o => alive(o) && o.id === e.def.shieldedBy);
+function summonEnemies(src, ids) {
+  const fresh = [];
+  for (const id of ids) {
+    if (livingEnemies().length >= 4) { addFloat(src, "No room", "#aab"); break; }
+    const e = mkEnemy(id, C.enemies.length, src.x); e.summoned = true; e.fade = 0; C.enemies.push(e); fresh.push(e);
+    relayout();
+  }
+  for (const e of fresh) e.x = e.tx;
+  if (fresh.length) sfx("summon");
+}
+const thornsOf = e => e.isP ? 0 : (e.def.thorns || 0) + (e.thornsTemp || 0);
+const sporeCount = () => [...C.hand, ...C.draw, ...C.disc].filter(c => c.id === "spore").length;
+const baseDmg = (m, e) => Math.round((m.dmg + (m.perSpore || 0) * sporeCount()) * (e ? zonePower(e.def) : 1));
+function healEnemy(e, n) { const h = Math.min(n, e.maxhp - e.hp); e.hp += h; if (h > 0) { addFloat(e, `+${h}`, "#6aff8a"); sfx("heal", { rate: .8 }); } }
+function addToDisc(id, n) { sfx("spore"); for (let i = 0; i < n; i++) C.disc.push({ id, up: false, uid: C.uid++, appear: 1 }); addFloat(C.P, `+${n} ${CARDS[id].n}`, "#8fe06a"); }
+
+function startCombat(allIds, kind) {
+  const encIds = kind === "boss" && run.zone === 3 && run.overrideKey ? allIds.filter(id => id !== "turret") : allIds;   // the Override Key takes the turrets offline
+  const xs = slotsFor(encIds.map(id => ({ def: ENEMIES[id] })));
   C = {
     kind, over: null, overT: 0, phase: "busy", turn: 0, Q: [], timer: .4, ins: -1, floats: [], sel: -1, choose: null, flash: 0, hoverCard: -1,
     P: { isP: true, hp: run.hp, maxhp: run.maxhp, block: 0, str: 0, weak: 0, vuln: 0, rad: 0, hitT: 0, pose: 0, poseT: 0 },
     enemies: [], draw: [], hand: [], disc: [], exh: [], energy: 0, nextEnergy: 0, charge: 0, heat: 0,
-    comp: { dog: 0, mouse: 0 }, pw: {}, pwv: {}, swordN: 0, atkN: 0, uid: 1, banner: null, dogT: 0, mouseT: 0, oreGain: { cu: 0, ag: 0, au: 0 }
+    comp: { dog: 0, mouse: 0 }, pw: {}, pwv: {}, swordN: 0, atkN: 0, played: 0, uid: 1, banner: null, dogT: 0, mouseT: 0, oreGain: { cu: 0, ag: 0, au: 0 }, nf: run.nextFight || null
   };
-  encIds.forEach((id, i) => {
-    const d = ENEMIES[id], hp = rr(d.hp[0], d.hp[1]);
-    C.enemies.push({ id, def: d, hp, maxhp: hp, block: 0, str: 0, weak: 0, vuln: 0, rad: 0, mi: 0, override: null, dead: false, fade: 1, hitT: 0, lungeT: 0, x: xs[i], y: 325, odDone: false, uid: i });
-  });
+  run.nextFight = null;
+  encIds.forEach((id, i) => C.enemies.push(mkEnemy(id, i, xs[i])));
+  preloadEnemyArt(encIds);
   for (const c of run.deck) C.draw.push(Object.assign(JSON.parse(JSON.stringify(c)), { uid: C.uid++, appear: 1 }));
   shuffle(C.draw);
   S.screen = "combat"; S.modal = null;
-  if (kind === "ambush") { C.banner = { t: 1.6, text: "AMBUSH!" }; C.timer = 1.4; }
+  sfx(kind === "ambush" || kind === "patrol" ? "ambush" : kind === "boss" ? "bossIntro" : "battleStart");
+  if (kind === "ambush" || kind === "patrol") { C.banner = { t: 1.6, text: kind === "patrol" ? "PATROL!" : "AMBUSH!" }; C.timer = 1.4; }
+  else if (encIds.length < allIds.length) { C.banner = { t: 1.6, text: "Turrets offline" }; C.timer = 1.4; }
   if (hasRelic("impactDrill")) C.charge = 2;
   if (hasRelic("dogR")) C.comp.dog = 3;
   if (hasRelic("mouseR")) C.comp.mouse = 3;
@@ -824,22 +1269,24 @@ function toHand(c) { c.appear = 0; if (C.hand.length >= 10) C.disc.push(c); else
 function drawCards(n) {
   for (let i = 0; i < n; i++) {
     if (C.hand.length >= 10) break;
-    if (!C.draw.length) { if (!C.disc.length) break; C.draw = shuffle(C.disc); C.disc = []; }
-    const c = C.draw.pop(); c.appear = 0; C.hand.push(c);
+    if (!C.draw.length) { if (!C.disc.length) break; C.draw = shuffle(C.disc); C.disc = []; sfx("shuffle"); }
+    const c = C.draw.pop(); c.appear = 0; C.hand.push(c); sfx("cardDraw", { delay: i * .06, vary: .1 });
   }
 }
 function applyStatus(u, key, n) {
   if (!n) return;
   u[key] += n;
+  if (n > 0) sfx(key === "rad" ? "rad" : key === "str" || key === "thorns" ? "buff" : "debuff");
   addFloat(u, `${STATUS[key].n} ${n > 0 ? "+" : ""}${n}`, STATUS[key].col);
 }
 // raw damage to hp after block; returns hp actually lost
 function takeDamage(t, n, pierce) {
-  if (n <= 0 && !pierce) { addFloat(t, "0", "#aab"); return 0; }
+  if (isShielded(t)) n = Math.floor(n / 2);   // the Core takes half while a Turret stands, from every source
+  if (n <= 0 && !pierce) { addFloat(t, "0", "#aab"); sfx("blocked"); return 0; }
   let blocked = 0;
   if (!pierce && t.block > 0) { blocked = Math.min(t.block, n); t.block -= blocked; n -= blocked; }
-  if (n > 0) { t.hp -= n; t.hitT = .25; if (t.isP) C.flash = .35; addFloat(t, `-${n}`, "#ff6a5a"); }
-  else if (blocked) addFloat(t, "Blocked", "#9cc8ff");
+  if (n > 0) { t.hp -= n; t.hitT = .25; if (t.isP) C.flash = .35; addFloat(t, `-${n}`, "#ff6a5a"); sfx(t.isP ? "hurt" : n >= 15 ? "hitHeavy" : "hit", { vary: .06 }); }
+  else if (blocked) { addFloat(t, "Blocked", "#9cc8ff"); sfx("blocked", { vary: .06 }); }
   return n;
 }
 function calcDmg(src, tgt, base, mult = 1) {
@@ -851,10 +1298,14 @@ function calcDmg(src, tgt, base, mult = 1) {
 // player attack hit on enemy t (x = card context for bonus/double)
 function strike(t, n, raw, x) {
   if (!alive(t)) return 0;
-  if (raw) return takeDamage(t, n, false);
+  if (raw) { t.dmgTaken = (t.dmgTaken || 0) + n; return takeDamage(t, n, false); }
   let first = 0;
   if (x && x.fz && x.fz.first) { first = x.fz.first; x.fz.first = 0; }
-  return takeDamage(t, calcDmg(C.P, t, n + (x ? x.bonus : 0) + first, x && x.dbl ? 2 : 1), false);
+  const dmg = calcDmg(C.P, t, n + (x ? x.bonus : 0) + first, x && x.dbl ? 2 : 1);
+  t.dmgTaken = (t.dmgTaken || 0) + dmg;   // the Mimic reflects what you dealt last turn
+  const lost = takeDamage(t, dmg, false), th = thornsOf(t);
+  if (th > 0) act(() => takeDamage(C.P, th, false), .15);   // every card hit pays Thorns (Dog / relic damage is raw and doesn't)
+  return lost;
 }
 function dogAttack() {
   const v = C.comp.dog; if (v <= 0) return;
@@ -919,8 +1370,8 @@ function shakeCard(c) { c.shake = .35; }
 
 function playCard(idx, target) {
   const card = C.hand[idx], d = D(card);
-  if (d.unplayable || !canPay(card)) { shakeCard(card); return false; }
-  C.energy -= costOf(card);
+  if (d.unplayable || !canPay(card)) { shakeCard(card); sfx("denied"); return false; }
+  C.energy -= costOf(card); sfx(d.t === "power" ? "power" : "cardPlay", { vary: .05 });
   C.P.pose = d.t === "attack" ? 1 : 2; C.P.poseT = .3;
   if (d.ore) for (const k of ORE_KEYS) if (d.ore[k]) run.ore[k] -= d.ore[k];
   C.hand.splice(idx, 1);
@@ -946,6 +1397,9 @@ function playCard(idx, target) {
     C.pwv[card.id] = (C.pwv[card.id] || 0) + (cardVals(card)[0] || 0);
     addFloat(C.P, d.n, "#ffe27a");
   } else act(() => { (isExh(card) ? C.exh : C.disc).push(card); }, 0);
+  // Sentry Eyes zap you for every card played after the 3rd each turn, through Block
+  C.played++;
+  if (C.played > 3) act(() => { for (const e of livingEnemies()) if (e.def.watch) takeDamage(C.P, e.def.watch, true); }, .15);
   return true;
 }
 function addHeat(n) {
@@ -953,22 +1407,23 @@ function addHeat(n) {
   const thr = hasRelic("blasterR") ? 7 : 5;
   if (C.heat >= thr) {
     C.heat = 0;
-    addFloat(C.P, "OVERHEAT!", "#ff6030");
+    addFloat(C.P, "OVERHEAT!", "#ff6030"); sfx("overheat");
     toHand(mkCard("overheat"));
     if (C.pw.heatSink) drawCards(2 * C.pw.heatSink);
   }
 }
 
 function startPlayerTurn() {
-  act(() => { C.turn++; C.phase = "busy"; C.P.block = 0; C.sel = -1; C.swordN = 0; if (C.turn > 1) C.banner = { t: 1.1, text: "Your Turn" }; }, .05);
+  act(() => { C.turn++; C.phase = "busy"; C.P.block = 0; C.sel = -1; C.swordN = 0; C.played = 0; for (const e of C.enemies) e.dmgTaken = 0; if (C.turn > 1) { C.banner = { t: 1.1, text: "Your Turn" }; sfx("yourTurn"); } }, .05);
+  if (C.turn === 0 && C.nf) act(() => applyNextFight(C.nf), .25);   // buffs from events: turn 1 only
   act(() => { if (C.P.rad > 0) { takeDamage(C.P, C.P.rad, true); C.P.rad--; } }, .2);
   act(() => {
     if (C.pw.perpetual) { C.charge += C.pw.perpetual; addFloat(C.P, `+${C.pw.perpetual} Charge`, "#ffa44a"); }
     if (C.pw.wingmen) for (let k = 0; k < C.pw.wingmen; k++) for (let h = 0; h < 2; h++) act(() => { const e = pick(livingEnemies()); if (e) strike(e, 4, false); }, .15);
   }, .1);
-  act(() => { drawCards(5 + (C.turn === 1 && hasRelic("thirdEye") ? 2 : 0)); }, .3);
+  act(() => { drawCards(5 + (C.turn === 1 && hasRelic("thirdEye") ? 2 : 0) + (C.turn === 1 && C.nf ? C.nf.draw || 0 : 0)); }, .3);
   act(() => {
-    C.energy = 3 + (C.turn === 1 && hasRelic("burstR") ? 1 : 0) + C.nextEnergy; C.nextEnergy = 0;
+    C.energy = Math.max(0, 3 + (C.turn === 1 && hasRelic("burstR") ? 1 : 0) + (C.turn === 1 && C.nf ? C.nf.energy || 0 : 0) + C.nextEnergy); C.nextEnergy = 0;
     if (C.turn === 1 && hasRelic("flareR")) for (const e of livingEnemies()) applyStatus(e, "vuln", 1);
   }, .1);
   act(() => { if (!C.over) C.phase = "player"; }, 0);
@@ -992,48 +1447,98 @@ function endTurn() {
     }
   }, 0);
   act(() => { if (C.pw.fallout) for (const e of livingEnemies()) applyStatus(e, "rad", C.pwv.fallout); }, .25);
-  act(() => { C.P.weak = Math.max(0, C.P.weak - 1); C.P.vuln = Math.max(0, C.P.vuln - 1); C.banner = { t: 1.1, text: "Enemy Turn" }; }, .3);
+  act(() => { C.P.weak = Math.max(0, C.P.weak - 1); C.P.vuln = Math.max(0, C.P.vuln - 1); C.banner = { t: 1.1, text: "Enemy Turn" }; sfx("enemyTurn"); }, .3);
+  // all enemy Block / temp Thorns expire together as the phase starts, so a support's ally Block (Knit, Shield Ally) survives whoever acts after it
+  act(() => { for (const e of C.enemies) { if (!e.def.keepBlock) e.block = 0; e.thornsTemp = 0; } }, 0);
   for (const e of C.enemies) {
-    act(() => { if (!alive(e)) return; e.block = 0; if (e.rad > 0) { takeDamage(e, e.rad, true); e.rad--; } }, .15);
+    act(() => {
+      if (!alive(e)) return;
+      if (e.rad > 0) { takeDamage(e, e.rad, true); e.rad--; }
+      const ph = e.def.phases && e.def.phases[e.phase];
+      if (ph && ph.turnStr && alive(e)) applyStatus(e, "str", ph.turnStr);   // Core Phase 3 grows stronger every enemy phase
+    }, .15);
     act(() => { if (alive(e)) execMove(e); }, .3);
     act(() => {
       if (!alive(e)) return;
       e.weak = Math.max(0, e.weak - 1); e.vuln = Math.max(0, e.vuln - 1);
-      if (e.override) e.override = null; else e.mi = (e.mi + 1) % e.def.moves.length;
+      if (e.override) e.override = null; else e.mi = (e.mi + 1) % movesOf(e).length;
     }, .05);
   }
   startPlayerTurn();
 }
 
-const moveOf = e => e.override || e.def.moves[e.mi];
+const movesOf = e => e.def.phases ? e.def.phases[e.phase].moves : e.def.moves;
+const moveOf = e => e.override || movesOf(e)[e.mi];
 function execMove(e) {
   const m = moveOf(e);
-  e.lungeT = .4;
+  e.lungeT = .4; if (m.dmg) sfx("lunge", { vary: .1 });
   addFloat(e, m.n, "#ffd9a0");
-  if (m.dmg) for (let h = 0; h < (m.hits || 1); h++) act(() => { if (alive(e)) takeDamage(C.P, calcDmg(e, C.P, m.dmg), false); }, .2);
+  if (m.breakBlock) act(() => { if (alive(e) && C.P.block > 0) { C.P.block = 0; addFloat(C.P, "Armor melted", "#ff9a6a"); } }, .15);
+  if (m.dmg) for (let h = 0; h < (m.hits || 1); h++) act(() => {
+    if (!alive(e)) return;
+    const lost = takeDamage(C.P, calcDmg(e, C.P, baseDmg(m, e)), false);
+    if (m.drain && lost > 0) healEnemy(e, lost);
+  }, .2);
   act(() => {
     if (!alive(e)) return;
     if (m.apply) for (const k in m.apply) applyStatus(C.P, k, m.apply[k]);
     if (m.block) { e.block += m.block; addFloat(e, `+${m.block} Block`, "#9cc8ff"); }
     if (m.str) applyStatus(e, "str", m.str);
+    if (m.heal) healEnemy(e, m.heal);
     if (m.allyBlock) {
       let al = livingEnemies().filter(o => o !== e); if (!al.length) al = [e];
       for (const o of al) { o.block += m.allyBlock; addFloat(o, `+${m.allyBlock} Block`, "#9cc8ff"); }
     }
+    if (m.allyStr) {
+      let al = livingEnemies().filter(o => o !== e); if (!al.length) al = [e];
+      for (const o of al) { o.str += m.allyStr; addFloat(o, `+${m.allyStr} Str`, STATUS.str.col); }
+    }
+    if (m.addDisc) for (const k in m.addDisc) addToDisc(k, m.addDisc[k]);
+    if (m.thornsTemp) { e.thornsTemp = (e.thornsTemp || 0) + m.thornsTemp; addFloat(e, `+${m.thornsTemp} Thorns`, STATUS.thorns.col); }
+    if (m.summon) summonEnemies(e, m.summon);
+    if (m.allBlock) for (const o of livingEnemies()) { o.block += m.allBlock; addFloat(o, `+${m.allBlock} Block`, "#9cc8ff"); }
+    if (m.reflect) { const b = Math.min(e.dmgTaken || 0, m.reflect); if (b > 0) { e.block += b; addFloat(e, `+${b} Block`, "#9cc8ff"); } }
+    if (m.healAlly) { const al = livingEnemies().filter(o => o !== e); healEnemy((al.length ? al : [e]).reduce((a, b) => b.hp < a.hp ? b : a), m.healAlly); }
+    if (m.drainEnergy) { C.nextEnergy -= m.drainEnergy; addFloat(C.P, `-${m.drainEnergy} Energy next turn`, "#ffe27a"); }
   }, .1);
+  if (m.selfDestruct) act(() => { if (alive(e)) { e.dead = true; e.hp = 0; addFloat(e, "Burst", "#ffd24a"); } }, .15);   // no loot, no onDeath
 }
-// sentinel enrages once at half HP: swaps its next move for Overdrive without losing its place in the cycle
+// enemies with an overdrive (Sentinel, Brood Knight, Bloom Matriarch) swap it in once at half HP, without losing their place in the cycle;
+// phased enemies (the Home Base Core) switch move list at each HP threshold, interrupting the current intent
 function refreshIntents() {
-  for (const e of C.enemies) if (alive(e) && e.def.overdrive && !e.odDone && e.hp <= e.maxhp / 2) {
-    e.odDone = true; e.override = e.def.overdrive;
-    C.banner = { t: 1.2, text: "Overdrive!" };
+  for (const e of C.enemies) {
+    if (!alive(e)) continue;
+    if (e.def.overdrive && !e.odDone && e.hp <= e.maxhp / 2) {
+      e.odDone = true; e.override = e.def.overdrive;
+      C.banner = { t: 1.2, text: e.def.overdrive.banner || "Overdrive!" }; sfx("alarm");
+    }
+    const ph = e.def.phases;
+    while (ph && e.phase + 1 < ph.length && e.hp <= ph[e.phase + 1].at) {
+      const p = ph[++e.phase];
+      e.mi = 0; e.override = null; C.banner = { t: 1.4, text: p.banner }; sfx("alarm");
+      if (p.summon) summonEnemies(e, p.summon);
+    }
   }
 }
 function afterAction() {
-  for (const e of C.enemies) if (!e.dead && e.hp <= 0) { e.dead = true; e.hp = 0; addFloat(e, "Defeated", "#ffd24a"); gainOre("cu", 1); }
+  for (const e of C.enemies) if (!e.dead && e.hp <= 0) {
+    e.dead = true; e.hp = 0; addFloat(e, "Defeated", "#ffd24a"); sfx(e.def.boss ? "bossDeath" : "enemyDeath", { vary: e.def.boss ? 0 : .08 });
+    if (!e.summoned && !e.def.noLoot) gainOre("cu", 1);
+    const od = e.def.onDeath;
+    if (od) {
+      addFloat(e, od.n, "#8fe06a");
+      for (const k in od.addDisc) addToDisc(k, od.addDisc[k]);
+      if (od.allyStr) for (const o of livingEnemies()) { o.str += od.allyStr; addFloat(o, `+${od.allyStr} Str`, STATUS.str.col); }
+    }
+    const b = e.def.bond, kin = b ? livingEnemies().filter(o => o.id === e.id) : [];   // Wardens avenge each other
+    if (kin.length) { for (const o of kin) { o.str += b.str; healEnemy(o, b.heal); addFloat(o, `+${b.str} Str`, STATUS.str.col); } C.banner = { t: 1.4, text: b.banner }; }
+    if (e.def.endsFight) for (const o of C.enemies) if (!o.dead) { o.dead = true; o.hp = 0; addFloat(o, "Shut down", "#9ad0ff"); }   // the Core falls: everything else powers down, no loot
+  }
   refreshIntents();
   if (C.P.hp <= 0) { C.P.hp = 0; C.over = "lost"; C.overT = 1; C.Q.length = 0; C.choose = null; return; }
-  if (C.enemies.every(e => e.dead)) { C.over = "won"; C.overT = .9; C.Q.length = 0; C.choose = null; }
+  // one stinger per win: the run-ending boss gets Run Won, and an elite / boss that drops a relic gets the Relic stinger (from onWin)
+  const relicWin = (C.kind === "elite" || C.kind === "boss") && unownedRelics().length > 0;
+  if (C.enemies.every(e => e.dead)) { if (!(C.kind === "boss" && run.zone >= 3) && !relicWin) sfx("victory", { delay: .35 }); C.over = "won"; C.overT = .9; C.Q.length = 0; C.choose = null; }
 }
 
 function updateCombat(dt) {
@@ -1047,7 +1552,16 @@ function updateCombat(dt) {
     }
     if (!C.Q.length && !C.over) afterAction();
   }
-  for (const e of C.enemies) { e.hitT = Math.max(0, e.hitT - dt); e.lungeT = Math.max(0, e.lungeT - dt); if (e.dead) e.fade = Math.max(0, e.fade - dt * 2.2); }
+  for (const e of C.enemies) {
+    e.hitT = Math.max(0, e.hitT - dt); e.lungeT = Math.max(0, e.lungeT - dt);
+    if (e.dead) e.fade = Math.max(0, e.fade - dt * 2.2);
+    else {
+      if (e.fade < 1) e.fade = Math.min(1, e.fade + dt * 3);
+      if (e.x !== e.tx) e.x = Math.abs(e.tx - e.x) < .5 ? e.tx : lerp(e.x, e.tx, 1 - Math.exp(-dt * 14));
+    }
+  }
+  if (C.P.block > (C.P.sndBlock || 0)) sfx("block"); C.P.sndBlock = C.P.block;
+  for (const e of C.enemies) { if (e.block > (e.sndBlock || 0) && !e.dead) sfx("block", { rate: .75 }); e.sndBlock = e.block; }
   C.P.hitT = Math.max(0, C.P.hitT - dt); C.flash = Math.max(0, C.flash - dt);
   C.P.poseT = Math.max(0, C.P.poseT - dt); C.dogT = Math.max(0, C.dogT - dt); C.mouseT = Math.max(0, C.mouseT - dt);
   for (const c of C.hand) { c.appear = Math.min(1, c.appear + dt * 5); if (c.shake) c.shake = Math.max(0, c.shake - dt); }
@@ -1062,28 +1576,80 @@ function onWin() {
   const kind = C.kind;
   if (kind === "elite") gainOre("ag", 1);
   if (kind === "boss") gainOre("au", 1);
+  const eb = run.pending && run.pending.eventBonus;   // fight started by an event: its bonus is paid on top of the normal reward
+  if (eb && eb.ore) for (const k in eb.ore) gainOre(k, eb.ore[k]);
   const oreG = Object.assign({}, C.oreGain);
   C = null;
-  if (kind === "boss") { run.scrap += 75; run.zone = 1; endRun(true); return; }
-  const scrap = gainScrap(kind === "elite" ? rr(30, 40) : kind === "ambush" ? rr(10, 20) : rr(15, 25));
-  const pend = { screen: "reward", scrap, cards: kind === "ambush" ? [] : rollCards(kind, save.forge.survey ? 4 : 3), relic: null, ore: oreG, ambush: kind === "ambush" };
-  if (kind === "elite") { const pool = unownedRelics(); if (pool.length) { pend.relic = pick(pool); grantRelic(pend.relic); } }
+  if (kind === "patrol" && run.pending && run.pending.patrolId != null) run.map.patrols = run.map.patrols.filter(p => p.id !== run.pending.patrolId);   // the squad is gone
+  if (kind === "boss" && run.zone >= 3) { run.scrap += 75; endRun(true); return; }   // the last zone's boss (the Home Base Core) ends the run
+  const scrap = gainScrap((kind === "elite" ? rr(30, 40) : kind === "boss" ? 75 : kind === "ambush" ? rr(10, 20) : rr(15, 25)) + (eb && eb.scrap || 0));
+  const pend = { screen: "reward", scrap, cards: kind === "ambush" ? [] : rollCards(kind, save.forge.survey ? 4 : 3), relic: null, ore: oreG, ambush: kind === "ambush", nextZone: kind === "boss" };
+  if (kind === "elite" || kind === "boss") { const pool = unownedRelics(); if (pool.length) { pend.relic = pick(pool); grantRelic(pend.relic); sfx("relic", { delay: .2 }); } }
   run.pending = pend;
   saveRun(); S.screen = "reward";
 }
 function onLose() { run.hp = 0; endRun(false); }
 
 // ---------------------------------------------------------------- events
+// ---- event helpers. Costs go through hurt/heal/changeMaxHp; pickers set run.pending.res themselves and their choice returns null
+const isStatus = c => !c.fuse && CARDS[c.id].t === "status";
+const scrapUp = n => { sfx("buy"); return gainScrap(n); };
+const oreUp = (k, n) => { sfx("ore_" + k); return gainOre(k, n); };
+function hurt(n) { sfx("hurt"); run.hp -= n; if (run.hp > 0) return false; run.hp = 0; endRun(false); return true; }   // true = the run just ended
+function heal(n) { const h = Math.min(n, run.maxhp - run.hp); run.hp += h; if (h > 0) sfx("heal"); return h; }
+function changeMaxHp(n) { run.maxhp = Math.max(10, run.maxhp + n); if (n > 0) run.hp += n; run.hp = Math.min(run.hp, run.maxhp); }
+const randomCardId = (rar, fam) => pick(REWARD_IDS.filter(id => CARDS[id].r === rar && (!fam || CARDS[id].f === fam)));
+const eventRes = s => { run.pending.res = s; saveRun(); };
+function offerCards(title, ids, lead = "") {
+  openModal({
+    title, cards: ids.map(id => ({ id, up: false })), n: 1, cancel: true, skip: true,
+    onDone: ([c]) => { addCard(c.id); sfx("cardAdd"); eventRes(`${lead}You take ${cardName(c)}.`); },
+    onCancel: () => eventRes(`${lead}You leave the cards.`)
+  });
+}
+function pickFromDeck(title, filter, n, onDone, upTo) {
+  const cards = run.deck.filter(filter);
+  if (!cards.length) { eventRes("You have no cards that qualify."); return; }
+  openModal({ title, cards, n: Math.min(n, cards.length), upTo, cancel: true, onDone });
+}
+function upgradeRandom(n, filter = () => true) {
+  const out = shuffle(run.deck.filter(c => canUpgrade(c) && filter(c))).slice(0, n);
+  out.forEach(upgradeCard); if (out.length) sfx("upgrade");
+  return out.map(cardName);
+}
+function transformCard(c) {
+  const r = D(c).r === "B" ? "C" : D(c).r, id = randomCardId(r);
+  run.deck.splice(run.deck.indexOf(c), 1); addCard(id); sfx("cardAdd"); return CARDS[id].n;
+}
+function relicOrScrap() {
+  const pool = unownedRelics();
+  if (!pool.length) return `Nothing left to find but scrap. +${scrapUp(100)} Scrap.`;
+  const id = pick(pool); grantRelic(id); sfx("relic"); return `You find the ${RELICS[id].n} relic.`;
+}
+function raiseAlert(n) { for (let i = 0; i < n; i++) { run.alert++; if (run.alert % 8 === 0) { run.ambushDue++; if (run.zone === 3) spawnPatrol(); } } }
+function revealAround(x, y, r) { for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (inMap(x + dx, y + dy)) tileAt(x + dx, y + dy).seen = true; }
+function eventFight(enc, kind, bonus) { run.pending = { screen: "combat", kind, enc, eventBonus: bonus }; saveRun(); openPending(); }
+function addNextFight(o) { const nf = run.nextFight = run.nextFight || {}; for (const k in o) nf[k] = (nf[k] || 0) + o[k]; saveRun(); }
+const nextFightText = nf => [nf.block && `+${nf.block} Block`, nf.str && `+${nf.str} Strength`, nf.energy && `+${nf.energy} Energy`, nf.draw && `draw ${nf.draw} extra`, nf.weakAll && `enemies Weak ${nf.weakAll}`, nf.vulnAll && `enemies Vulnerable ${nf.vulnAll}`, nf.radAll && `enemies Radiation ${nf.radAll}`].filter(Boolean).join(", ");
+function applyNextFight(nf) {
+  if (nf.block) { C.P.block += nf.block; addFloat(C.P, `+${nf.block} Block`, "#9cc8ff"); }
+  if (nf.str) applyStatus(C.P, "str", nf.str);
+  for (const [k, s] of [["weakAll", "weak"], ["vulnAll", "vuln"], ["radAll", "rad"]]) if (nf[k]) for (const e of livingEnemies()) applyStatus(e, s, nf[k]);
+  C.banner = { t: 1.6, text: nextFightText(nf) };
+}
+const sporeCards = () => run.deck.filter(c => c.id === "spore").length;
+const threeCards = rar => { const ids = []; while (ids.length < 3) { const id = randomCardId(rar); if (!ids.includes(id)) ids.push(id); } return ids; };
+const NOTHING = { label: "Leave", fn: () => "You move on." };
 const EVENTS = {
   probe: {
-    img: "probe", title: "Crashed Probe", text: "A battered survey probe lies half-buried in the dust, its hatch still warm.",
+    zone: 1, img: "probe", title: "Crashed Probe", text: "A battered survey probe lies half-buried in the dust, its hatch still warm.",
     choices: [
       { label: "Take a random relic", fn: () => { const pool = unownedRelics(); if (pool.length) { const id = pick(pool); grantRelic(id); return `You pull the ${RELICS[id].n} relic from the wreck.`; } return `Nothing useful left. +${gainScrap(60)} Scrap.`; } },
       { label: "Strip it for 60 Scrap", fn: () => `You strip the probe for parts. +${gainScrap(60)} Scrap.` }
     ]
   },
   pool: {
-    img: "sporePool", title: "Spore Pool", text: "A glowing pool of spores bubbles at the edge of the landing zone. It smells sweet.",
+    zone: 2, img: "sporePool", title: "Spore Pool", text: "A glowing pool of spores bubbles in a clearing of the Spore Wilds. It smells sweet.",
     choices: [
       { label: "Drink: heal 15", fn: () => { const h = Math.min(15, run.maxhp - run.hp); run.hp += h; return `The spores taste like honey. +${h} HP.`; } },
       {
@@ -1097,19 +1663,178 @@ const EVENTS = {
     ]
   },
   mouse: {
-    img: "mouse", title: "Stranded Mouse", text: "A tiny alien creature cowers under a rock, one leg caught in a crack.",
+    zone: 1, img: "mouse", title: "Stranded Mouse", text: "A tiny alien creature cowers under a rock, one leg caught in a crack.",
     choices: [
       { label: "Take it along: add Mouse Helper to the deck", fn: () => { addCard("mouseHelper"); return "The mouse scampers into your pack. Mouse Helper added."; } },
       { label: "Leave it: nothing happens", fn: () => "You leave the mouse where it is." }
     ]
-  }
+  },
+  // ---- Zone 1: Landing Zone
+  wreckage: {
+    zone: 1, img: "wreckage", title: "Ship Wreckage", text: "The tail section of your landing craft lies half-buried in the dust, still ticking as it cools.",
+    choices: [
+      { label: "Strip the hull: +45 Scrap", fn: () => `You pry loose what's still good. +${scrapUp(45)} Scrap.` },
+      { label: "Raid the med-bay: heal 20", fn: () => `The med-kits still work. +${heal(20)} HP.` },
+      { label: "Pull the reactor rod: take 8 damage, Hot Rock+", fn: () => { if (hurt(8)) return null; addCard("hotRock", true); sfx("cardAdd"); return "The rod sears your hands. -8 HP. Hot Rock+ added."; } }
+    ]
+  },
+  crater: {
+    zone: 1, img: "crater", title: "Meteor Crater", text: "A fresh crater smokes at the edge of your path. Something at the bottom glitters silver.",
+    choices: [
+      { label: "Climb down and mine it: take 6 damage, +2 Silver", fn: () => { if (hurt(6)) return null; oreUp("ag", 2); return "The slope gives way on the climb out. -6 HP, +2 Silver."; } },
+      { label: "Scan it from the rim: upgrade a random card", fn: () => { const n = upgradeRandom(1); return n.length ? `The scan sharpens your kit. ${n[0]} upgraded.` : "The scan finds nothing to improve."; } },
+      { label: "Leave it", fn: () => "You leave the crater to cool." }
+    ]
+  },
+  supplyDrop: {
+    zone: 1, img: "supplyDrop", title: "Stray Supply Drop", text: "A crate from the orbital fleet hangs from a torn parachute, snagged on a rock spire.",
+    choices: [
+      { label: "Open the crate: choose 1 of 3 cards", fn: () => { offerCards("Choose a card from the crate", threeCards("U")); return null; } },
+      { label: "Salvage the parachute rig: +5 Max HP", fn: () => { changeMaxHp(5); sfx("heal"); return "The harness makes a fine plate carrier. +5 Max HP."; } }
+    ]
+  },
+  crawlerNest: {
+    zone: 1, img: "crawlerNest", title: "Crawler Nest", text: "Dozens of pale eggs pulse in a hollow under the rocks. Something larger skitters nearby.",
+    choices: [
+      { label: "Clear the nest: fight 3 Crawlers, +2 Silver", fn: () => { eventFight(["crawler", "crawler", "crawler"], "battle", { ore: { ag: 2 } }); return null; } },
+      { label: "Scrape the egg resin: +35 Scrap, add a Spore", fn: () => { addCard("spore"); sfx("spore"); return `The resin sells well, but it clings to your pack. +${scrapUp(35)} Scrap, Spore added.`; } },
+      { label: "Sneak around it", fn: () => "You tiptoe past the nest." }
+    ]
+  },
+  tradeDrone: {
+    zone: 1, img: "tradeDrone", title: "Stranded Trade Drone", text: "A merchant drone lies on its side, one rotor buzzing weakly. Its cargo hatch is sealed.",
+    choices: [
+      { label: "Repair it (10 Copper)", req: () => run.ore.cu < 10 ? "Need 10 Copper" : null, fn: () => { run.ore.cu -= 10; return `The drone whirs up and hands over a gift. ${relicOrScrap()}`; } },
+      { label: "Kick the hatch open", fn: () => rng.next() < .4 ? `The hatch pops. +${scrapUp(60)} Scrap.` : hurt(6) ? null : `A spring-loaded panel clips you. -6 HP, but +${scrapUp(15)} Scrap spills out.` },
+      { label: "Leave it", fn: () => "You leave the drone to its buzzing." }
+    ]
+  },
+  singingRocks: {
+    zone: 1, img: "singingRocks", title: "Singing Rocks", text: "Wind moans through hollow stone pillars in a slow, strange melody. Your thoughts sharpen.",
+    choices: [
+      { label: "Sit and listen: upgrade a card of your choice", fn: () => { pickFromDeck("Upgrade a card", canUpgrade, 1, ([c]) => { upgradeCard(c); sfx("upgrade"); eventRes(`The melody settles in your head. ${cardName(c)} upgraded.`); }); return null; } },
+      { label: "Snap off a crystal: +2 Silver, -3 Max HP", fn: () => { changeMaxHp(-3); oreUp("ag", 2); return "The crystal rings like a bell, then goes dull. +2 Silver, -3 Max HP."; } },
+      { label: "Move on", fn: () => "You walk on, the tune following you." }
+    ]
+  },
+  // ---- Zone 2: Spore Wilds
+  fairyRing: {
+    zone: 2, img: "fairyRing", title: "Mushroom Ring", text: "A perfect circle of glowing caps. Inside it, the air shimmers like heat haze.",
+    choices: [
+      { label: "Step inside: transform up to 2 cards", fn: () => { pickFromDeck("Transform up to 2 cards", c => !isStatus(c), 2, picked => { const n = picked.map(transformCard); eventRes(n.length ? `The haze reshapes your kit: ${n.join(", ")}.` : "You step out unchanged."); }, true); return null; } },
+      { label: "Eat a cap: heal 15, add a Spore", fn: () => { const h = heal(15); addCard("spore"); sfx("spore"); return `Warm and earthy. +${h} HP, Spore added.`; } },
+      { label: "Leave", fn: () => "You walk around the ring." }
+    ]
+  },
+  overgrownCache: {
+    zone: 2, img: "overgrownCache", title: "Overgrown Cache", text: "An old expedition crate, swallowed by fungus. You can see the latch through the growth.",
+    choices: [
+      { label: "Hack through the fungus: take 7 damage, +50 Scrap, pick a card", fn: () => { if (hurt(7)) return null; offerCards("Choose a card from the crate", rollCards("elite", 3), `Spores sting your arms. -7 HP, +${scrapUp(50)} Scrap. `); return null; } },
+      { label: "Burn the fungus away: remove all Spores", req: () => sporeCards() ? null : "No Spore cards", fn: () => { const n = sporeCards(); run.deck = run.deck.filter(c => c.id !== "spore"); sfx("cleanse"); return `The fungus and the crate go up together. ${n} Spore card${n === 1 ? "" : "s"} removed.`; } }
+    ]
+  },
+  cocoon: {
+    zone: 2, img: "cocoon", title: "Silk Cocoon", text: "A cocoon the size of a dog hangs from a fungal stalk. Something inside is moving.",
+    choices: [
+      { label: "Cut it open", fn: () => { if (rng.next() < .5) { eventFight(["sporeBat", "sporeBat"], "battle"); return null; } addCard("fetch"); sfx("cardAdd"); return `A docile glowworm crawls out and follows you. +${heal(5)} HP, Fetch! added.`; } },
+      { label: "Leave it hanging", fn: () => "You leave the cocoon to hatch on its own." }
+    ]
+  },
+  pollenGeyser: {
+    zone: 2, img: "pollenGeyser", title: "Pollen Geyser", text: "The ground hisses, then erupts in a towering plume of golden pollen.",
+    choices: [
+      { label: "Ride the blast: take 5 damage, reveal the lair area", fn: () => { if (hurt(5)) return null; revealAround(4, 10, 3); sfx("discover"); return "The plume lifts you high enough to see. -5 HP, the area around the lair is revealed."; } },
+      { label: "Bottle the pollen: next fight, enemies Weak 2", fn: () => { addNextFight({ weakAll: 2 }); return "You cork a flask of the stuff. Next fight: enemies start Weak."; } }
+    ]
+  },
+  mossPool: {
+    zone: 2, img: "mossPool", title: "Glowing Moss Pool", text: "Warm water glows blue-green under a carpet of moss. It feels wonderful on your aching legs.",
+    choices: [
+      { label: "Bathe: heal to full, add 2 Spores", fn: () => { const h = heal(run.maxhp); addCard("spore"); addCard("spore"); sfx("spore"); return `You soak until the aches vanish. +${h} HP, 2 Spores added.`; } },
+      { label: "Harvest the moss: upgrade 2 random Skills", fn: () => { const n = upgradeRandom(2, c => D(c).t === "skill"); return n.length ? `The moss makes a fine polish. Upgraded: ${n.join(", ")}.` : "You have no Skills left to improve."; } },
+      { label: "Leave", fn: () => "You leave the pool glowing behind you." }
+    ]
+  },
+  lostPup: {
+    zone: 2, img: "lostPup", title: "Lost Pup", text: "A Rot Hound pup whimpers under a root, one paw caught in a snare. It eyes you warily.",
+    choices: [
+      { label: "Free its paw: take 4 damage", fn: () => { if (hurt(4)) return null; if (!hasRelic("dogR")) { grantRelic("dogR"); sfx("relic"); return "It nips you, then licks the wound. -4 HP. The Dog joins you."; } addCard("goodBoy", true); sfx("cardAdd"); return "It nips you, then licks the wound. -4 HP. Good Boy+ added."; } },
+      { label: "Toss it scraps (20 Scrap)", req: () => run.scrap < 20 ? "Need 20 Scrap" : null, fn: () => { run.scrap -= 20; addNextFight({ block: 10 }); return "It wolfs the scraps and shadows you. Next fight: +10 Block."; } },
+      { label: "Leave it", fn: () => "You leave the pup to its snare." }
+    ]
+  },
+  swapMeet: {
+    zone: 2, img: "swapMeet", title: "Junk Trader", text: "A scrap-trading drone hovers over a blanket of salvage, fungus creeping up its legs. \"Swap? Swap?\" it chirps.",
+    choices: [
+      { label: "Trade a relic for another, +50 Scrap", req: () => !run.relics.length ? "No relic to trade" : !unownedRelics().length ? "No relics to swap for" : null, fn: () => { const give = pick(run.relics), get = pick(unownedRelics()); run.relics.splice(run.relics.indexOf(give), 1); grantRelic(get); sfx("relic"); return `${RELICS[give].n} for ${RELICS[get].n}. "Swap!" +${scrapUp(50)} Scrap.`; } },
+      { label: "Trade 15 Copper for 1 Gold", req: () => run.ore.cu < 15 ? "Need 15 Copper" : null, fn: () => { run.ore.cu -= 15; oreUp("au", 1); return "The drone weighs it and nods. -15 Copper, +1 Gold."; } },
+      { label: "Sell all your Silver (30 Scrap each)", req: () => run.ore.ag < 1 ? "Need 1 Silver" : null, fn: () => { const n = run.ore.ag; run.ore.ag = 0; return `"Shiny!" -${n} Silver, +${scrapUp(30 * n)} Scrap.`; } }
+    ]
+  },
+  // ---- Zone 3: Hive Gate
+  hiveTerminal: {
+    zone: 3, img: "hiveTerminal", title: "Hive Terminal", text: "An organic console pulses in the wall, glyphs crawling across a membrane screen.",
+    choices: [
+      { label: "Wipe the alarm log: clear Alert, remove a patrol", fn: () => { run.alert = 0; run.ambushDue = 0; const ps = run.map.patrols || [], had = ps.length > 0; if (had) ps.splice(rr(0, ps.length - 1), 1); sfx("cleanse"); return "The hive forgets you were ever here. Alert cleared" + (had ? ", and a patrol is called off." : "."); } },
+      { label: "Download the gate layout: reveal the map, +4 Alert", fn: () => { run.hiveMap = true; raiseAlert(4); sfx("discover"); return "The whole Gate unfolds in your visor, patrols included. The download is noisy: +4 Alert."; } }
+    ]
+  },
+  larvaNursery: {
+    zone: 3, img: "larvaNursery", title: "Larva Nursery", text: "Rows of translucent sacs line the chamber walls. In the middle, a pool of glittering royal jelly.",
+    choices: [
+      { label: "Purge the nursery: fight 2 Larva Clusters (elite)", fn: () => { eventFight(["larvaCluster", "larvaCluster"], "elite"); return null; } },
+      { label: "Steal the royal jelly: +8 Max HP, +8 Alert", fn: () => { changeMaxHp(8); raiseAlert(8); sfx("heal"); return "It tastes like power. +8 Max HP. The sacs shriek: +8 Alert, an ambush is coming."; } },
+      { label: "Back away", fn: () => "You slip out without a sound." }
+    ]
+  },
+  fallenMiner: {
+    zone: 3, img: "fallenMiner", title: "Fallen Miner", text: "A miner from an earlier expedition, sealed in amber resin. Their pack is still on their back.",
+    choices: [
+      { label: "Cut out their gear: take 10 damage, pick a Rare", fn: () => { if (hurt(10)) return null; offerCards("Choose a card from their pack", threeCards("R"), "The resin burns. -10 HP. "); return null; } },
+      { label: "Take their tags: +100 Scrap", fn: () => `Someone will pay for these. +${scrapUp(100)} Scrap.` },
+      { label: "Bury them properly: remove a card", fn: () => { pickFromDeck("Remove a card from your deck", () => true, 1, ([c]) => { run.deck.splice(run.deck.indexOf(c), 1); eventRes(`You lay them to rest and let ${cardName(c)} go with them.`); }); return null; } }
+    ]
+  },
+  psionicEcho: {
+    zone: 3, img: "psionicEcho", title: "Psionic Echo", text: "A voice that sounds like your own whispers from the fog, offering to help.",
+    choices: [
+      { label: "Let it in: duplicate a card, -6 Max HP", fn: () => { pickFromDeck("Duplicate a card", c => !isStatus(c), 1, ([c]) => { run.deck.push(JSON.parse(JSON.stringify(c))); changeMaxHp(-6); sfx("cardAdd"); eventRes(`It copies ${cardName(c)} and takes something in return. -6 Max HP.`); }); return null; } },
+      { label: "Push it back: take 10 damage, next fight +3 Strength", fn: () => { if (hurt(10)) return null; addNextFight({ str: 3 }); return "You drive it out, and the anger stays. -10 HP. Next fight: +3 Strength."; } }
+    ]
+  },
+  acidMoat: {
+    zone: 3, img: "acidMoat", title: "Acid Moat", text: "A relic gleams on a ledge across a channel of hissing green acid.",
+    choices: [
+      { label: "Wade across: take 14 damage", fn: () => hurt(14) ? null : `The acid eats through your boots. -14 HP. ${relicOrScrap()}` },
+      { label: "Lay down a Silver stepping-stone", req: () => run.ore.ag < 1 ? "Need 1 Silver" : null, fn: () => { run.ore.ag--; return `The Silver holds just long enough. -1 Silver. ${relicOrScrap()}`; } },
+      { label: "Leave it", fn: () => "Not worth the burns." }
+    ]
+  },
+  obelisk: {
+    zone: 3, img: "obelisk", title: "Glyph Obelisk", text: "A tall black stone carved with glowing hive glyphs stands in the fog. The glyphs rearrange themselves as you watch.",
+    choices: [
+      { label: "Press your hand to the glyphs: upgrade 3 cards, take 12 damage", fn: () => { if (hurt(12)) return null; const n = upgradeRandom(3); return `The glyphs burn into your palm. -12 HP.${n.length ? ` Upgraded: ${n.join(", ")}.` : " Nothing left to upgrade."}`; } },
+      { label: "Trace a single glyph: next fight +1 Energy, draw 2", fn: () => { addNextFight({ energy: 1, draw: 2 }); return "One shape stays in your mind. Next fight: +1 Energy and 2 extra cards on turn 1."; } },
+      { label: "Walk away", fn: () => "You turn your eyes from the stone." }
+    ]
+  },
+  sealedChest: {
+    zone: 3, img: "sealedChest", title: "Sealed Chest", text: "An ornate chest sits alone in a hive tunnel, oddly clean, with no resin on it at all.",
+    choices: [
+      { label: "Pry it open", fn: () => { const r = rng.next(); if (r < 1 / 3) return `The lid gives. ${relicOrScrap()}`; if (r < 2 / 3) return `Inside, a stash of salvage. +${scrapUp(120)} Scrap.`; eventFight(["mimic"], "battle", { ore: { au: 1 } }); return null; } },
+      { label: "Leave it alone", fn: () => "Too clean. You leave it be." }
+    ]
+  },
 };
+for (const id in EVENTS) { const k = "ev_" + EVENTS[id].img; ART_FILES[k] = ART_FILES[k] || `assets/event-${EVENTS[id].img}.png`; }
 
 // ---------------------------------------------------------------- ui toolkit
 const M = { x: -1, y: -1 };
 let hits = [], prevHits = [], hitsOff = false, tip = null;
 const over = (x, y, w, h) => !hitsOff && M.x >= x && M.x <= x + w && M.y >= y && M.y <= y + h;
 function hit(x, y, w, h, fn, o) { if (!hitsOff) hits.push({ x, y, w, h, fn, k: o && o.k, nf: o && o.nf, fr: o && o.fr }); }
+// a do-nothing focus target: lets the controller / arrow keys land on tooltip-only things (status chips, intent icons, Block, relics)
+const tipHit = (x, y, w, h, key) => hit(x, y, w, h, () => { }, { k: key });
 function rp(x, y, w, h, r) {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
 }
@@ -1132,7 +1857,7 @@ function btn(x, y, w, h, label, fn, o = {}) {
   const ic = o.icon && artReady("ui");
   T(label, x + w / 2 + (ic ? 10 : 0), y + h / 2 + 1, o.size || 16, o.off ? "#667" : "#fff", "center", true);
   if (ic) uiIcon(o.icon[0], o.icon[1], x + 18, y + h / 2, 22);
-  if (!o.off) hit(x, y, w, h, fn);
+  if (!o.off) hit(x, y, w, h, () => { sfx("click"); fn(); });
 }
 function setTip(items, ax, ay) { tip = { items, ax, ay }; }
 function drawTip() {
@@ -1249,6 +1974,7 @@ function drawRelic(id, x, y, r, tipOn = true) {
   const ri = RELIC_ICON[id];
   if (art && ri !== undefined) drawCell("relics", ri % 5, (ri / 5) | 0, 128, 128, x - r * 1.05, y - r * 1.05, r * 2.1, r * 2.1);
   else T(initials(d.n), x, y + 1, r * .85, "#10141c", "center", true);
+  if (tipOn && S.screen === "combat") tipHit(x - r, y - r, r * 2, r * 2, "relic:" + id);   // reachable by controller in combat
   if (tipOn && over(x - r, y - r, r * 2, r * 2)) {
     const extra = id === "rocketR" && C ? ` (${C.atkN % 3}/3)` : "";
     setTip([{ t: d.n, d: d.d + extra }], x + r + 6, y + r);
@@ -1258,14 +1984,17 @@ function drawRelicRow(x, y) {
   run.relics.forEach((id, i) => drawRelic(id, x + 14 + i * 30, y, 13));
 }
 function statusRow(u, cx, y) {
-  const keys = ["str", "weak", "vuln", "rad"].filter(k => u[k] > 0);
+  // passives (Thorns, Watch, Plated, Shielded) are computed from the enemy's definition, not stored as stacks
+  const sv = k => k === "thorns" ? thornsOf(u) : k === "watch" ? (u.isP ? 0 : u.def.watch || 0) : k === "plated" ? (u.isP || !u.def.keepBlock ? 0 : 1) : k === "shielded" ? (isShielded(u) ? 1 : 0) : u[k];
+  const keys = ["str", "weak", "vuln", "rad", "thorns", "watch", "plated", "shielded"].filter(k => sv(k) > 0);
   const x0 = cx - (keys.length - 1) * 15;
   keys.forEach((k, i) => {
-    const st = STATUS[k], x = x0 + i * 30;
+    const st = STATUS[k], x = x0 + i * 30, n = sv(k);
     ctx.beginPath(); ctx.arc(x, y, 12, 0, TAU); ctx.fillStyle = "#12161e"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = st.col; ctx.stroke();
-    if (!uiIcon(st.ico[0], st.ico[1], x, y, 24)) T(st.l, x, y, 12, st.col, "center", true);
-    T(String(u[k]), x + 9, y + 10, 11, "#fff", "center", true);
-    if (over(x - 12, y - 12, 24, 24)) setTip([{ t: `${st.n} ${u[k]}`, d: st.d }], x + 16, y);
+    if (!st.ico || !uiIcon(st.ico[0], st.ico[1], x, y, 24)) T(st.l, x, y, st.l.length > 1 ? 10 : 12, st.col, "center", true);
+    if (!st.nonum) T(String(n), x + 9, y + 10, 11, "#fff", "center", true);
+    tipHit(x - 12, y - 12, 24, 24, `st:${u.isP ? "p" : u.uid}:${k}`);
+    if (over(x - 12, y - 12, 24, 24)) setTip([{ t: st.nonum ? st.n : `${st.n} ${n}`, d: st.d.replace(/\bN\b/, n) }], x + 16, y);
   });
 }
 function hpBar(u, cx, y, w) {
@@ -1275,13 +2004,17 @@ function hpBar(u, cx, y, w) {
   ctx.lineWidth = 1.5; ctx.strokeStyle = "#0d0f14"; rp(cx - w / 2, y, w, 14, 5); ctx.stroke();
   T(`${Math.max(0, u.hp)}/${u.maxhp}`, cx, y + 7.5, 11, "#fff", "center", true);
   if (u.block > 0) {
-    const bx = cx - w / 2 - 14, by = y + 7;
-    if (!uiIcon(6, 0, bx, by + 1, 34)) {
+    const bx = cx - w / 2 - 18, by = y + 7;
+    if (!uiIcon(6, 0, bx, by + 1, 46)) {
     ctx.beginPath(); ctx.moveTo(bx - 11, by - 12); ctx.lineTo(bx + 11, by - 12); ctx.lineTo(bx + 11, by + 3); ctx.lineTo(bx, by + 14); ctx.lineTo(bx - 11, by + 3); ctx.closePath();
     ctx.fillStyle = "#3a78c8"; ctx.fill(); ctx.strokeStyle = "#cfe4ff"; ctx.lineWidth = 2; ctx.stroke();
     }
-    T(String(u.block), bx, by, 12, "#fff", "center", true);
-    if (over(bx - 12, by - 12, 24, 26)) setTip([{ t: "Block " + u.block, d: KW[0][2] }], bx + 16, by);
+    // dark outline so the number reads over the bright shield art
+    ctx.font = `bold 20px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.lineJoin = "round"; ctx.lineWidth = 4; ctx.strokeStyle = "#0d0f14"; ctx.strokeText(String(u.block), bx, by + 1);
+    T(String(u.block), bx, by + 1, 20, "#fff", "center", true);
+    tipHit(bx - 16, by - 16, 32, 34, "blk:" + (u.isP ? "p" : u.uid));
+    if (over(bx - 16, by - 16, 32, 34)) setTip([{ t: "Block " + u.block, d: KW[0][2] }], bx + 16, by);
   }
 }
 
@@ -1308,16 +2041,36 @@ function drawIntentIcon(kind, x, y) {
 function intentInfo(e) {
   const m = moveOf(e), kinds = [];
   let num = "";
-  if (m.dmg) { const d = calcDmg(e, C.P, m.dmg); kinds.push("attack"); num = m.hits > 1 ? `${d}×${m.hits}` : String(d); }
-  if (m.block || m.allyBlock) kinds.push("block");
-  if (m.apply) kinds.push("debuff");
-  if (m.str) kinds.push("buff");
+  if (m.dmg) { const d = calcDmg(e, C.P, baseDmg(m, e)); kinds.push("attack"); num = m.hits > 1 ? `${d}×${m.hits}` : String(d); }
+  if (m.block || m.allyBlock || m.allBlock || m.reflect) kinds.push("block");
+  if (m.apply || m.addDisc || m.breakBlock || m.drainEnergy) kinds.push("debuff");
+  if (m.str || m.heal || m.allyStr || m.thornsTemp || m.healAlly) kinds.push("buff");
+  if (m.summon) kinds.push("summon");
+  if (m.charging) kinds.push("charging");
   return { m, kinds, num };
 }
 const enemyArtKey = id => "e_" + (id.startsWith("drone") ? "drone" : id);
+// starts loading the art for every monster a zone can field (and whatever they summon), so it's ready before the first fight
+function preloadEnemyArt(list) {
+  const ids = new Set();
+  const add = v => {
+    if (Array.isArray(v)) return v.forEach(add);
+    if (v && typeof v === "object") return Object.values(v).forEach(add);
+    if (typeof v !== "string" || !ENEMIES[v] || ids.has(v)) return;
+    ids.add(v);
+    const d = ENEMIES[v];
+    for (const m of [...(d.moves || []), d.overdrive || {}, ...(d.phases || []).flatMap(p => [p, ...p.moves])]) if (m.summon) add(m.summon);
+  };
+  add(list);
+  for (const id of ids) artReady(enemyArtKey(id));
+}
 function enemyTop(e) {
   const d = e.def;
   return artReady(enemyArtKey(e.id)) ? d.h * (d.boss ? 1.15 : 1.25) * (d.artScale || 1) + (d.fly ? d.h * .2 + 6 : 0) : d.h;
+}
+function eyeAt(x, y, r = 7) {
+  ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+  ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(x - r * .25, y + r * .1, r * .5, 0, TAU); ctx.fill();
 }
 function drawEnemyBody(e, x, y) {
   const d = e.def, t = S.time, col = d.col;
@@ -1331,6 +2084,7 @@ function drawEnemyBody(e, x, y) {
     if (e.hitT > 0) flashSprite(dx - 6, dy - 6, w + 12, th + 12, "#ffffff", e.hitT * 2, g => g.drawImage(img, tb.x, tb.y, tb.w, tb.h, dx, dy, w, th));
     return true;
   }
+  if (artPending(key)) return true;   // art is on its way: show nothing for that moment, never the placeholder
   ctx.lineWidth = 3; ctx.strokeStyle = "#0d0f14"; ctx.fillStyle = col;
   if (d.shape === "blob") {
     const sq = Math.sin(t * 3 + e.uid) * 2;
@@ -1355,6 +2109,193 @@ function drawEnemyBody(e, x, y) {
     ctx.strokeStyle = "#cfe4ff"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x, by, 46, 11, -.2, 0, TAU); ctx.stroke();
     ctx.beginPath(); ctx.arc(x - 8, by, 11, 0, TAU); ctx.fillStyle = "#ff4a3a"; ctx.fill();
     ctx.fillStyle = "#ffd0c0"; ctx.beginPath(); ctx.arc(x - 11, by - 3, 3.5, 0, TAU); ctx.fill();
+  } else if (d.shape === "mushroom") {
+    const bob = Math.sin(t * 3 + e.uid) * 2.5;
+    ctx.beginPath(); ctx.moveTo(x - 11, y); ctx.lineTo(x - 9, y - 34); ctx.lineTo(x + 9, y - 34); ctx.lineTo(x + 11, y); ctx.closePath(); ctx.fillStyle = "#efe3c0"; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(x, y - 34 + bob, 36, 26, 0, Math.PI, TAU); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#d6f3ec"; for (const [dx, dy, r] of [[-18, -44, 5], [4, -54, 4], [19, -42, 5]]) { ctx.beginPath(); ctx.arc(x + dx, y + dy + bob, r, 0, TAU); ctx.fill(); }
+    eyeAt(x - 5, y - 18, 4.5); eyeAt(x + 5, y - 18, 4.5);
+  } else if (d.shape === "bloom" || d.shape === "matriarch") {
+    const big = d.shape === "matriarch", k = big ? 1.5 : 1, cy = y - 58 * k + Math.sin(t * 2 + e.uid) * 4;
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(x + s * 14 * k, cy + 34 * k, 6 * k, 13 * k, s * .6, 0, TAU); ctx.fillStyle = "#5a9a3a"; ctx.fill(); ctx.stroke(); }
+    if (big) for (let i = 0; i < 8; i++) {   // ring of pulsing buds
+      const a = i / 8 * TAU + t * .4, r = (5 + Math.sin(t * 4 + i) * 1.6) * k;
+      ctx.beginPath(); ctx.arc(x + Math.cos(a) * 47 * k, cy + Math.sin(a) * 47 * k, r, 0, TAU); ctx.fillStyle = "#e0709a"; ctx.fill(); ctx.stroke();
+    }
+    for (let i = 0; i < 6; i++) {
+      const a = i / 6 * TAU + Math.sin(t * 2 + i) * .12;
+      ctx.beginPath(); ctx.ellipse(x + Math.cos(a) * 24 * k, cy + Math.sin(a) * 24 * k, 17 * k, 11 * k, a, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(x, cy, 17 * k, 0, TAU); ctx.fillStyle = "#f2d04a"; ctx.fill(); ctx.stroke();
+    eyeAt(x - 7 * k, cy - 2 * k, 5 * k); eyeAt(x + 7 * k, cy - 2 * k, 5 * k);
+  } else if (d.shape === "hound") {
+    const br = Math.sin(t * 3 + e.uid) * 1.5;
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x + 36, y - 38); ctx.lineTo(x + 56, y - 46); ctx.lineTo(x + 52, y - 38); ctx.closePath(); ctx.fill(); ctx.stroke();   // tail
+    for (const dx of [-30, -14, 14, 28]) { ctx.fillStyle = "#58612e"; ctx.fillRect(x + dx - 4, y - 20, 9, 20); ctx.strokeRect(x + dx - 4, y - 20, 9, 20); }
+    ctx.beginPath(); ctx.ellipse(x + 6, y - 34, 40, 19 + br, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.fillRect(x - 56, y - 56, 34, 26); ctx.strokeRect(x - 56, y - 56, 34, 26);   // blocky head
+    ctx.fillStyle = "#58612e"; ctx.fillRect(x - 56, y - 32, 30, 9); ctx.strokeRect(x - 56, y - 32, 30, 9);   // jaw
+    ctx.fillStyle = "#f4f0d0"; for (const dx of [-52, -44, -36]) { ctx.beginPath(); ctx.moveTo(x + dx, y - 32); ctx.lineTo(x + dx + 3, y - 32); ctx.lineTo(x + dx + 1.5, y - 37); ctx.fill(); }
+    eyeAt(x - 38, y - 48, 5);
+    ctx.fillStyle = "#9be05a"; for (const dx of [-14, 4, 22]) { ctx.beginPath(); ctx.arc(x + dx, y - 51 + br, 5, 0, TAU); ctx.fill(); ctx.stroke(); }
+  } else if (d.shape === "hulk") {
+    const br = Math.sin(t * 2 + e.uid) * 2;
+    for (const s of [-1, 1]) {
+      ctx.beginPath(); ctx.ellipse(x + s * 62, y - 50, 17, 42, s * -.15, 0, TAU); ctx.fillStyle = "#4e5d31"; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x + s * 66, y - 12, 16, 0, TAU); ctx.fill(); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.ellipse(x, y - 66, 60, 54 + br, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x - 14, y - 96 + br, 19, 0, TAU); ctx.fillStyle = "#4e5d31"; ctx.fill(); ctx.stroke();
+    eyeAt(x - 21, y - 98 + br, 3.5); eyeAt(x - 8, y - 98 + br, 3.5);
+    for (const [dx, dy, r] of [[18, -90, 7], [-28, -58, 6], [28, -52, 8], [-6, -34, 5], [40, -74, 5]]) {   // pulsing pustules
+      const pu = .5 + .5 * Math.sin(t * 3 + dx);
+      ctx.beginPath(); ctx.arc(x + dx, y + dy, r + pu * 1.5, 0, TAU); ctx.fillStyle = `rgba(${150 + pu * 60 | 0},255,${100 + pu * 40 | 0},${.7 + pu * .3})`; ctx.fill(); ctx.stroke();
+    }
+  } else if (d.shape === "bat") {
+    const fl = Math.sin(t * 11 + e.uid * 2), cy = y - 38 + Math.sin(t * 2 + e.uid) * 4;
+    for (const s of [-1, 1]) {
+      ctx.save(); ctx.translate(x + s * 12, cy - 4); ctx.rotate(s * (-.35 + fl * .5));
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(s * 38, -12); ctx.lineTo(s * 34, 8); ctx.lineTo(s * 22, 3); ctx.lineTo(s * 12, 13); ctx.closePath();
+      ctx.fillStyle = "#54467a"; ctx.fill(); ctx.stroke(); ctx.restore();
+    }
+    ctx.fillStyle = col; for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + s * 6, cy - 12); ctx.lineTo(x + s * 14, cy - 26); ctx.lineTo(x + s * 15, cy - 9); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(x, cy, 17, 0, TAU); ctx.fill(); ctx.stroke();
+    eyeAt(x - 6, cy - 3, 6); eyeAt(x + 6, cy - 3, 6);
+    ctx.fillStyle = "#fff"; for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + s * 5 - 2, cy + 9); ctx.lineTo(x + s * 5 + 2, cy + 9); ctx.lineTo(x + s * 5, cy + 15); ctx.fill(); }
+  } else if (d.shape === "grub") {
+    const seg = [[34, 16, 0], [10, 19, 1], [-14, 20, 2]];
+    for (const [dx, r, i] of seg) {
+      const sy = y - 24 - r * .2 - Math.max(0, Math.sin(t * 3 + i * 1.1 + e.uid)) * 4;
+      ctx.beginPath(); ctx.arc(x + dx, sy, r, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(x + dx, sy - 2, r * .55, r * .9, 0, Math.PI * 1.1, Math.PI * 1.9); ctx.fillStyle = "#8a7a56"; ctx.fill(); ctx.stroke();
+    }
+    const hx = x - 42, hy = y - 28;
+    ctx.beginPath(); ctx.arc(hx, hy, 21, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(hx - 10, hy + 2, 10, 0, TAU); ctx.fillStyle = "#3a2418"; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#fff"; for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; ctx.beginPath(); ctx.arc(hx - 10 + Math.cos(a) * 9, hy + 2 + Math.sin(a) * 9, 1.8, 0, TAU); ctx.fill(); }
+    eyeAt(hx + 4, hy - 14, 4);
+  } else if (d.shape === "weaver") {
+    ctx.lineCap = "round";
+    for (const s of [-1, 1]) for (let i = 0; i < 3; i++) {
+      const sw = Math.sin(t * 2.5 + i + e.uid) * 3, kx = x + s * (18 + i * 10), ky = y - 82 + i * 8, fx = x + s * (34 + i * 11) + sw;
+      ctx.strokeStyle = "rgba(236,242,222,.4)"; ctx.lineWidth = 1.5;   // pale thread from the knee to the ground
+      ctx.beginPath(); ctx.moveTo(kx, ky); ctx.quadraticCurveTo(kx + sw * 2, (ky + y) / 2, kx + sw, y + 2); ctx.stroke();
+      ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x + s * 8, y - 52 + i * 3); ctx.lineTo(kx, ky); ctx.lineTo(fx, y); ctx.stroke();
+    }
+    ctx.lineCap = "butt";
+    ctx.beginPath(); ctx.ellipse(x + 8, y - 54, 24, 18, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x - 18, y - 56, 13, 0, TAU); ctx.fill(); ctx.stroke();
+    eyeAt(x - 22, y - 59, 4); eyeAt(x - 13, y - 59, 4);
+  } else if (d.shape === "shaman") {
+    const pu = .5 + .5 * Math.sin(t * 3 + e.uid);
+    ctx.strokeStyle = "#6a4a2a"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x + 28, y); ctx.lineTo(x + 28, y - 74); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 24, y); ctx.lineTo(x - 14, y - 52); ctx.lineTo(x + 14, y - 52); ctx.lineTo(x + 24, y); ctx.closePath(); ctx.fillStyle = col; ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 3; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y - 62, 16, 0, TAU); ctx.fillStyle = "#3a2c4a"; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(x, y - 60, 9, 10, 0, 0, TAU); ctx.fillStyle = "#120c18"; ctx.fill();
+    ctx.fillStyle = "#e8ff7a"; for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(x + s * 4, y - 61, 2, 0, TAU); ctx.fill(); }
+    const gl = ctx.createRadialGradient(x, y - 80, 4, x, y - 80, 40); gl.addColorStop(0, `rgba(210,255,90,${.3 + pu * .35})`); gl.addColorStop(1, "rgba(210,255,90,0)");
+    ctx.fillStyle = gl; ctx.fillRect(x - 44, y - 124, 88, 88);
+    ctx.beginPath(); ctx.ellipse(x, y - 74, 26, 17, 0, Math.PI, TAU); ctx.closePath(); ctx.fillStyle = `rgb(${190 + pu * 30 | 0},${230 + pu * 20 | 0},${70 + pu * 20 | 0})`; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + 28, y - 76, 5 + pu * 1.5, 0, TAU); ctx.fillStyle = "#e8ff7a"; ctx.fill(); ctx.stroke();
+  } else if (d.shape === "lurker") {
+    const sink = e.block > 0 ? 14 : 0;
+    ctx.beginPath(); ctx.ellipse(x, y - 22 + sink, 68, 26, 0, Math.PI, TAU); ctx.lineTo(x + 68, y + 4); ctx.lineTo(x - 68, y + 4); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    for (const s of [-1, 1]) {
+      const sw = Math.sin(t * 2 + s + e.uid) * 4, ex = x + s * 24 + sw, ey = y - 66 + sink;
+      ctx.strokeStyle = "#2c4234"; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(x + s * 20, y - 40 + sink); ctx.lineTo(ex, ey); ctx.stroke();
+      eyeAt(ex, ey, 8);
+    }
+    ctx.strokeStyle = "#1a2a20"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x - 54, y - 18 + sink); ctx.quadraticCurveTo(x, y - 4 + sink, x + 54, y - 18 + sink); ctx.stroke();
+    ctx.fillStyle = "#e8e4d0"; for (let i = -4; i <= 4; i++) { const tx = x + i * 11, ty = y - 11 + sink - Math.abs(i) * 1.4; ctx.beginPath(); ctx.moveTo(tx - 2, ty - 1); ctx.lineTo(tx + 2, ty - 1); ctx.lineTo(tx, ty + 5); ctx.fill(); }
+  } else if (d.shape === "worker") {
+    const bob = Math.sin(t * 5 + e.uid) * 1.5;
+    ctx.lineCap = "round";
+    for (const dx of [-14, 0, 14]) { const sw = Math.sin(t * 6 + dx) * 3; ctx.beginPath(); ctx.moveTo(x + dx, y - 22); ctx.lineTo(x + dx - 6 + sw, y - 9); ctx.lineTo(x + dx - 8 + sw, y); ctx.stroke(); }
+    ctx.lineCap = "butt";
+    ctx.beginPath(); ctx.ellipse(x + 24, y - 28, 19, 14, 0, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(x + 2, y - 28 + bob, 13, 11, 0, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x - 26, y - 32 + bob, 13, 0, TAU); ctx.fill(); ctx.stroke();
+    eyeAt(x - 29, y - 36 + bob, 4.5);
+    const gl = ctx.createRadialGradient(x - 44, y - 22, 1, x - 44, y - 22, 14); gl.addColorStop(0, "rgba(255,200,80,.9)"); gl.addColorStop(1, "rgba(255,170,40,0)");
+    ctx.fillStyle = gl; ctx.fillRect(x - 60, y - 38, 32, 32);
+    ctx.beginPath(); ctx.arc(x - 44, y - 22, 8, 0, TAU); ctx.fillStyle = "#f0a830"; ctx.fill(); ctx.stroke();   // amber resin blob
+  } else if (d.shape === "sprayer") {
+    const pu = .5 + .5 * Math.sin(t * 3 + e.uid);
+    for (const dx of [-24, -4, 18]) { ctx.fillStyle = "#3e6a3e"; ctx.fillRect(x + dx - 3, y - 14, 7, 14); ctx.strokeRect(x + dx - 3, y - 14, 7, 14); }
+    ctx.beginPath(); ctx.ellipse(x, y - 32, 42, 24, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 4, y - 54); ctx.lineTo(x - 4, y - 12); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + 14, y - 56, 13 + pu * 2, 0, TAU); ctx.fillStyle = `rgb(${130 + pu * 40 | 0},255,${80 + pu * 30 | 0})`; ctx.fill(); ctx.stroke();   // swollen acid sac
+    ctx.beginPath(); ctx.arc(x - 38, y - 32, 12, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#3a3a44"; ctx.fillRect(x - 62, y - 36, 24, 8); ctx.strokeRect(x - 62, y - 36, 24, 8);   // nozzle snout
+    eyeAt(x - 36, y - 40, 4);
+  } else if (d.shape === "larvaCluster") {
+    const sw = 1 + e.mi * .07 + Math.sin(t * 2 + e.uid) * .02;   // swells toward the hatch
+    ctx.save(); ctx.translate(x, y); ctx.scale(sw, sw);
+    [[-26, -14, 17], [4, -12, 19], [30, -14, 16], [-12, -40, 17], [16, -40, 18], [2, -62, 15]].forEach(([dx, dy, r], i) => {
+      ctx.globalAlpha = e.fade * .92; ctx.beginPath(); ctx.ellipse(dx, dy, r, r * 1.12, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+      ctx.globalAlpha = e.fade; ctx.fillStyle = "#4a3a4a"; ctx.beginPath(); ctx.ellipse(dx + Math.sin(t * 4 + i * 2) * 3, dy + Math.cos(t * 3 + i) * 3, r * .4, r * .55, Math.sin(t + i), 0, TAU); ctx.fill();   // something wriggles inside
+    });
+    ctx.restore();
+  } else if (d.shape === "larva") {
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x + 12 - i * 12, y - 10 - Math.max(0, Math.sin(t * 5 + i)) * 3, 9 - i, 0, TAU); ctx.fillStyle = i % 2 ? "#d0c0a0" : col; ctx.fill(); ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(x - 16, y - 10, 4, 0, TAU); ctx.fillStyle = "#3a1a1a"; ctx.fill();
+    eyeAt(x - 9, y - 18, 3);
+  } else if (d.shape === "eye") {
+    const by = y - 58 + Math.sin(t * 2.5 + e.uid) * 5, off = clamp((200 - x) / 40, -1, 1) * 9;   // the iris tracks the player
+    ctx.lineCap = "round"; ctx.strokeStyle = "#8a7aa0"; ctx.lineWidth = 4;
+    for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(x + i * 9, by + 26); ctx.quadraticCurveTo(x + i * 12 + Math.sin(t * 3 + i) * 5, by + 40, x + i * 10 + Math.sin(t * 2 + i) * 6, by + 52); ctx.stroke(); }
+    ctx.lineCap = "butt"; ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(x, by, 30, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + off, by, 17, 0, TAU); ctx.fillStyle = "#d02a2a"; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + off, by, 7, 0, TAU); ctx.fillStyle = "#111"; ctx.fill();
+  } else if (d.shape === "lancer") {
+    const ch = moveOf(e).charging, kick = ch ? Math.sin(t * 20) * 1.5 : 0;
+    ctx.beginPath(); ctx.ellipse(x + 6, y - 58, 17, 38, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x - 2, y - 104, 13, 0, TAU); ctx.fill(); ctx.stroke();
+    eyeAt(x - 7, y - 106, 4.5);
+    ctx.lineCap = "round"; ctx.lineWidth = 5; ctx.strokeStyle = "#0d0f14";
+    for (const dx of [-6, 14]) { ctx.beginPath(); ctx.moveTo(x + dx, y - 26); ctx.lineTo(x + dx - 6, y - 12); ctx.lineTo(x + dx - 4, y); ctx.stroke(); }
+    const ax = ch ? x + 20 + kick : x - 56, ay = ch ? y - 104 : y - 70;   // the spike arm pulls back while winding up
+    ctx.beginPath(); ctx.moveTo(x - 2, y - 82); ctx.lineTo(ax, ay); ctx.stroke(); ctx.strokeStyle = "#e8e0f0"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x - 2, y - 82); ctx.lineTo(ax, ay); ctx.stroke();
+    ctx.lineCap = "butt"; ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 3;
+  } else if (d.shape === "swarmer") {
+    const fl = Math.abs(Math.sin(t * 40 + e.uid));
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(x + s * 6, y - 32 - fl * 4, 15, 7 + fl * 6, s * -.5, 0, TAU); ctx.fillStyle = "rgba(230,200,240,.7)"; ctx.fill(); ctx.stroke(); }
+    ctx.beginPath(); ctx.ellipse(x, y - 22 + Math.sin(t * 6 + e.uid) * 2, 12, 15, 0, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    eyeAt(x - 4, y - 26, 4);
+  } else if (d.shape === "mindLeech") {
+    const sg = [[30, 20, 14], [12, 28, 16], [-8, 30, 15], [-24, 40, 13], [-38, 52, 11]];
+    sg.forEach(([dx, dy, r], i) => { const sy = y - dy - Math.sin(t * 3 + i * .8) * 2; ctx.beginPath(); ctx.arc(x + 4 - dx + 20, sy, r, 0, TAU); ctx.fillStyle = i % 2 ? "#6a3a90" : col; ctx.fill(); ctx.stroke(); });
+    const pu = .5 + .5 * Math.sin(t * 4 + e.uid);
+    ctx.beginPath(); ctx.arc(x - 28, y - 62, 11 + pu, 0, TAU); ctx.fillStyle = `rgb(${220 + pu * 30 | 0},${150 + pu * 40 | 0},255)`; ctx.fill(); ctx.stroke();   // glowing brain bulb
+    ctx.strokeStyle = "#7a4aa0"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x - 28, y - 62, 6, .3, 4); ctx.stroke(); ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 3;
+    eyeAt(x - 30, y - 46, 4);
+  } else if (d.shape === "resin") {
+    ctx.beginPath(); ctx.arc(x + 6, y - 34, 30, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x - 26, y - 44, 15, 0, TAU); ctx.fillStyle = "#8a5a2a"; ctx.fill(); ctx.stroke();
+    eyeAt(x - 30, y - 50, 5);
+    ctx.strokeStyle = "#e0a040"; ctx.lineWidth = 3;
+    for (let i = 0; i < 3; i++) { const sw = Math.sin(t * 2 + i) * 2, ln = 14 + i * 7 + Math.max(0, Math.sin(t * 1.5 + i * 2)) * 8; ctx.beginPath(); ctx.moveTo(x - 36 + i * 5, y - 34); ctx.lineTo(x - 36 + i * 5 + sw, y - 34 + ln); ctx.stroke(); ctx.beginPath(); ctx.arc(x - 36 + i * 5 + sw, y - 34 + ln + 2, 2.5, 0, TAU); ctx.fillStyle = "#e0a040"; ctx.fill(); }
+    ctx.strokeStyle = "#0d0f14";
+  } else if (d.shape === "overseer") {
+    const pu = .5 + .5 * Math.sin(t * 3 + e.uid);
+    ctx.beginPath(); ctx.moveTo(x - 48, y); ctx.lineTo(x - 22, y - 116); ctx.lineTo(x + 22, y - 116); ctx.lineTo(x + 48, y); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    ctx.lineCap = "round"; ctx.lineWidth = 5; for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + s * 20, y - 104); ctx.lineTo(x + s * 54, y - 126 - Math.sin(t * 2 + s) * 4); ctx.stroke(); } ctx.lineCap = "butt"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(x, y - 132, 17, 21, 0, 0, TAU); ctx.fillStyle = "#6a4a7a"; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#6a4a7a"; for (const dx of [-12, 0, 12]) { ctx.beginPath(); ctx.moveTo(x + dx - 5, y - 148); ctx.lineTo(x + dx, y - 166 + Math.abs(dx) * .4); ctx.lineTo(x + dx + 5, y - 148); ctx.fill(); ctx.stroke(); }   // crest
+    eyeAt(x - 7, y - 134, 4.5); eyeAt(x + 7, y - 134, 4.5);
+    const gl = ctx.createRadialGradient(x, y - 84, 2, x, y - 84, 26); gl.addColorStop(0, `rgba(235,140,255,${.5 + pu * .4})`); gl.addColorStop(1, "rgba(235,140,255,0)");
+    ctx.fillStyle = gl; ctx.fillRect(x - 30, y - 114, 60, 60);
+    ctx.beginPath(); ctx.moveTo(x, y - 96); ctx.lineTo(x + 9, y - 84); ctx.lineTo(x, y - 72); ctx.lineTo(x - 9, y - 84); ctx.closePath(); ctx.fillStyle = "#f0a0ff"; ctx.fill(); ctx.stroke();   // psionic gem
+  } else if (d.shape === "juggernaut") {
+    const b = clamp(e.block / 20, 0, 1), plate = `rgb(${110 + b * 90 | 0},${110 + b * 90 | 0},${130 + b * 90 | 0})`;   // plates brighten with Block
+    for (const dx of [-56, -22, 14, 48]) { ctx.fillStyle = "#2a2a34"; ctx.fillRect(x + dx, y - 22, 12, 22); ctx.strokeRect(x + dx, y - 22, 12, 22); }
+    ctx.beginPath(); ctx.ellipse(x + 6, y - 62, 82, 54, 0, Math.PI, TAU); ctx.lineTo(x + 88, y - 22); ctx.lineTo(x - 76, y - 22); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.stroke();
+    for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.ellipse(x + 6, y - 22, 80 - i * 18, 52 - i * 9, 0, Math.PI * 1.08, Math.PI * 1.92); ctx.strokeStyle = plate; ctx.lineWidth = 7; ctx.stroke(); ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 3; }
+    ctx.beginPath(); ctx.arc(x - 84, y - 40, 17, 0, TAU); ctx.fillStyle = "#2c2c38"; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#e0d8c0"; for (const dy of [-10, 6]) { ctx.beginPath(); ctx.moveTo(x - 94, y - 40 + dy); ctx.lineTo(x - 114, y - 46 + dy); ctx.lineTo(x - 96, y - 34 + dy); ctx.fill(); ctx.stroke(); }
+    eyeAt(x - 82, y - 46, 5);
   } else {
     ctx.beginPath(); ctx.moveTo(x - 80, y - 70); ctx.lineTo(x + 70, y - 90); ctx.lineTo(x + 95, y - 25); ctx.lineTo(x - 90, y - 25); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = "#6a3a20"; ctx.fillRect(x - 70, y - 25, 34, 30); ctx.fillRect(x + 40, y - 25, 34, 30);
@@ -1378,21 +2319,72 @@ function drawEnemy(e) {
   hpBar(e, e.x, e.y + 14, Math.max(80, d.w * .9));
   statusRow(e, e.x, e.y + 44);
   T(d.n, e.x, e.y + 66, 12, "#cfd6e2", "center", true);
+  if (d.onDeath && over(e.x - 60, e.y + 57, 120, 18)) setTip([{ t: d.n, d: `On death: ${d.onDeath.n}. ${describeMove(d.onDeath)}` }], e.x + 66, e.y + 50);
   const info = intentInfo(e), iy = e.y - enemyTop(e) - 28;
   const parts = info.kinds.length; ctx.font = `bold 20px ${FONT}`;
-  const wTot = parts * 26 + (info.num ? ctx.measureText(info.num).width + 22 : 0);
+  const numW = info.num ? ctx.measureText(info.num).width : 0, wTot = parts * 26 + (info.num ? numW + 22 : 0);
   let ix = e.x - wTot / 2 + 13;
-  info.kinds.forEach(k => { drawIntentIcon(k, ix, iy); ix += 26; });
-  if (info.num) T(info.num, ix - 6, iy, 20, "#ff9a8a", "left", true);
-  if (over(e.x - 40, iy - 16, 80, 32)) setTip([{ t: info.m.n, d: describeMove(info.m, info.num) }], e.x + 44, iy);
+  // every icon (and the damage number) is its own tooltip / controller target: the move, then what that kind of effect does
+  info.kinds.forEach(k => {
+    drawIntentIcon(k, ix, iy);
+    tipHit(ix - 13, iy - 15, 26, 30, `int:${e.uid}:${k}`);
+    if (over(ix - 13, iy - 15, 26, 30)) setTip(intentTips(e, info, k), e.x + 44, iy);
+    ix += 26;
+  });
+  if (info.num) {
+    ctx.font = `bold 20px ${FONT}`; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = 5; ctx.strokeStyle = "#1a0505"; ctx.strokeText(info.num, ix - 6, iy);   // dark outline: readable on the orange sky and the dark zones alike
+    T(info.num, ix - 6, iy, 20, "#ff2418", "left", true);
+    tipHit(ix - 10, iy - 15, numW + 8, 30, `int:${e.uid}:num`);
+    if (over(ix - 10, iy - 15, numW + 8, 30)) setTip(intentTips(e, info, "attack"), e.x + 44, iy);
+  }
+}
+// tooltip blocks for one intent icon: the whole move first, then a plain-language note for that kind of effect
+function intentTips(e, info, kind) {
+  const m = info.m, out = [{ t: m.n, d: describeMove(m, info.num) }];
+  if (kind === "attack") {
+    const notes = [`Damage this turn: ${info.num}. Your Block absorbs it first, then your HP.`];
+    if (e.str) notes.push(`Includes ${e.str} Strength.`);
+    if (e.weak > 0) notes.push("Its Weak cuts this by 25%.");
+    if (C.P.vuln > 0) notes.push("Your Vulnerable adds 50%.");
+    out.push({ t: "Attack", d: notes.join(" ") });
+  } else if (kind === "block") out.push({ t: "Block", d: KW[0][2] });
+  else if (kind === "debuff") {
+    for (const k in m.apply || {}) out.push({ t: `${STATUS[k].n} ${m.apply[k]}`, d: STATUS[k].d.replace(/\bN\b/, m.apply[k]) });
+    for (const k in m.addDisc || {}) out.push({ t: `${CARDS[k].n} x${m.addDisc[k]}`, d: "Added to your discard pile. " + CARDS[k].tx([]) });
+    if (m.breakBlock) out.push({ t: "Armor melted", d: "Removes all your Block before the attack hits." });
+    if (m.drainEnergy) out.push({ t: "Energy drain", d: `You start your next turn with ${m.drainEnergy} less Energy.` });
+  } else if (kind === "buff") {
+    if (m.str || m.allyStr) out.push({ t: "Strength", d: STATUS.str.d });
+    if (m.thornsTemp) out.push({ t: "Thorns", d: STATUS.thorns.d.replace(/\bN\b/, m.thornsTemp) });
+    if (m.heal || m.healAlly) out.push({ t: "Heal", d: "Restores HP, up to the target's maximum." });
+  } else if (kind === "summon") out.push({ t: "Summon", d: "Brings new enemies into the fight (at most 4 at once). Summoned enemies drop nothing." });
+  else if (kind === "charging") out.push({ t: "Charging", d: "Nothing happens this turn, but a big attack follows. Get your Block up." });
+  return out;
 }
 function describeMove(m, num) {
   const p = [];
+  if (m.breakBlock) p.push("Removes all your Block.");
+  if (m.charging) p.push("Winding up a big attack.");
   if (m.dmg) p.push(`Attacks for ${num}.`);
+  if (m.drain) p.push("Heals for unblocked damage.");
+  if (m.perSpore) p.push(`+${m.perSpore} per Spore card you hold.`);
   if (m.block) p.push(`Gains ${m.block} Block.`);
   if (m.allyBlock) p.push(`Gives ${m.allyBlock} Block to its ally.`);
+  if (m.allBlock) p.push(`Gives ${m.allBlock} Block to all enemies.`);
+  if (m.reflect) p.push(`Gains Block equal to the damage you dealt it last turn (max ${m.reflect}).`);
+  if (m.healAlly) p.push(`Heals its most wounded ally for ${m.healAlly}.`);
+  if (m.drainEnergy) p.push(`You start your next turn with ${m.drainEnergy} less Energy.`);
   if (m.apply) p.push("Applies " + Object.keys(m.apply).map(k => `${m.apply[k]} ${STATUS[k].n}`).join(", ") + ".");
   if (m.str) p.push(`Gains ${m.str} Strength.`);
+  if (m.heal) p.push(`Heals ${m.heal}.`);
+  if (m.allyStr) p.push(`Gives ${m.allyStr} Strength to its allies.`);
+  if (m.addDisc) p.push("Shuffles " + Object.keys(m.addDisc).map(k => `${m.addDisc[k]} ${CARDS[k].n}`).join(", ") + " into your discard pile.");
+  if (m.thornsTemp) p.push(`Gains ${m.thornsTemp} Thorns this round.`);
+  if (m.summon) {
+    const cnt = {}; m.summon.forEach(id => { cnt[id] = (cnt[id] || 0) + 1; });
+    p.push("Summons " + Object.keys(cnt).map(id => cnt[id] > 1 ? `${cnt[id]} ${ENEMIES[id].n}s` : `a ${ENEMIES[id].n}`).join(" and ") + ".");
+  }
+  if (m.selfDestruct) p.push("Then it bursts.");
   return p.join(" ");
 }
 function drawPlayer() {
@@ -1431,6 +2423,7 @@ function drawPlayer() {
     }
     const ty = companions ? dy - 82 : dy - 42;
     T(String(C.comp.dog), dx, ty, 15, "#ffe0a8", "center", true);
+    tipHit(dx - 34, ty - 12, 70, dy - ty + 16, "comp:dog");
     if (over(dx - 34, ty - 12, 70, dy - ty + 16)) setTip([{ t: "Dog " + C.comp.dog, d: "At end of your turn, deals " + C.comp.dog + " to a random enemy." }], dx + 40, ty);
   }
   if (C.comp.mouse > 0) {
@@ -1444,6 +2437,7 @@ function drawPlayer() {
     }
     const ty = companions ? my - 82 : my - 30;
     T(String(C.comp.mouse), mx, ty, 15, "#ffe0a8", "center", true);
+    tipHit(mx - 34, ty - 12, 70, my - ty + 14, "comp:mouse");
     if (over(mx - 34, ty - 12, 70, my - ty + 14)) setTip([{ t: "Mouse " + C.comp.mouse, d: "At end of your turn, gives you " + C.comp.mouse + " Block." }], mx + 40, ty);
   }
 }
@@ -1483,6 +2477,7 @@ function drawCombat() {
     rp(14, cy - 11, w, 22, 8); ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
     if (hasI) uiIcon(ico[0], ico[1], 28, cy, 22);
     T(label, 14 + w / 2 + (hasI ? 10 : 0), cy + 1, 13, col, "center", true);
+    tipHit(14, cy - 11, w, 22, "hud:" + tipItem.t);
     if (over(14, cy - 11, w, 22)) setTip([tipItem], 14 + w + 8, cy);
     cy += 28;
   };
@@ -1542,7 +2537,8 @@ function drawCombat() {
   // energy / piles / end turn
   const og = ctx.createRadialGradient(66, 540, 4, 70, 548, 36); og.addColorStop(0, "#ffe9a0"); og.addColorStop(1, "#d98a20");
   if (!uiIcon(7, 0, 70, 548, 84)) { ctx.beginPath(); ctx.arc(70, 548, 34, 0, TAU); ctx.fillStyle = og; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "#0d0f14"; ctx.stroke(); }
-  T(`${C.energy}/3`, 70, 549, 24, "#2a1a08", "center", true);
+  // the orb's moons sit above it, so the sphere itself is ~2px below the icon centre
+  T(`${C.energy}/3`, 70, 551, 24, "#2a1a08", "center", true);
   if (over(36, 514, 68, 68)) setTip([{ t: "Energy", d: "Spent to play cards. Refills to 3 each turn." }], 110, 520);
   const pile = (label, arr, x, y, w, title, icon) => btn(x, y, w, 30, `${label} ${arr.length}`, () => openPile(title, arr), { size: 13, icon });
   pile("Draw", C.draw, 24, 598, 92, "Draw pile (random order)", [6, 2]);
@@ -1572,8 +2568,8 @@ function selectCard(i) {
   const c = C.hand[i];
   if (!c) return;
   if (C.sel === i) { C.sel = -1; return; }
-  if (D(c).unplayable || !canPay(c)) { shakeCard(c); return; }
-  C.sel = i;
+  if (D(c).unplayable || !canPay(c)) { shakeCard(c); sfx("denied"); return; }
+  C.sel = i; sfx("select");
 }
 function openPile(title, arr) {
   const cards = arr.slice();
@@ -1584,6 +2580,7 @@ function openDeck() {
   const cards = run.deck.slice().sort((a, b) => FAM_ORDER.indexOf(D(a).f) - FAM_ORDER.indexOf(D(b).f) || RAR_ORD[D(a).r] - RAR_ORD[D(b).r] || D(a).n.localeCompare(D(b).n));
   openModal({ title: `Deck (${cards.length})`, cards, n: 0, cancel: true });
 }
+function closeModal() { const m = S.modal; S.modal = null; if (m && m.onCancel) m.onCancel(); }
 function openModal(m) { S.scroll = 0; S.modal = Object.assign({ picked: [], cancel: false, n: 0 }, m); }
 
 // generic card grid used by deck/pile viewers, camp upgrade, removals, and in-combat choices
@@ -1610,11 +2607,11 @@ function drawGrid(g, isChoose) {
   ctx.restore();
   if (g.preview === "upgrade" && hoverCard && canUpgrade(hoverCard)) {
     T("Before", 830, 100, 14, "#9ab", "center", true); drawCard(hoverCard, 830, 205, 1);
-    T("After", 830, 330, 14, "#8dff95", "center", true); drawCard({ id: hoverCard.id, up: true }, 830, 435, 1);
+    T("After", 830, 330, 14, "#8dff95", "center", true); drawCard(upgradedPreview(hoverCard), 830, 435, 1);
   }
   if (maxScroll > 0) T("Scroll for more", 480, 598, 12, "#789", "center");
-  if (g.n > 1 && g.picked.length === g.n) btn(420, 592, 120, 38, "Confirm", () => { if (isChoose) finishChoose(); else { const m = S.modal; S.modal = null; m.onDone(m.picked); } }, { bg: "#2a4a2a", bd: "#8aff9a" });
-  if (g.cancel) btn(820, 592, 120, 38, g.n > 0 ? "Cancel" : "Close", () => { S.modal = null; });
+  if (g.n > 1 && (g.picked.length === g.n || g.upTo)) btn(420, 592, 120, 38, "Confirm", () => { if (isChoose) finishChoose(); else { const m = S.modal; S.modal = null; m.onDone(m.picked); } }, { bg: "#2a4a2a", bd: "#8aff9a" });
+  if (g.cancel) btn(820, 592, 120, 38, g.skip ? "Skip" : g.n > 0 ? "Cancel" : "Close", closeModal);
 }
 function gridPick(g, c, isChoose) {
   if (g.n === 1) { g.picked = [c]; if (isChoose) finishChoose(); else { const m = S.modal; S.modal = null; m.onDone([c]); } return; }
@@ -1627,12 +2624,12 @@ function buyForge(it) {
   const lv = save.forge[it.key];
   if (lv >= it.max) return;
   const cost = it.cost(lv);
-  if (save.bank < cost) { S.toast = { text: "Not enough Scrap", t: 1.6 }; return; }
-  save.bank -= cost; save.forge[it.key]++; writeSave();
+  if (save.bank < cost) { S.toast = { text: "Not enough Scrap", t: 1.6 }; sfx("denied"); return; }
+  save.bank -= cost; save.forge[it.key]++; sfx("upgrade"); writeSave();
 }
 function startNewRun() {
   if (save.run && S.confirmAbandon <= 0) { S.confirmAbandon = 4; return; }
-  if (save.run) { save.bank += save.run.scrap + oreScrapValue(save.run); save.run = null; writeSave(); }
+  if (save.run) { if (!save.run.debug) save.bank += save.run.scrap + oreScrapValue(save.run); save.run = null; writeSave(); }
   newRun();
   openPending();
 }
@@ -1678,7 +2675,90 @@ function oreHud(x, y) {
   });
 }
 const MAP_ICON = { battle: 0, elite: 1, event: 2, camp: 3, trader: 4, cache: 5, cu: 6, ag: 7, au: 8, pod: 9, boss: 10 };
-function drawTileIcon(c, cx, cy, r, alpha = 1) {
+// translucent green wash plus pale puffs; px,py is the tile's top-left, seed keeps each tile's puffs fixed
+function sporeOverlay(px, py, size, seed) {
+  const pu = .5 + .5 * Math.sin(S.time * 2 + seed * 6), n = 5 + (hash(seed + 3.3) * 3 | 0);
+  ctx.fillStyle = `rgba(90,200,80,${.22 + pu * .1})`; ctx.fillRect(px + 1, py + 1, size - 2, size - 2);
+  for (let k = 0; k < n; k++) {
+    const sx = px + 5 + hash(seed * 19 + k * 3.1) * (size - 10), sy = py + 5 + hash(seed * 7 + k * 5.7) * (size - 10), r = (1.8 + hash(seed + k * 9.1) * 2.6) * (size / 52) + pu * .8;
+    ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.fillStyle = `rgba(190,255,170,${.45 + pu * .25})`; ctx.fill();
+  }
+}
+// canvas vial for the Spore Antidote until assets/map-antidote.png exists
+function drawAntidote(cx, cy, r, alpha) {
+  const im = artReady("mapAntidote");
+  ctx.save(); ctx.globalAlpha *= alpha;
+  if (im) { const sz = r * 2.4; ctx.drawImage(im, cx - sz / 2, cy - sz / 2, sz, sz); ctx.restore(); return; }
+  ctx.translate(cx, cy); const s = r / 15;
+  ctx.lineWidth = 2; ctx.strokeStyle = "#0d0f14";
+  ctx.beginPath(); ctx.moveTo(-4 * s, -13 * s); ctx.lineTo(4 * s, -13 * s); ctx.lineTo(4 * s, -6 * s); ctx.lineTo(11 * s, 8 * s); ctx.quadraticCurveTo(13 * s, 14 * s, 7 * s, 14 * s);
+  ctx.lineTo(-7 * s, 14 * s); ctx.quadraticCurveTo(-13 * s, 14 * s, -11 * s, 8 * s); ctx.lineTo(-4 * s, -6 * s); ctx.closePath();
+  ctx.fillStyle = "#cdf3f0"; ctx.fill();
+  ctx.save(); ctx.clip(); ctx.fillStyle = "#3ed36a"; ctx.fillRect(-14 * s, 0, 28 * s, 16 * s); ctx.restore();
+  ctx.stroke();
+  ctx.fillStyle = "#b08a5a"; ctx.fillRect(-5 * s, -17 * s, 10 * s, 4 * s); ctx.strokeRect(-5 * s, -17 * s, 10 * s, 4 * s);
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.5 * s; ctx.beginPath(); ctx.moveTo(-4 * s, 7 * s); ctx.lineTo(4 * s, 7 * s); ctx.moveTo(0, 3 * s); ctx.lineTo(0, 11 * s); ctx.stroke();
+  ctx.restore();
+}
+// Zone 3's one-off tiles: art file if present, else a canvas icon
+function uniqueArt(key, cx, cy, r) { const im = artReady(key); if (!im) return false; const sz = r * 2.4; ctx.drawImage(im, cx - sz / 2, cy - sz / 2, sz, sz); return true; }
+function drawBeacon(cx, cy, r, alpha, lit) {
+  ctx.save(); ctx.globalAlpha *= alpha;
+  const s = r / 15, pu = .5 + .5 * Math.sin(S.time * 3 + cx);
+  if (lit) { const gl = ctx.createRadialGradient(cx, cy - 3 * s, 2, cx, cy - 3 * s, 28 * s); gl.addColorStop(0, `rgba(170,130,255,${.55 + pu * .3})`); gl.addColorStop(1, "rgba(170,130,255,0)"); ctx.fillStyle = gl; ctx.fillRect(cx - 30 * s, cy - 32 * s, 60 * s, 60 * s); }
+  if (!uniqueArt("mapBeacon", cx, cy, r)) {
+    ctx.translate(cx, cy); ctx.lineWidth = 2; ctx.strokeStyle = "#0d0f14";
+    ctx.beginPath(); ctx.moveTo(-10 * s, 14 * s); ctx.lineTo(10 * s, 14 * s); ctx.lineTo(6 * s, 8 * s); ctx.lineTo(-6 * s, 8 * s); ctx.closePath(); ctx.fillStyle = "#2a2438"; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -15 * s); ctx.lineTo(8 * s, -3 * s); ctx.lineTo(0, 8 * s); ctx.lineTo(-8 * s, -3 * s); ctx.closePath(); ctx.fillStyle = lit ? "#d8c4ff" : "#7a5ad0"; ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.beginPath(); ctx.moveTo(-2 * s, -10 * s); ctx.lineTo(-5 * s, -3 * s); ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawKeyIcon(cx, cy, r, alpha) {
+  ctx.save(); ctx.globalAlpha *= alpha;
+  if (!uniqueArt("mapOverrideKey", cx, cy, r)) {
+    const s = r / 15; ctx.translate(cx, cy); ctx.lineWidth = 2; ctx.strokeStyle = "#0d0f14";
+    rp(-13 * s, -9 * s, 26 * s, 18 * s, 3 * s); ctx.fillStyle = "#ffcf4a"; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#6a4a10"; ctx.fillRect(-13 * s, -4 * s, 26 * s, 4 * s);
+    ctx.fillStyle = "#5aff7a"; ctx.beginPath(); ctx.arc(8 * s, 4.5 * s, 2.6 * s, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#b8901c"; ctx.fillRect(-10 * s, 3 * s, 9 * s, 3.5 * s);
+  }
+  ctx.restore();
+}
+function drawHiveMapIcon(cx, cy, r, alpha) {
+  ctx.save(); ctx.globalAlpha *= alpha;
+  if (!uniqueArt("mapHiveMap", cx, cy, r)) {
+    const s = r / 15, pu = .5 + .5 * Math.sin(S.time * 4); ctx.translate(cx, cy); ctx.lineWidth = 2;
+    ctx.fillStyle = "rgba(40,140,190,.55)"; ctx.fillRect(-13 * s, -13 * s, 26 * s, 26 * s);
+    ctx.strokeStyle = "rgba(120,220,255,.6)"; ctx.lineWidth = 1.2; ctx.beginPath();
+    for (const k of [-4.3, 4.3]) { ctx.moveTo(k * s, -13 * s); ctx.lineTo(k * s, 13 * s); ctx.moveTo(-13 * s, k * s); ctx.lineTo(13 * s, k * s); }
+    ctx.stroke(); ctx.strokeStyle = "#5ad0ff"; ctx.lineWidth = 2; ctx.strokeRect(-13 * s, -13 * s, 26 * s, 26 * s);
+    ctx.beginPath(); ctx.arc(3 * s, -3 * s, (3 + pu * 1.5) * s, 0, TAU); ctx.fillStyle = "#e8fbff"; ctx.fill();
+  }
+  ctx.restore();
+}
+function drawPatrolIcon(cx, cy, hgt) {
+  const key = "e_hiveGuard", img = artReady(key);
+  if (img) { const tb = trimBox(key, img), sc = hgt / tb.h, w = tb.w * sc; ctx.drawImage(img, tb.x, tb.y, tb.w, tb.h, cx - w / 2, cy - hgt / 2, w, hgt); return; }
+  if (artPending(key)) return;
+  const s = hgt / 44; ctx.save(); ctx.translate(cx, cy); ctx.lineWidth = 2; ctx.strokeStyle = "#0d0f14";
+  ctx.beginPath(); ctx.arc(0, 2 * s, 17 * s, Math.PI, TAU); ctx.lineTo(15 * s, 18 * s); ctx.lineTo(-15 * s, 18 * s); ctx.closePath(); ctx.fillStyle = "#2a2236"; ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, -18 * s); ctx.lineTo(4 * s, -26 * s); ctx.lineTo(-4 * s, -26 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#ff3a3a"; ctx.beginPath(); ctx.ellipse(0, 3 * s, 10 * s, 3.5 * s, 0, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+function hiveVeins(px, py, size, seed) {
+  ctx.strokeStyle = "rgba(170,105,230,.42)"; ctx.lineWidth = 1.6 * size / 52;
+  for (let k = 0; k < 3; k++) {
+    const a = hash(seed + k * 4.1), b = hash(seed * 2 + k * 7.3);
+    ctx.beginPath(); ctx.moveTo(px + a * size, py); ctx.bezierCurveTo(px + b * size, py + size * .35, px + (1 - a) * size, py + size * .65, px + b * size * .8 + size * .1, py + size); ctx.stroke();
+  }
+}
+function drawTileIcon(c, cx, cy, r, alpha = 1, lit = false) {
+  if (c === "antidote") { drawAntidote(cx, cy, r, alpha); return; }
+  if (c === "beacon") { drawBeacon(cx, cy, r, alpha, lit); return; }
+  if (c === "overrideKey") { drawKeyIcon(cx, cy, r, alpha); return; }
+  if (c === "hiveMap") { drawHiveMapIcon(cx, cy, r, alpha); return; }
   const mi = MAP_ICON[c];
   if (mi !== undefined && artReady("mapIcons")) {
     const sz = r * 2.4; ctx.globalAlpha *= alpha;
@@ -1699,7 +2779,8 @@ function drawTileIcon(c, cx, cy, r, alpha = 1) {
 function mapHud() {
   const m = run.map;
   T(ZONES[run.zone - 1], 730, 40, 26, "#fff", "center", true);
-  T("Dig toward the Sentinel's lair", 730, 64, 13, "rgba(255,255,255,.55)", "center");
+  if (m.enc && over(590, 22, 280, 36)) setTip([{ t: "Sightings", d: sightings(m.enc).join(", ") }], 560, 66);   // this map's monster roster
+  T(ZONE_GOAL[run.zone - 1] || "", 730, 64, 13, "rgba(255,255,255,.55)", "center");
   T(`HP ${run.hp}/${run.maxhp}`, 540, 100, 17, "#ff8a7a", "left", true);
   scrapText(660, 100, run.scrap);
   oreHud(540, 132);
@@ -1713,15 +2794,35 @@ function mapHud() {
   if (a > 0) { rp(540, 188, Math.max(10, 386 * a / 8), 16, 6); ctx.fillStyle = a >= 6 ? "#ff4a3a" : "#c8402e"; ctx.fill(); }
   ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 1.5; rp(540, 188, 386, 16, 6); ctx.stroke();
   if (over(540, 170, 386, 36)) setTip([{ t: "Hive Alert", d: "Every dig raises it. Each time it reaches a multiple of 8, an Ambush strikes on your next dig into plain dirt or an ore vein." }], 560, 214);
+  if (hasSpores()) {
+    if (run.antidote) T("Antidote active: spores are harmless", 540, 216, 13, "#7affc0", "left", true);
+    else T(`Spores spread in ${m.sporeIn} dig${m.sporeIn === 1 ? "" : "s"}`, 540, 216, 13, "#8fe06a", "left", true);
+  }
+  if (run.zone === 3) {
+    const vis = (m.patrols || []).filter(p => isRevealed(p.x, p.y));
+    T(vis.length || run.hiveMap ? `Patrols: ${vis.length} (hunting: ${vis.filter(hunting).length})` : "Patrols: ?", 540, 216, 13, "#ff6a5a", "left", true);
+  }
   drawRelicRow(526, 236);
-  // legend
+  if (run.nextFight && nextFightText(run.nextFight)) T("Next fight: " + nextFightText(run.nextFight), 540, 260, 12, "#9ad0ff", "left", true);
+  // legend (Zone 2 adds spores and the Antidote; Zone 3 adds five entries and goes to 3 columns)
   T("Legend", 540, 276, 14, "#cfc6bb", "left", true);
   const leg = ["battle", "elite", "event", "camp", "trader", "cache", "cu", "ag", "au", "boss"];
+  if (hasSpores()) leg.push("spore", "antidote");
+  if (run.zone === 3) leg.push("beacon", "overrideKey", "hiveMap", "patrol", "hive");
+  const cols = run.zone === 3 ? 3 : 2, rowH = run.zone === 3 ? 34 : leg.length > 10 ? 28 : 34, fs = run.zone === 3 ? 12 : 13, ir = run.zone === 3 ? 11 : 13;
   leg.forEach((c, i) => {
-    const lx = 548 + (i % 2) * 200, ly = 306 + ((i / 2) | 0) * 34;
-    drawTileIcon(c, lx + 12, ly, 13);
-    T(NODE_INFO[c].n, lx + 32, ly + 1, 13, "#d8d0c8");
+    const lx = cols === 3 ? 544 + (i % 3) * 130 : 548 + (i % 2) * 200, ly = 306 + ((i / cols) | 0) * rowH;
+    if (c === "spore") {
+      rp(lx - 1, ly - 13, 26, 26, 5); ctx.fillStyle = "#7a4a2a"; ctx.fill(); sporeOverlay(lx - 1, ly - 13, 26, 5.5);
+      T("Spored tile", lx + 32, ly + 1, fs, "#d8d0c8");
+    } else if (c === "patrol") { drawPatrolIcon(lx + 11, ly, 24); T("Hive Patrol", lx + 28, ly + 1, fs, "#d8d0c8"); }
+    else if (c === "hive") { rp(lx - 1, ly - 11, 24, 24, 5); ctx.fillStyle = "#7a4a2a"; ctx.fill(); hiveVeins(lx - 1, ly - 11, 24, 3.7); T("Hive tunnel", lx + 28, ly + 1, fs, "#d8d0c8"); }
+    else { drawTileIcon(c, lx + 12, ly, ir); T(NODE_INFO[c].n, lx + (cols === 3 ? 28 : 32), ly + 1, fs, "#d8d0c8"); }
   });
+  if (run.zone === 1 && m.px === 4 && m.py === 0 && !run.shipRest) {
+    const full = run.hp >= run.maxhp;
+    btn(605, 526, 250, 30, full ? "Already at full HP" : "Rest in Ship: full heal", shipRest, { off: full, size: 14, bd: "#8aff9a" });
+  }
   T("Move: click a tunnel tile, or arrows / WASD / D-pad.", 540, 474, 13, "#b8aa9a");
   T("Select an un-dug tile, then click it again or press A (Enter) to dig.", 540, 494, 13, "#b8aa9a");
   T("Bedrock can't be dug. The lair opens from the camp above it.", 540, 514, 13, "#b8aa9a");
@@ -1729,6 +2830,7 @@ function mapHud() {
 }
 function drawMap() {
   const tint = ZONE_TINT[run.zone - 1], m = run.map;
+  if (S.artZone !== run.zone) { S.artZone = run.zone; preloadEnemyArt(ENC["z" + run.zone]); }
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, tint[1]); g.addColorStop(1, tint[0]); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   rp(GX - 6, GY - 6, MW * TILE + 12, MH * TILE + 12, 8); ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.fill();
   let hoverTile = null;
@@ -1744,10 +2846,22 @@ function drawMap() {
       else if (t.dug && t.k !== "bedrock") { ctx.fillStyle = "rgba(210,130,60,.14)"; ctx.fillRect(px, py, TILE, TILE); ctx.strokeStyle = "rgba(0,0,0,.65)"; ctx.lineWidth = 2; ctx.strokeRect(px + 3, py + 3, TILE - 6, TILE - 6); }
     }
     if (!rev) {
-      if (tilesArt) continue;
-      ctx.fillStyle = `rgb(${26 + h * 14 | 0},${21 + h * 10 | 0},${19 + h * 8 | 0})`; ctx.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
-      ctx.fillStyle = "rgba(255,255,255,.05)";
-      for (let k = 0; k < 4; k++) ctx.fillRect(px + 6 + hash(x * 7 + y * 13 + k) * (TILE - 14), py + 6 + hash(x * 11 + y * 5 + k * 3) * (TILE - 14), 2, 2);
+      if (!tilesArt) {
+        ctx.fillStyle = `rgb(${26 + h * 14 | 0},${21 + h * 10 | 0},${19 + h * 8 | 0})`; ctx.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
+        ctx.fillStyle = "rgba(255,255,255,.05)";
+        for (let k = 0; k < 4; k++) ctx.fillRect(px + 6 + hash(x * 7 + y * 13 + k) * (TILE - 14), py + 6 + hash(x * 11 + y * 5 + k * 3) * (TILE - 14), 2, 2);
+      }
+      if (run.zone === 3 && canReach(x, y)) {   // fog frontier: next to a tunnel, contents unknown (it may even be bedrock)
+        const can = canDig(x, y), face = S.face && S.face.x === x && S.face.y === y, pr = .5 + .5 * Math.sin(S.time * 5);
+        ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = can ? `rgba(205,190,255,${.6 + pr * .4})` : "rgba(205,190,255,.38)"; ctx.lineWidth = can ? 2.5 : 1.5; ctx.strokeRect(px + 3, py + 3, TILE - 6, TILE - 6); ctx.restore();
+        if (face && can) {
+          ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 3; ctx.strokeRect(px + 1, py + 1, TILE - 2, TILE - 2);
+          ctx.beginPath(); ctx.arc(px + TILE - 12, py + 12, 9, 0, TAU); ctx.fillStyle = "#3aa04a"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "#0d0f14"; ctx.stroke();
+          T("A", px + TILE - 12, py + 13, 12, "#fff", "center", true);
+        }
+        hit(px, py, TILE, TILE, () => clickTile(x, y));
+        if (over(px, py, TILE, TILE)) hoverTile = { t, x, y, can, reach: true, fog: true };
+      }
       continue;
     }
     if (tilesArt) { /* tile art already drawn */ }
@@ -1761,11 +2875,13 @@ function drawMap() {
       ctx.fillStyle = `rgb(${118 + h * 16 | 0},${74 + h * 12 | 0},${42 + h * 8 | 0})`; ctx.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
       ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.fillRect(px + 1, py + TILE - 8, TILE - 2, 7);
     }
+    if (t.spore && !t.dug) sporeOverlay(px, py, TILE, x * 31 + y * 17);
+    if (t.hive) hiveVeins(px, py, TILE, x * 31 + y * 17);
     const reopen = t.dug && t.c === "trader";
     if (t.c && t.k !== "bedrock") {
-      const ia = t.used ? .4 : t.dug && !reopen ? .5 : 1, ar = artReady("mapIcons");
+      const beacon = t.c === "beacon", ia = beacon ? 1 : t.used ? .4 : t.dug && !reopen ? .5 : 1, ar = artReady("mapIcons");
       if (ar) { ctx.globalAlpha = ia; ctx.beginPath(); ctx.arc(cx, cy, 20, 0, TAU); ctx.fillStyle = "rgba(12,7,4,.55)"; ctx.fill(); ctx.globalAlpha = 1; }
-      drawTileIcon(t.c, cx, cy, ar ? 18 : 15, ia);
+      drawTileIcon(t.c, cx, cy, ar ? 18 : 15, ia, beacon && t.dug);   // a lit Beacon glows
     }
     const can = canDig(x, y), reach = canReach(x, y), face = S.face && S.face.x === x && S.face.y === y;
     if (reach) {
@@ -1780,7 +2896,16 @@ function drawMap() {
     if (reach || t.dug) hit(px, py, TILE, TILE, () => clickTile(x, y));
     if (over(px, py, TILE, TILE)) hoverTile = { t, x, y, can, reach, reopen };
   }
-  drawTileIcon("pod", GX + 4 * TILE + TILE / 2, GY + TILE / 2, 20);
+  // start tile: Zone 1 shows the player's landed ship (Stage 5 sheet frame 1, cropped above the engine flames); later zones show the tunnel mouth
+  const ship = artReady("ship"), sx0 = GX + 4 * TILE;
+  if (run.zone > 1) {
+    const mx = sx0 + TILE / 2, my = GY + TILE / 2 + 2;
+    ctx.fillStyle = "#07050a"; ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(mx, my, 17, 12, 0, 0, TAU); ctx.fill();
+    for (let k = 0; k < 11; k++) { const a = k / 11 * TAU + .3; ctx.beginPath(); ctx.arc(mx + Math.cos(a) * 19, my + Math.sin(a) * 14, 5 + hash(k * 3.1) * 2, 0, TAU); ctx.fillStyle = hash(k * 7.7) < .5 ? "#7a7268" : "#625b52"; ctx.fill(); ctx.stroke(); }
+  } else if (ship) { const sh = TILE * 1.6, sw = sh * 116 / 150; ctx.drawImage(ship, 0, 0, 116, 150, GX + 4.5 * TILE - sw / 2, GY + TILE - 2 - sh, sw, sh); }
+  else drawTileIcon("pod", sx0 + TILE / 2, GY + TILE / 2, 20);
+  if (over(sx0, GY, TILE, TILE)) hoverTile = { ship: run.zone === 1, tunnel: run.zone > 1, x: 4, y: 0 };
   // boss lair: always visible
   const lx = GX + 4 * TILE, ly = GY + 10 * TILE, lcx = lx + TILE / 2, lcy = ly + TILE / 2;
   const glow = ctx.createRadialGradient(lcx, lcy, 4, lcx, lcy, 52); glow.addColorStop(0, "rgba(255,90,40,.9)"); glow.addColorStop(1, "rgba(255,60,20,0)");
@@ -1791,26 +2916,51 @@ function drawMap() {
   ctx.fillStyle = "#2a0c08"; ctx.beginPath(); ctx.ellipse(lcx, lcy + 2, 13, 11, 0, 0, TAU); ctx.fill();
   ctx.fillStyle = "#ffe8c0"; for (let k = 0; k < 5; k++) { const tx = lcx - 12 + k * 6; ctx.beginPath(); ctx.moveTo(tx, lcy - 8); ctx.lineTo(tx + 3, lcy - 8); ctx.lineTo(tx + 1.5, lcy - 1); ctx.fill(); }
   }
-  T(ENEMIES.sentinel.n, lcx, ly + TILE + 14, 13, "#ff9a7a", "center", true);
+  T(bossName(), lcx, ly + TILE + 14, 13, "#ff9a7a", "center", true);
   if (canReach(4, 10)) {
     ctx.strokeStyle = `rgba(255,226,122,${canDig(4, 10) ? .6 + .4 * Math.sin(S.time * 5) : .3})`; ctx.lineWidth = 3; ctx.strokeRect(lx + 2, ly + 2, TILE - 4, TILE - 4);
     hit(lx, ly, TILE, TILE, () => clickTile(4, 10));
     if (S.face && S.face.x === 4 && S.face.y === 10 && canDig(4, 10)) { ctx.beginPath(); ctx.arc(lx + TILE - 12, ly + 12, 9, 0, TAU); ctx.fillStyle = "#3aa04a"; ctx.fill(); T("A", lx + TILE - 12, ly + 13, 12, "#fff", "center", true); }
   }
   if (over(lx, ly, TILE, TILE)) hoverTile = { t: tileAt(4, 10), x: 4, y: 10, can: canDig(4, 10), reach: canReach(4, 10), lair: true };
+  // Zone 3 patrols: only seen where the fog is lifted (the Hive Map shows them all, plus where they're heading)
+  if (run.zone === 3) for (const p of m.patrols || []) {
+    if (!isRevealed(p.x, p.y)) continue;
+    const pcx = GX + p.x * TILE + TILE / 2, pcy = GY + p.y * TILE + TILE / 2, hunt = hunting(p), gl = ctx.createRadialGradient(pcx, pcy + 14, 2, pcx, pcy + 14, 24);
+    gl.addColorStop(0, "rgba(255,50,40,.55)"); gl.addColorStop(1, "rgba(255,50,40,0)"); ctx.fillStyle = gl; ctx.fillRect(pcx - 26, pcy - 12, 52, 52);
+    drawPatrolIcon(pcx, pcy - 2, 44);
+    if (hunt) T("!", pcx + 15, pcy - 18, 18, Math.sin(S.time * 8) > 0 ? "#ff3a3a" : "#ff9a8a", "center", true);
+    if (run.hiveMap) {
+      const nx = hunt ? patrolPath(p)[0] : null;
+      if (nx) { const dx = nx.x - p.x, dy = nx.y - p.y, ax = pcx + dx * 24, ay = pcy + dy * 24; ctx.fillStyle = "rgba(255,120,100,.85)"; ctx.beginPath(); ctx.moveTo(ax + dx * 8, ay + dy * 8); ctx.lineTo(ax - dy * 6, ay + dx * 6); ctx.lineTo(ax + dy * 6, ay - dx * 6); ctx.closePath(); ctx.fill(); }
+      else T("?", pcx + 16, pcy - 16, 16, "rgba(255,200,190,.8)", "center", true);
+    }
+    if (over(pcx - 22, pcy - 24, 44, 48)) hoverTile = { patrol: true, x: p.x, y: p.y };
+  }
   // player token
   let tx = run.map.px, ty = run.map.py;
   if (S.dig) { const k = ease(clamp(S.dig.t / (S.dig.dur || .2), 0, 1)); tx = lerp(S.dig.from.x, S.dig.to.x, k); ty = lerp(S.dig.from.y, S.dig.to.y, k); }
   const kx = GX + tx * TILE + TILE / 2, ky = GY + ty * TILE + TILE / 2;
-  ctx.fillStyle = "#e0902a"; ctx.fillRect(kx - 8, ky - 2, 16, 15); ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 2; ctx.strokeRect(kx - 8, ky - 2, 16, 15);
-  ctx.beginPath(); ctx.arc(kx, ky - 7, 9, 0, TAU); ctx.fillStyle = "#e8eef5"; ctx.fill(); ctx.stroke();
-  ctx.fillStyle = "#1a3a5a"; ctx.beginPath(); ctx.ellipse(kx + 3, ky - 7, 5, 4, 0, 0, TAU); ctx.fill();
+  // miner idle pose, feet near the tile bottom (cell feet sit at y≈455 of 512)
+  const ms = .115;
+  if (!drawCell("miner", 0, 0, 384, 512, kx - 192 * ms, ky + 22 - 455 * ms, 384 * ms, 512 * ms)) {
+    ctx.fillStyle = "#e0902a"; ctx.fillRect(kx - 8, ky - 2, 16, 15); ctx.strokeStyle = "#0d0f14"; ctx.lineWidth = 2; ctx.strokeRect(kx - 8, ky - 2, 16, 15);
+    ctx.beginPath(); ctx.arc(kx, ky - 7, 9, 0, TAU); ctx.fillStyle = "#e8eef5"; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#1a3a5a"; ctx.beginPath(); ctx.ellipse(kx + 3, ky - 7, 5, 4, 0, 0, TAU); ctx.fill();
+  }
   for (const f of S.mfloats) { ctx.globalAlpha = clamp(1.2 - f.t, 0, 1); T(f.text, f.x, f.y - 10 - f.t * 36, 16, f.col, "center", true); ctx.globalAlpha = 1; }
   if (hoverTile) {
     const ht = hoverTile, rev = isRevealed(ht.x, ht.y);
-    if (rev) {
-      const name = ht.lair ? ENEMIES.sentinel.n + " (Boss)" : ht.t.k === "bedrock" ? "Bedrock" : ht.t.c ? NODE_INFO[ht.t.c].n : "Dirt";
-      const d = ht.can ? "Click to select, click again (or press A) to dig." : ht.reach ? "Click to walk over and select it." : ht.reopen ? "Click to walk over and trade." : ht.t.k === "bedrock" ? "Can't be dug." : ht.t.dug ? (ht.t.used ? "Used. Click to walk here." : "Click to walk here.") : ht.lair ? "Dig the camp tile above it first." : "Not next to a tunnel.";
+    if (ht.ship) setTip([{ t: "Your Ship", d: run.shipRest ? "Already rested this run." : "Rest here once per run for a full heal." }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
+    else if (ht.tunnel) setTip([{ t: "Tunnel", d: `The shaft you came down from the ${ZONES[run.zone - 2]}.` }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
+    else if (ht.patrol) setTip([{ t: "Hive Patrol", d: "Moves one tile each time you dig. Hunts you within 6 tiles. Touching it starts a fight." }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
+    else if (ht.fog) setTip([{ t: "Unknown", d: "The psionic fog hides what's here. Dig to find out." }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
+    else if (rev) {
+      const name = ht.lair ? bossName() + " (Boss)" : ht.t.k === "bedrock" ? "Bedrock" : ht.t.c ? NODE_INFO[ht.t.c].n : "Dirt";
+      let d = ht.can ? "Click to select, click again (or press A) to dig." : ht.reach ? "Click to walk over and select it." : ht.reopen ? "Click to walk over and trade." : ht.t.k === "bedrock" ? "Can't be dug." : ht.t.dug ? (ht.t.used ? "Used. Click to walk here." : "Click to walk here.") : ht.lair ? "Dig the camp tile above it first." : "Not next to a tunnel.";
+      const desc = { antidote: "Removes all Spore cards from your deck, stops the spread, and makes spored tiles harmless to dig.", beacon: "Lights up the fog around it once dug.", overrideKey: "Shuts down the Home Base Core's turrets for the final fight.", hiveMap: "Reveals the entire map and all patrols." }[ht.t.c];
+      if (desc && !ht.t.dug) d = desc + " " + d;
+      if (ht.t.spore && !ht.t.dug) d += run.antidote ? " Spored: harmless now. Digging here cleanses it." : " Spored: digging here adds a Spore card to your deck.";
       setTip([{ t: name, d }], GX + ht.x * TILE + TILE + 6, GY + ht.y * TILE);
     }
   }
@@ -1837,11 +2987,12 @@ function drawReward() {
       drawRelic(id, x, y - 50, 32, false);
       T(RELICS[id].n, x, y + 10, 18, "#fff", "center", true);
       ctx.font = `13px ${FONT}`; wrap(RELICS[id].d, 210).forEach((l, k) => T(l, x, y + 40 + k * 17, 13, "#cfc6bb", "center"));
-      hit(x - 120, y - 110, 240, 220, () => { grantRelic(id); run.pending = null; saveRun(); S.screen = "map"; });
+      hit(x - 120, y - 110, 240, 220, () => { grantRelic(id); sfx("relic"); run.pending = null; saveRun(); S.screen = "map"; });
     });
     return;
   }
-  T(p.ambush ? "Ambush Survived" : "Battle Won", 480, 80, 32, "#8dff95", "center", true);
+  T(p.ambush ? "Ambush Survived" : p.nextZone ? "Boss Defeated" : "Battle Won", 480, 80, 32, "#8dff95", "center", true);
+  const leave = () => p.nextZone ? enterZone(run.zone + 1) : completeNode();
   T(`+${p.scrap} Scrap`, 480, 114, 20, "#ffe27a", "center", true);
   oreGainText(p.ore, 480, 140);
   if (p.relic) { drawRelic(p.relic, 360, 172, 18); T(`Relic gained: ${RELICS[p.relic].n}`, 390, 172, 16, "#d8c8ff", "left", true); }
@@ -1854,10 +3005,10 @@ function drawReward() {
     const card = { id, up: false }, x = x0 + i * sp, y = 350, hv = over(x - 72, y - 102, 144, 204);
     drawCard(card, x, y - (hv ? 10 : 0), hv ? 1.3 : 1.2);
     if (hv) hovTip = [card, x + 90, y - 60];
-    hit(x - 72, y - 102, 144, 204, () => { addCard(id); completeNode(); });
+    hit(x - 72, y - 102, 144, 204, () => { addCard(id); sfx("cardAdd"); leave(); });
   });
   if (hovTip) setTip(cardTips(hovTip[0]), hovTip[1], hovTip[2]);
-  btn(380, 540, 200, 48, "Skip", () => completeNode(), { size: 18 });
+  btn(380, 540, 200, 48, p.nextZone ? "Descend" : "Skip", leave, { size: 18 });
 }
 function mapHud2() { T(`HP ${run.hp}/${run.maxhp}`, 14, 20, 17, "#ff8a7a", "left", true); scrapText(150, 20, run.scrap); oreHud(280, 20); drawRelicRow(14, 56); btn(806, 10, 92, 28, `Deck ${run.deck.length}`, openDeck, { size: 13, icon: [5, 2] }); }
 function drawCamp() {
@@ -1871,13 +3022,14 @@ function drawCamp() {
     if (!off) hit(x, 190, 300, 240, fn);
   };
   const heal = Math.ceil(run.maxhp * .3);
-  big(130, "Rest", `Heal ${heal} HP (30% of max)`, () => { const h = Math.min(heal, run.maxhp - run.hp); run.hp += h; S.toast = { text: `Rested: +${h} HP`, t: 2.5 }; completeNode(); });
-  big(530, "Workbench", "Upgrade a card (3 Copper) or fuse two cards into one with ore.", () => { run.pending = { screen: "bench" }; S.bench = { sel: [] }; S.scroll = 0; S.screen = "bench"; saveRun(); });
+  big(130, "Rest", `Heal ${heal} HP (30% of max)`, () => { const h = Math.min(heal, run.maxhp - run.hp); run.hp += h; S.toast = { text: `Rested: +${h} HP`, t: 2.5 }; sfx("rest"); completeNode(); });
+  big(530, "Workbench", "Upgrade a card (20 Copper) or fuse two cards into one with ore.", () => { run.pending = { screen: "bench" }; S.bench = { sel: [] }; S.scroll = 0; S.screen = "bench"; saveRun(); });
   mapHud2();
 }
 
 // ---------------------------------------------------------------- workbench
-const fuseCost = (a, b) => { const r = Math.max(RAR_RANK[D(a).r], RAR_RANK[D(b).r]); return r <= 1 ? { cu: 4 } : r === 2 ? { cu: 2, ag: 1 } : { ag: 2, au: 1 }; };
+const UPGRADE_CU = 20;
+const fuseCost = (a, b) => { const r = Math.max(RAR_RANK[D(a).r], RAR_RANK[D(b).r]); return r <= 1 ? { cu: 30 } : r === 2 ? { cu: 30, ag: 2 } : { cu: 40, ag: 3, au: 1 }; };
 const canAffordOre = cost => ORE_KEYS.every(k => !cost[k] || run.ore[k] >= cost[k]);
 const oreCostText = cost => ORE_KEYS.filter(k => cost[k]).map(k => `${cost[k]} ${ORE[k].n}`).join(" + ");
 function drawBench() {
@@ -1917,20 +3069,23 @@ function drawBench() {
   const both = sel.length === 2, okFuse = both && sel.every(isFusable);
   let result = null, fcost = null;
   if (okFuse) { result = { fuse: [{ id: sel[0].id, up: sel[0].up }, { id: sel[1].id, up: sel[1].up }] }; fcost = fuseCost(sel[0], sel[1]); }
-  T("Result", 752, 292, 13, "#9ab", "center", true);
-  if (result) drawCard(result, 752, 390, .85); else { ctx.setLineDash([6, 5]); ctx.strokeStyle = "rgba(255,255,255,.2)"; ctx.lineWidth = 2; rp(752 - 51, 390 - 72, 102, 144, 8); ctx.stroke(); ctx.setLineDash([]); }
+  const upPrev = !result && sel.length === 1 && canUpgrade(sel[0]);
+  T(upPrev ? "After upgrade" : "Result", 752, 292, 13, upPrev ? "#8dff95" : "#9ab", "center", true);
+  if (upPrev) drawCard(upgradedPreview(sel[0]), 752, 390, .85);
+  else if (result) drawCard(result, 752, 390, .85); else { ctx.setLineDash([6, 5]); ctx.strokeStyle = "rgba(255,255,255,.2)"; ctx.lineWidth = 2; rp(752 - 51, 390 - 72, 102, 144, 8); ctx.stroke(); ctx.setLineDash([]); }
   let msg = "";
   if (both && !okFuse) msg = "Powers, Status and fused cards can't be fused.";
   else if (okFuse) msg = `Fuse cost: ${oreCostText(fcost)}`;
-  else if (sel.length === 1) msg = canUpgrade(sel[0]) ? "Upgrade cost: 3 Copper" : "Already upgraded.";
+  else if (sel.length === 1) msg = canUpgrade(sel[0]) ? `Upgrade cost: ${UPGRADE_CU} Copper` : "Already upgraded.";
   T(msg, 752, 484, 14, okFuse && !canAffordOre(fcost) ? "#ff8a7a" : "#ffe27a", "center", true);
-  const canUp = sel.length === 1 && canUpgrade(sel[0]) && run.ore.cu >= 3;
-  btn(574, 504, 172, 44, "Upgrade · 3 Cu", () => {
-    run.ore.cu -= 3; upgradeCard(sel[0]); B.sel = []; saveRun(); S.toast = { text: "Card upgraded", t: 1.8 };
+  const canUp = sel.length === 1 && canUpgrade(sel[0]) && run.ore.cu >= UPGRADE_CU;
+  btn(574, 504, 172, 44, `Upgrade · ${UPGRADE_CU} Cu`, () => {
+    run.ore.cu -= UPGRADE_CU; upgradeCard(sel[0]); B.sel = []; saveRun(); S.toast = { text: "Card upgraded", t: 1.8 };
   }, { off: !canUp, size: 15, bd: "#8aff9a" });
   const canFu = okFuse && canAffordOre(fcost);
   btn(758, 504, 172, 44, "Fuse", () => {
     for (const k of ORE_KEYS) run.ore[k] -= fcost[k] || 0;
+    sfx("fuse");
     for (const c of sel) run.deck.splice(run.deck.indexOf(c), 1);
     run.deck.push(result); B.sel = []; saveRun(); S.toast = { text: `Fused: ${D(result).n}`, t: 2.2 };
   }, { off: !canFu, size: 16, bd: "#ffb050" });
@@ -1982,8 +3137,8 @@ function drawTrader() {
   if (S.toast) { ctx.globalAlpha = clamp(S.toast.t, 0, 1); T(S.toast.text, 480, 612, 16, "#ff9a8a", "center", true); ctx.globalAlpha = 1; }
   mapHud2();
 }
-function buyCard(c) { if (run.scrap < c.price) { S.toast = { text: "Not enough Scrap", t: 1.6 }; return; } run.scrap -= c.price; c.sold = true; addCard(c.id); saveRun(); }
-function buyRelic(r) { if (run.scrap < r.price) { S.toast = { text: "Not enough Scrap", t: 1.6 }; return; } run.scrap -= r.price; r.sold = true; grantRelic(r.id); saveRun(); }
+function buyCard(c) { if (run.scrap < c.price) { S.toast = { text: "Not enough Scrap", t: 1.6 }; sfx("denied"); return; } sfx("buy"); run.scrap -= c.price; c.sold = true; addCard(c.id); saveRun(); }
+function buyRelic(r) { if (run.scrap < r.price) { S.toast = { text: "Not enough Scrap", t: 1.6 }; sfx("denied"); return; } sfx("buy"); sfx("relic", { delay: .15 }); run.scrap -= r.price; r.sold = true; grantRelic(r.id); saveRun(); }
 function drawEvent() {
   const p = run.pending, ev = EVENTS[p.id]; panelBg("#0e1424", "#06080f", "bgEvent", .4);
   const im = artReady("ev_" + ev.img), ty = im ? 408 : 190;
@@ -1998,10 +3153,13 @@ function drawEvent() {
   ctx.font = `17px ${FONT}`;
   wrap(p.res || ev.text, 700).forEach((l, i) => T(l, 480, ty + i * 24, 17, "#dfe6f2", "center"));
   if (p.res) btn(380, im ? 480 : 400, 200, 52, "Continue", () => completeNode(), { size: 18 });
-  else ev.choices.forEach((c, i) => btn(180, (im ? 470 : 330) + i * (im ? 58 : 76), 600, im ? 50 : 58, c.label, () => {
-    const r = c.fn();
-    if (r != null) { p.res = r; saveRun(); }
-  }, { size: 17, bd: "#9ac0ff" }));
+  else ev.choices.forEach((c, i) => {
+    const why = c.req && c.req();   // a reason string greys the choice out
+    btn(180, (im ? 470 : 330) + i * (im ? 54 : 76), 600, im ? 46 : 58, why ? `${c.label} (${why})` : c.label, () => {
+      const r = c.fn();
+      if (r != null) { p.res = r; saveRun(); }
+    }, { size: 17, bd: "#9ac0ff", off: !!why });
+  });
   mapHud2();
 }
 function drawCache() {
@@ -2017,17 +3175,82 @@ function drawCache() {
 }
 function drawRunEnd() {
   const e = S.end; panelBg(e.win ? "#10240f" : "#240f0f", "#060606");
-  T(e.win ? "Landing Sentinel Down" : "Run Over", 480, 110, 44, e.win ? "#8dff95" : "#ff8a7a", "center", true);
-  if (e.win) T("Victory! Zone 2 coming soon.", 480, 165, 22, "#ffe27a", "center", true);
+  T(e.win ? "Home Base Core Down" : "Run Over", 480, 110, 44, e.win ? "#8dff95" : "#ff8a7a", "center", true);
+  if (e.win) T("Victory! The Home Base has fallen.", 480, 165, 22, "#ffe27a", "center", true);
   T(`Scrap kept: ${e.scrap}${e.win ? "   Victory bonus: +200" : ""}`, 480, 230, 18, "#ffe27a", "center", true);
   if (e.oreScrap > 0) {
     T(`Leftover ore smelted: +${e.oreScrap} Scrap`, 480, 262, 18, "#ffd9a0", "center", true);
     T(ORE_KEYS.filter(k => e.ore[k]).map(k => `${e.ore[k]} ${ORE[k].n} (${ORE[k].scrap} each)`).join("   "), 480, 288, 14, "#cfc6bb", "center");
   } else T("No leftover ore to smelt.", 480, 262, 15, "#9a9088", "center");
-  T(`Scrap banked: ${e.gain}`, 480, 330, 22, "#ffe27a", "center", true);
+  T(e.debug ? "Debug run: nothing banked" : `Scrap banked: ${e.gain}`, 480, 330, 22, e.debug ? "#ff9ad0" : "#ffe27a", "center", true);
   T(`Total banked: ${save.bank}`, 480, 362, 16, "#d8d0c8", "center");
   T(`Seed: ${e.seed}`, 480, 396, 18, "#9ab", "center", true);
   btn(360, 450, 240, 56, "Return to the Forge", () => { S.screen = "hub"; }, { size: 18 });
+}
+
+// ---------------------------------------------------------------- DEBUG PANEL (temporary)
+// To remove it later: delete this block, the `if (DEBUG_PANEL) drawDebug();` line in draw(), `dbg` in S, `S.dbg.reveal` in isRevealed,
+// and the `run.debug` / `e.debug` / `save.run.debug` bits in endRun, startNewRun and drawRunEnd. Or just set DEBUG_PANEL to false.
+const DEBUG_PANEL = true;
+function dbgRun() {   // the run the panel works on (made or resumed if needed); any run it touches is flagged so it banks nothing
+  if (!run) {
+    if (save.run && !save.run.debug) { S.toast = { text: "Finish or abandon your saved run first", t: 2.5 }; return null; }
+    if (save.run) { run = save.run; rng = makeRng(run.seed); rng.state = run.rngState; }
+    else { newRun(); save.stats.runs--; run.pending = null; run.cur = null; S.end = null; }
+  }
+  run.debug = true; return run;
+}
+function dbgZone(z) { if (!dbgRun()) return; C = null; S.modal = null; enterZone(z); run.shipRest = false; saveRun(); }
+function dbgFight(kind, pickEnc) {
+  if (!dbgRun()) return;
+  C = null; S.modal = null; run.cur = null; run.queued = null;
+  run.pending = { screen: "combat", kind, enc: pickEnc() }; saveRun(); openPending();
+}
+function dbgEvent(id) {   // open an event on a dummy tile (no tile is marked used), in the event's own zone
+  if (!dbgRun()) return;
+  C = null; S.modal = null; run.queued = null;
+  if (run.zone !== EVENTS[id].zone) { enterZone(EVENTS[id].zone); run.shipRest = false; }
+  run.cur = null; run.pending = { screen: "event", id, res: null }; saveRun(); openPending();
+  S.toast = { text: "Event: " + EVENTS[id].title, t: 2 };
+}
+function drawDebug() {
+  const d = S.dbg;
+  if (!d.open) { btn(896, 612, 60, 22, "Debug", () => { d.open = true; }, { size: 11, bg: "#3a1a3a", hi: "#5a2a5a", bd: "#ff9ad0" }); return; }
+  const X = 622, Y = 36, PW = 334, blocked = !run && !!save.run && !save.run.debug;
+  rp(X, Y, PW, 352, 10); ctx.fillStyle = "rgba(14,8,22,.94)"; ctx.fill(); ctx.strokeStyle = "#ff9ad0"; ctx.lineWidth = 2; ctx.stroke();
+  hit(X, Y, PW, 352, () => { });   // swallows clicks on the panel body
+  T("DEBUG PANEL", X + 12, Y + 17, 15, "#ff9ad0", "left", true);
+  btn(X + PW - 70, Y + 6, 60, 22, "Hide", () => { d.open = false; }, { size: 11 });
+  const bt = (i, y, label, fn, off) => btn(X + 10 + i * 108, y, 102, 24, label, fn, { size: 11, off, bd: "#b88ac8" });
+  const sec = (title, y) => T(title, X + 12, y, 12, "#cfc6bb", "left", true);
+  const R = fn => () => { if (dbgRun()) fn(); };
+  sec("Jump to zone (new run if none)", Y + 44);
+  [1, 2, 3].forEach((z, i) => bt(i, Y + 54, `Zone ${z}`, () => dbgZone(z), blocked));
+  sec("Run", Y + 90);
+  const hasRun = !!run;
+  bt(0, Y + 100, "Heal full", R(() => { run.hp = run.maxhp; if (C) C.P.hp = C.P.maxhp; }), !hasRun);
+  bt(1, Y + 100, "+200 Scrap", R(() => { run.scrap += 200; }), !hasRun);
+  bt(2, Y + 100, "+5 each ore", R(() => { for (const k of ORE_KEYS) run.ore[k] += 5; }), !hasRun);
+  bt(0, Y + 130, "All relics", R(() => { run.relics = RELIC_IDS.slice(); }), !hasRun);
+  bt(1, Y + 130, "Full deck", R(() => { run.deck = Object.keys(CARDS).filter(id => CARDS[id].t !== "status").map(id => ({ id, up: false })); }), !hasRun);
+  bt(2, Y + 130, `Reveal: ${d.reveal ? "ON" : "OFF"}`, () => { d.reveal = !d.reveal; });
+  bt(0, Y + 160, "Clear alert", R(() => { run.alert = 0; run.ambushDue = 0; }), !hasRun);
+  bt(1, Y + 160, `Key: ${hasRun && run.overrideKey ? "ON" : "OFF"}`, R(() => { run.overrideKey = !run.overrideKey; }), !hasRun);
+  bt(2, Y + 160, `Hive Map: ${hasRun && run.hiveMap ? "ON" : "OFF"}`, R(() => { run.hiveMap = !run.hiveMap; }), !hasRun);
+  sec("Start a fight now (current zone)", Y + 196);
+  bt(0, Y + 206, "Battle", () => dbgFight("battle", () => chooseEncounter("battle", 5)), blocked);
+  bt(1, Y + 206, "Elite", () => dbgFight("elite", () => chooseEncounter("elite", 5)), blocked);
+  bt(2, Y + 206, "Boss", () => dbgFight("boss", () => chooseEncounter("boss", 5)), blocked);
+  bt(0, Y + 236, "Ambush", () => dbgFight("ambush", () => chooseEncounter("battle", 9)), blocked);
+  bt(1, Y + 236, "Patrol", () => dbgFight("patrol", () => pick(ENC.z3.patrol)), blocked);
+  bt(2, Y + 236, "Event ▸", () => { const ids = Object.keys(EVENTS); dbgEvent(ids[(d.ev = ((d.ev ?? -1) + 1) % ids.length)]); }, blocked);   // cycles through every event
+  sec("In a fight", Y + 272);
+  const inFight = !!C && S.screen === "combat";
+  bt(0, Y + 282, "Kill all", R(() => { for (const e of C.enemies) e.hp = 0; }), !inFight);
+  bt(1, Y + 282, "Heal me", R(() => { C.P.hp = C.P.maxhp; run.hp = run.maxhp; }), !inFight);
+  bt(2, Y + 282, "+3 Energy", R(() => { C.energy += 3; }), !inFight);
+  T("Anything done here flags the run: it banks no", X + 12, Y + 322, 11, "#b8aab8");
+  T("Scrap and counts toward no wins or Best zone.", X + 12, Y + 337, 11, "#b8aab8");
 }
 
 // ---------------------------------------------------------------- frame / input
@@ -2059,6 +3282,7 @@ function draw() {
   drawScene();
   hitsOff = false;
   if (grid) { tip = null; drawGrid(grid, !!chooseG); }
+  if (DEBUG_PANEL) drawDebug();
   if (padNav) {
     const cur = resolveFocus(focusables(hits));
     if (cur) {
@@ -2076,13 +3300,18 @@ function frame(now) {
   S.time += dt;
   if (S.toast) { S.toast.t -= dt; if (S.toast.t <= 0) S.toast = null; }
   if (S.confirmAbandon > 0) S.confirmAbandon -= dt;
-  updateMap(dt); pollPad(dt);
+  updateMap(dt); pollPad(dt); updateMusic(dt);
   if (S.screen === "combat" && C) updateCombat(dt);
   draw();
   requestAnimationFrame(frame);
 }
 function mouseXY(e) { S.padMode = false; const r = canvas.getBoundingClientRect(); M.x = (e.clientX - r.left) * W / r.width; M.y = (e.clientY - r.top) * H / r.height; }
 canvas.addEventListener("mousemove", mouseXY);
+for (const ev of ["pointerdown", "keydown"]) window.addEventListener(ev, unlockAudio);
+const soundBtn = document.querySelector(".s6-sound");
+if (soundBtn) { soundBtn.classList.toggle("muted", Snd.mute); soundBtn.addEventListener("click", () => { unlockAudio(); setMute(!Snd.mute); soundBtn.blur(); }); }
+const musicBtn = document.querySelector(".s6-music");
+if (musicBtn) { musicBtn.classList.toggle("muted", Snd.musicOff); musicBtn.addEventListener("click", () => { unlockAudio(); setMusicOff(!Snd.musicOff); musicBtn.blur(); }); }
 canvas.addEventListener("click", e => {
   mouseXY(e);
   for (let i = hits.length - 1; i >= 0; i--) { const h = hits[i]; if (M.x >= h.x && M.x <= h.x + h.w && M.y >= h.y && M.y <= h.y + h.h) { h.fn(); return; } }
@@ -2090,7 +3319,9 @@ canvas.addEventListener("click", e => {
 canvas.addEventListener("contextmenu", e => { e.preventDefault(); if (C && S.screen === "combat") C.sel = -1; });
 canvas.addEventListener("wheel", e => { if (S.modal || (C && C.choose) || S.screen === "bench") { S.scroll += e.deltaY * .6; e.preventDefault(); } }, { passive: false });
 window.addEventListener("keydown", e => {
-  if (e.key === "Escape") { if (S.modal && S.modal.cancel) S.modal = null; else if (C) C.sel = -1; return; }
+  if (e.key === "m" || e.key === "M") { setMute(!Snd.mute); return; }
+  if (e.key === "n" || e.key === "N") { setMusicOff(!Snd.musicOff); return; }
+  if (e.key === "Escape") { if (S.modal && S.modal.cancel) closeModal(); else if (C) C.sel = -1; return; }
   if (S.screen === "map" && run && !S.modal) {
     const dirs = { ArrowLeft: [-1, 0], a: [-1, 0], A: [-1, 0], ArrowRight: [1, 0], d: [1, 0], D: [1, 0], ArrowUp: [0, -1], w: [0, -1], W: [0, -1], ArrowDown: [0, 1], s: [0, 1], S: [0, 1] };
     if (dirs[e.key]) { e.preventDefault(); moveDir(...dirs[e.key]); return; }
@@ -2112,6 +3343,8 @@ function bootFight(key) {
   const k = key.toLowerCase();
   let enc, kind = "battle";
   if (k.includes("sentinel")) { enc = ["sentinel"]; kind = "boss"; }
+  else if (k.includes("thornback")) { enc = ["thornback"]; kind = "boss"; }
+  else if (k.includes("homecore")) { enc = ["turret", "homeCore", "turret"]; kind = "boss"; }
   else if (k.includes("drone")) { enc = ["droneA", "droneB"]; kind = "elite"; }
   else enc = key.split(",").filter(id => ENEMIES[id]);
   if (!enc || !enc.length) enc = ["crawler", "spitter"];
@@ -2119,7 +3352,15 @@ function bootFight(key) {
   saveRun(); openPending();
 }
 if (save.run && !(save.run.map && save.run.map.tiles && save.run.ore)) { save.run = null; writeSave(); S.toast = { text: "Old run discarded after update", t: 6 }; }
+function bootEvent(id) {   // ?event=<id>: a debug run that opens that event
+  if (!EVENTS[id]) return;
+  newRun(); run.debug = true; run.pending = null;
+  if (EVENTS[id].zone !== 1) enterZone(EVENTS[id].zone);
+  run.cur = null; run.pending = { screen: "event", id, res: null };
+  saveRun(); openPending();
+}
 if (params.has("fight")) bootFight(params.get("fight"));
+else if (params.has("event")) bootEvent(params.get("event"));
 requestAnimationFrame(frame);
-window.__s6 = { get run() { return run; }, get C() { return C; }, S, CARDS, RELICS, ENEMIES, save, playCard, endTurn, canAct, finishChoose, costOf, padMove, padA, padB, digTile, canDig, canReach, clickTile, moveDir, confirmMap, updateMap, tileAt, openTrader, openPending, completeNode, draw, canPay, D, gainOre, step: dt => { S.time += dt; if (C) updateCombat(dt); updateMap(dt); pollPad(dt); } };
+window.__s6 = { EVENTS, newRun, makePending, hurt, raiseAlert, startCombat, onWin, get hits() { return prevHits; }, get run() { return run; }, get C() { return C; }, S, CARDS, RELICS, ENEMIES, save, playCard, endTurn, canAct, finishChoose, costOf, padMove, padA, padB, digTile, canDig, canReach, clickTile, moveDir, confirmMap, updateMap, tileAt, openTrader, openPending, completeNode, enterZone, shipRest, movePatrols, spawnPatrol, patrolAt, hunting, isRevealed, draw, canPay, D, gainOre, step: dt => { S.time += dt; if (C) updateCombat(dt); updateMap(dt); pollPad(dt); } };
 })();
