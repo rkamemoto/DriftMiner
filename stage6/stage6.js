@@ -25,6 +25,140 @@ function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)
 const save = loadSave();
 if (params.has("bank")) { save.bank = Math.max(0, Number(params.get("bank")) || 0); writeSave(); }
 
+// ---------------------------------------------------------------- sound (recorded effects in assets/audio: Kenney CC0 packs + Stage 4's alien screams)
+// Each sound lists takes, and one is picked at random per play. A take is one file, or several joined by " + " that play together;
+// "file@0.2" starts that layer 0.2 s late and "file~0.5" cuts a long recording to 0.5 s with a fade. Files without an extension are .ogg.
+// The audio context can only start after a click or key press, so sounds before that are silently dropped.
+const take = (base, ids) => ids.map(i => base + i);
+const SOUNDS = {
+  // interface
+  click: { v: .5, t: take("impactGeneric_light_00", [0, 1, 2, 3, 4]) },
+  select: { v: .7, t: take("card-slide-", [1, 2, 3, 4]) },
+  denied: { v: .8, t: take("impactSoft_medium_00", [0, 1, 2, 3, 4]) },
+  buy: { v: .8, t: take("chips-handle-", [1, 2, 4, 6]) },
+  // cards
+  cardDraw: { v: .6, t: take("card-slide-", [1, 2, 3, 4, 5, 6, 7, 8]) },
+  cardPlay: { v: .8, t: take("card-place-", [1, 2, 3, 4]) },
+  power: { v: .7, t: ["card-place-1 + forceField_000@0.05~0.7", "card-place-3 + forceField_001@0.05~0.7"] },
+  shuffle: { v: .7, t: ["card-shuffle~0.9"] },
+  cardAdd: { v: .8, t: take("cards-pack-take-out-", [1, 2]) },
+  upgrade: { v: .7, t: ["impactMetal_light_000 + impactMetal_light_002@0.14 + metalClick@0.3"] },
+  fuse: { v: .7, t: ["forceField_002~0.9 + impactMetal_heavy_001@0.35 + impactMetal_heavy_003@0.42"] },
+  // combat
+  hit: { v: .8, t: take("impactPunch_medium_00", [0, 1, 2, 3, 4]) },
+  hitHeavy: { v: 1, t: take("impactPunch_heavy_00", [0, 1, 2, 3, 4]) },
+  hurt: { v: .9, t: take("impactPlate_heavy_00", [0, 1, 2, 3, 4]) },
+  blocked: { v: .7, t: take("impactMetal_medium_00", [0, 1, 2, 3, 4]) },
+  block: { v: .6, t: take("impactPlate_light_00", [0, 1, 2, 3, 4]) },
+  lunge: { v: .7, t: take("cloth", [1, 2, 3, 4]) },
+  debuff: { v: .7, t: ["slime_000"] },
+  buff: { v: .7, t: ["clothBelt", "clothBelt2"] },
+  rad: { v: .5, t: ["computerNoise_000~0.45", "computerNoise_002~0.45"] },
+  heal: { v: .5, t: ["forceField_003~0.6", "forceField_004~0.6"] },
+  summon: { v: .8, t: ["doorOpen_000 + slime_000@0.15", "doorOpen_001 + slime_000@0.15"] },
+  overheat: { v: .6, t: ["thrusterFire_000~0.6", "thrusterFire_002~0.6"] },
+  enemyDeath: { v: .8, t: ["explosionCrunch_000 + slime_000", "explosionCrunch_001 + slime_000", "explosionCrunch_002 + slime_000"] },
+  bossDeath: { v: 1, t: ["lowFrequency_explosion_000 + alien-guttural-scream-v1.mp3@0.1"] },
+  yourTurn: { v: .8, t: take("card-fan-", [1, 2]) },
+  enemyTurn: { v: .45, t: ["impactBell_heavy_002", "impactBell_heavy_003"] },
+  alarm: { v: .8, t: ["lowFrequency_explosion_001 + forceField_002@0.1~0.8"] },
+  battleStart: { v: .8, t: take("drawKnife", [1, 2, 3]) },
+  ambush: { v: .9, t: ["explosionCrunch_003 + drawKnife2@0.25", "explosionCrunch_004 + drawKnife3@0.25"] },
+  bossIntro: { v: .9, t: ["alien-scream-A-roar.mp3 + lowFrequency_explosion_001"] },
+  // stingers: made with Google Flow Music, trimmed and faded (untouched originals in tmp/flow-originals/)
+  victory: { v: .75, t: ["stinger-victory.wav"] },
+  defeat: { v: .8, t: ["impactSoft_heavy_000 + stinger-defeat.wav@0.2"] },
+  runWin: { v: .85, t: ["stinger-runwin.wav"] },
+  relic: { v: .75, t: ["stinger-relic.wav"] },
+  rest: { v: .8, t: ["dropLeather + cloth2@0.25"] },
+  // dig map
+  dig: { v: .8, t: take("impactMining_00", [0, 1, 2, 3, 4]) },
+  bump: { v: .8, t: take("impactMetal_heavy_00", [0, 2, 4]) },
+  step: { v: .45, t: take("footstep0", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) },
+  ore_cu: { v: .8, t: take("chips-collide-", [1, 2, 3, 4]) },
+  ore_ag: { v: .7, t: take("impactMetal_light_00", [1, 3, 4]) },
+  ore_au: { v: .6, t: ["impactGlass_heavy_000", "impactGlass_heavy_002"] },
+  spore: { v: .8, t: ["slime_000"] },
+  sporeSpread: { v: .7, t: ["slime_001~1.0"] },
+  cleanse: { v: .5, t: ["forceField_004~0.5"] },
+  antidote: { v: .8, t: ["impactGlass_heavy_003 + forceField_003@0.1~0.7"] },
+  discover: { v: .8, t: ["metalLatch + handleSmallLeather@0.12"] },
+  zone: { v: .7, t: ["spaceEngineLow_000~1.4 + doorClose_000@1.0"] }
+};
+const MUTE_KEY = "driftMinerStage6Mute", MUSIC_OFF_KEY = "driftMinerStage6MusicOff";
+const stored = k => { try { return localStorage.getItem(k) === "1"; } catch (e) { return false; } };
+const Snd = { ctx: null, out: null, bufs: {}, last: {}, mute: stored(MUTE_KEY), musicOff: stored(MUSIC_OFF_KEY) };
+const SFX_GAP = { hit: 40, hitHeavy: 40, blocked: 50, block: 60, cardDraw: 30, step: 60, debuff: 60, buff: 60, heal: 60, rad: 120, click: 30 };
+const layersOf = tk => tk.split(" + ").map(s => { const m = /^([^@~]+)(?:@([\d.]+))?(?:~([\d.]+))?$/.exec(s.trim()); return { f: m[1], at: +(m[2] || 0), max: +(m[3] || 0) }; });
+const fileUrl = f => "assets/audio/" + f + (/\.\w+$/.test(f) ? "" : ".ogg");
+// files download as the page opens and are decoded once a gesture has started the audio context
+const sndFiles = new Set(Object.values(SOUNDS).flatMap(s => s.t.flatMap(tk => layersOf(tk).map(l => l.f))));
+const sndRaw = new Map([...sndFiles].map(f => [f, fetch(fileUrl(f)).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)]));
+function unlockAudio() {
+  if (Snd.ctx) return;
+  try {
+    Snd.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    Snd.out = Snd.ctx.createGain(); Snd.out.gain.value = .8;
+    Snd.out.connect(Snd.ctx.createDynamicsCompressor()).connect(Snd.ctx.destination);
+  } catch (e) { Snd.ctx = null; return; }
+  for (const [f, raw] of sndRaw) raw.then(b => b && Snd.ctx.decodeAudioData(b)).then(buf => { if (buf) Snd.bufs[f] = buf; }).catch(() => { /* a missing or broken file just stays silent */ });
+}
+function sfx(name, o = {}) {
+  const a = Snd.ctx, s = SOUNDS[name]; if (!a || Snd.mute || !s) return;
+  if (a.state === "suspended") a.resume();
+  const now = performance.now(), gap = o.delay ? 0 : SFX_GAP[name] || 0;   // a burst of the same sound in one instant plays once
+  if (gap && now - (Snd.last[name] || 0) < gap) return;
+  Snd.last[name] = now;
+  const rate = (o.rate || 1) * (1 + (o.vary || 0) * (Math.random() * 2 - 1)), layers = layersOf(s.t[Math.floor(Math.random() * s.t.length)]);
+  if (name === "victory" || name === "defeat" || name === "relic" || name === "runWin") {   // music dips for as long as the stinger lasts
+    const len = Math.max(0, ...layers.map(l => Snd.bufs[l.f] ? l.at + (l.max || Snd.bufs[l.f].duration) : 0));
+    Mus.duckT = Math.max(Mus.duckT, (len || 2.5) + (o.delay || 0));
+  }
+  for (const l of layers) {
+    const buf = Snd.bufs[l.f]; if (!buf) continue;
+    const src = a.createBufferSource(), g = a.createGain(), t0 = a.currentTime + (o.delay || 0) + l.at;
+    src.buffer = buf; src.playbackRate.value = rate;
+    g.gain.value = s.v * (o.vol || 1);
+    if (l.max) { g.gain.setValueAtTime(s.v * (o.vol || 1), t0 + l.max * .75); g.gain.linearRampToValueAtTime(0, t0 + l.max); }
+    src.connect(g).connect(Snd.out); src.start(t0);
+    if (l.max) src.stop(t0 + l.max + .02);
+  }
+}
+// background music: one looping track per situation, crossfaded on change and loaded on first use
+const MUSIC = { shaft: "drift-miner-deep-shaft-loop.wav", rush: "drift-miner-ore-rush-loop.wav", hive: "drift-miner-hive-gate-loop.wav" };
+const MUSIC_VOL = .35, MUSIC_FADE = .4;   // fade is the time constant: a crossfade takes about 3x this
+const Mus = { cur: null, bufs: {}, loading: {}, duckT: 0 };
+function musicFor() {
+  if (S.screen === "runEnd") return null;   // quiet, so the Run Won / Defeat stinger stands alone
+  if (S.screen === "combat") return "rush";
+  return run && run.zone === 3 ? "hive" : "shaft";
+}
+function updateMusic(dt) {
+  const a = Snd.ctx; if (!a) return;
+  const want = musicFor(), now = a.currentTime;
+  if (want && !Mus.bufs[want] && !Mus.loading[want]) {
+    Mus.loading[want] = fetch(fileUrl(MUSIC[want])).then(r => r.arrayBuffer()).then(b => a.decodeAudioData(b)).then(buf => { Mus.bufs[want] = buf; }).catch(() => { /* stays silent */ });
+  }
+  if (Mus.cur && Mus.cur.key !== want) { Mus.cur.g.gain.setTargetAtTime(0, now, MUSIC_FADE); Mus.cur.src.stop(now + MUSIC_FADE * 6); Mus.cur = null; }
+  if (!Mus.cur && want && Mus.bufs[want]) {
+    const src = a.createBufferSource(), g = a.createGain();
+    src.buffer = Mus.bufs[want]; src.loop = true; g.gain.value = 0;
+    src.connect(g).connect(Snd.out); src.start();
+    Mus.cur = { key: want, src, g, vol: 0 };
+  }
+  Mus.duckT = Math.max(0, Mus.duckT - dt);
+  const vol = Snd.mute || Snd.musicOff ? 0 : MUSIC_VOL * (Mus.duckT > 0 ? .3 : 1);
+  if (Mus.cur && Mus.cur.vol !== vol) { Mus.cur.g.gain.setTargetAtTime(vol, now, Mus.cur.vol < vol ? MUSIC_FADE : .08); Mus.cur.vol = vol; }
+}
+function setMute(m) {
+  Snd.mute = m; try { localStorage.setItem(MUTE_KEY, m ? "1" : "0"); } catch (e) { /* ignore */ }
+  const b = document.querySelector(".s6-sound"); if (b) b.classList.toggle("muted", m);
+}
+function setMusicOff(m) {
+  Snd.musicOff = m; try { localStorage.setItem(MUSIC_OFF_KEY, m ? "1" : "0"); } catch (e) { /* ignore */ }
+  const b = document.querySelector(".s6-music"); if (b) b.classList.toggle("muted", m);
+}
+
 // ---------------------------------------------------------------- seeded rng (mulberry32)
 function makeRng(seed) {
   let a = seed >>> 0;
@@ -61,6 +195,8 @@ function artReady(k) {
   const i = ART[k] || loadArt(k);
   return i.complete && i.naturalWidth > 0 ? i : null;
 }
+// still downloading (as opposed to missing): callers draw nothing rather than flash the canvas placeholder
+const artPending = k => ART_ON && !!ART_FILES[k] && !ART_FAIL[k] && !artReady(k);
 // sheets whose cells overlap or leak into neighbours are cleaned at load: each cell keeps only its own connected blob
 // (blobs closer than `bridge` blocks of 4px count as one, so a weapon tip or shield edge stays with its pose)
 const SHEETS = { miner: { cols: 4, rows: 1, cw: 384, ch: 512, bridge: 5 }, companions: { cols: 4, rows: 1, cw: 256, ch: 256, bridge: 5 } };
@@ -326,6 +462,7 @@ function cardName(c) {
   return d.rec ? d.n + (c.fuse[0].up && c.fuse[1].up ? "+" : "") : `${pName(c.fuse[0])} + ${pName(c.fuse[1])}`;
 }
 const canUpgrade = c => halves(c).some(h => !h.up && CARDS[h.id].t !== "status");
+const upgradedPreview = c => c.fuse ? { fuse: c.fuse.map(h => ({ id: h.id, up: true })) } : { id: c.id, up: true };
 const upgradeCard = c => { halves(c).forEach(h => { h.up = true; }); };
 const isFusable = c => !c.fuse && !["power", "status"].includes(CARDS[c.id].t);
 const oreList = d => ["cu", "ag", "au"].filter(k => d.ore && d.ore[k]);
@@ -530,7 +667,7 @@ function newRun(seedOverride) {
     deck.push({ id: "pilotBore", up: false });
   }
   const maxhp = 70 + 5 * f.hp;
-  run = { seed, rngState: 0, zone: 1, map: null, cur: null, hp: maxhp, maxhp, deck, relics: [], scrap: 50 * f.supply, removals: 0, pending: null, alert: 0, ambushDue: 0, shipRest: false, antidote: false, ore: { cu: 2 * f.satchel, ag: 0, au: 0 } };
+  run = { seed, rngState: 0, zone: 1, map: null, cur: null, hp: maxhp, maxhp, deck, relics: [], scrap: 50 * f.supply, removals: 0, pending: null, alert: 0, ambushDue: 0, shipRest: false, antidote: false, seenEvents: [], nextFight: null, ore: { cu: 2 * f.satchel, ag: 0, au: 0 } };
   if (params.has("ore")) { const n = Math.max(0, Number(params.get("ore")) || 0); run.ore = { cu: n, ag: n, au: n }; }
   if (params.get("relics") === "all") run.relics = RELIC_IDS.slice();
   run.map = genDigMap(1);
@@ -550,7 +687,7 @@ function enterZone(z) {
   const h = Math.min(Math.ceil(run.maxhp * .3), run.maxhp - run.hp); run.hp += h;
   run.map = genDigMap(z); run.cur = null; run.pending = null; run.queued = null;
   run.alert = 0; run.ambushDue = 0; run.antidote = false; run.overrideKey = false; run.hiveMap = false;
-  S.toast = { text: `${ZONES[z - 1]} — healed ${h} HP`, t: 3 };
+  S.toast = { text: `${ZONES[z - 1]} — healed ${h} HP`, t: 3 }; sfx("zone");
   S.screen = "map"; S.face = null; S.walk = null; saveRun();
 }
 
@@ -661,7 +798,7 @@ function genDigMap(zone = 1) {
 function isRevealed(x, y) {
   if (params.get("reveal") === "1" || S.dbg.reveal) return true;
   const t = tileAt(x, y);
-  if (t.k === "lair" || t.dug) return true;
+  if (t.k === "lair" || t.dug || t.seen) return true;   // t.seen: revealed by an event
   if (run.zone === 3) {   // psionic fog: only felt bedrock, the Hive Map, a lit Beacon's radius 2, or (3rd Eye) radius 1 around tunnels
     if (t.felt || run.hiveMap) return true;
     for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
@@ -733,7 +870,10 @@ const traderStock = () => tileAt(run.cur.x, run.cur.y).stock;
 function mapFloat(x, y, text, col) { S.mfloats.push({ x: GX + x * TILE + TILE / 2, y: GY + y * TILE + TILE / 2, text, col, t: 0 }); }
 function makePending(c, y) {
   if (["battle", "elite", "boss"].includes(c)) return { screen: "combat", kind: c, enc: chooseEncounter(c, y) };
-  if (c === "event") return { screen: "event", id: pick(Object.keys(EVENTS)), res: null };
+  if (c === "event") {   // only this zone's events, none twice in a run until the zone's list is used up
+    const seen = run.seenEvents = run.seenEvents || [], zone = Object.keys(EVENTS).filter(id => EVENTS[id].zone === run.zone), fresh = zone.filter(id => !seen.includes(id)), id = pick(fresh.length ? fresh : zone);
+    seen.push(id); return { screen: "event", id, res: null };
+  }
   if (c === "camp") return { screen: "camp" };
   if (c === "cache") {
     const pool = unownedRelics(), id = pool.length ? pick(pool) : null;
@@ -758,7 +898,7 @@ function spreadSpores() {
     const all = snap.flatMap(([x, y]) => elig(x, y));
     if (all.length) { const [a, b] = pick(all); infect(a, b); }
   }
-  S.toast = { text: "The spores spread", t: 2 };
+  S.toast = { text: "The spores spread", t: 2 }; sfx("sporeSpread", { delay: .15 });
   for (const [a, b] of fresh) if (isRevealed(a, b)) mapFloat(a, b, "Spores!", "#8fe06a");
 }
 function digAntidote(t, x, y) {
@@ -766,7 +906,7 @@ function digAntidote(t, x, y) {
   let n = 0;
   for (let i = run.deck.length - 1; i >= 0; i--) if (run.deck[i].id === "spore") { run.deck.splice(i, 1); n++; }
   S.toast = { text: n ? `Spore Antidote! Removed ${n} Spore card${n === 1 ? "" : "s"}. Spores no longer affect you.` : "Spore Antidote! No Spore cards to remove. Spores no longer affect you.", t: 4 };
-  mapFloat(x, y, "Antidote", "#7affc0");
+  mapFloat(x, y, "Antidote", "#7affc0"); sfx("antidote", { delay: .1 });
 }
 // Zone 3 patrols: Hive Guard squads that walk hive tunnels and the player's dug tiles, one step per dig
 const patrolAt = (x, y) => (run.map.patrols || []).find(p => p.x === x && p.y === y) || null;
@@ -804,24 +944,25 @@ const patrolFight = p => ({ screen: "combat", kind: "patrol", enc: pick(ENC.z3.p
 function digTile(x, y) {
   if (S.dig || S.modal || !canDig(x, y)) return;
   const t = tileAt(x, y), from = { x: run.map.px, y: run.map.py };
-  if (t.k === "bedrock") { t.felt = true; S.face = null; mapFloat(x, y, "Solid rock", "#b8aab0"); saveRun(); return; }   // hidden by Zone 3's fog: bumped, nothing is spent
-  t.dug = true; run.map.px = x; run.map.py = y;
+  if (t.k === "bedrock") { sfx("bump"); t.felt = true; S.face = null; mapFloat(x, y, "Solid rock", "#b8aab0"); saveRun(); return; }   // hidden by Zone 3's fog: bumped, nothing is spent
+  t.dug = true; run.map.px = x; run.map.py = y; sfx("dig", { vary: .08 });
   run.alert++; if (run.alert % 8 === 0) run.ambushDue++;
   run.cur = { x, y };
   const c = t.c;
+  if (c === "overrideKey" || c === "hiveMap" || c === "beacon") sfx("discover", { delay: .12 });
   if (c === "overrideKey") { run.overrideKey = true; t.used = true; mapFloat(x, y, "Override Key", "#ffcf4a"); S.toast = { text: "Override Key! The Core's turrets will be offline.", t: 4 }; }
   if (c === "hiveMap") { run.hiveMap = true; t.used = true; mapFloat(x, y, "Hive Map", "#5ad0ff"); S.toast = { text: "Hive Map! The whole Gate is revealed, patrols included.", t: 4 }; }
   if (c === "beacon") { t.used = true; mapFloat(x, y, "Beacon lit", "#b8a0ff"); }
   if (t.spore) {
     t.spore = false;
-    if (run.antidote) mapFloat(x, y, "Cleansed", "#7affc0");
-    else { addCard("spore"); mapFloat(x, y, "+1 Spore", "#8fe06a"); }
+    if (run.antidote) { mapFloat(x, y, "Cleansed", "#7affc0"); sfx("cleanse", { delay: .08 }); }
+    else { addCard("spore"); sfx("spore", { delay: .08 }); mapFloat(x, y, "+1 Spore", "#8fe06a"); }
   }
   if (c === "antidote") digAntidote(t, x, y);
   else if (hasSpores() && !run.antidote && --run.map.sporeIn <= 0) spreadSpores();
   if (ORE_KEYS.includes(c)) {
     const n = (c === "cu" ? rr(2, 3) : c === "ag" ? rr(1, 2) : 1) + (hasRelic("magnetR") ? 1 : 0);
-    gainOre(c, n); t.used = true; mapFloat(x, y, `+${n} ${ORE[c].n}`, ORE[c].col);
+    gainOre(c, n); t.used = true; sfx("ore_" + c, { delay: .12 }); mapFloat(x, y, `+${n} ${ORE[c].n}`, ORE[c].col);
   }
   run.pending = makePending(c, y);
   // an ambush only lands on plain dirt or ore veins, never on another content tile
@@ -883,13 +1024,14 @@ function confirmMap() {
 function shipRest() {
   if (run.zone !== 1 || run.shipRest || run.hp >= run.maxhp) return;
   const h = run.maxhp - run.hp; run.hp = run.maxhp; run.shipRest = true;
-  S.toast = { text: `Rested aboard the ship: +${h} HP`, t: 2.5 }; saveRun();
+  S.toast = { text: `Rested aboard the ship: +${h} HP`, t: 2.5 }; sfx("rest"); saveRun();
 }
 function updateMap(dt) {
   if (S.dig) { S.dig.t += dt; if (S.dig.t >= (S.dig.dur || .2)) { S.dig = null; if (run && run.pending) openPending(); } }
   if (!S.dig && S.walk && run && S.screen === "map") {
     const st = S.walk.path.shift();
     if (st) {
+      sfx("step", { vary: .1 });
       const from = { x: run.map.px, y: run.map.py }; run.map.px = st.x; run.map.py = st.y; S.dig = { t: 0, from, to: st, dur: .1 };
       const pt = run.zone === 3 && patrolAt(st.x, st.y);
       if (pt) { S.walk = null; run.cur = null; run.pending = patrolFight(pt); saveRun(); }   // walked into a patrol
@@ -976,7 +1118,7 @@ function padA() {
 function padB() {
   S.padMode = true;
   if (C && S.screen === "combat" && !S.modal && !C.choose && C.sel >= 0) { const sc = C.hand[C.sel]; C.sel = -1; if (sc) S.focusKey = "hand:" + sc.uid; return; }
-  if (S.modal) { if (S.modal.cancel) S.modal = null; return; }
+  if (S.modal) { if (S.modal.cancel) closeModal(); return; }
   if (C && C.choose) return;
   // B = return: leave the shop / workbench, or go back to the Forge from the run-end screen
   if (run && (S.screen === "trader" || S.screen === "bench")) completeNode();
@@ -986,6 +1128,7 @@ function padX() { if (run && S.screen !== "hub" && S.screen !== "runEnd" && !S.m
 const pad = { dir: null, t: 0, a: false, b: false, x: false, y: false };
 window.addEventListener("gamepadconnected", e => { S.toast = { text: "Controller connected: " + e.gamepad.id.slice(0, 44), t: 4 }; });
 window.addEventListener("gamepaddisconnected", () => { S.toast = { text: "Controller disconnected", t: 3 }; });
+const END_HOLD = .5;   // seconds Y must be held to end the turn
 function pollPad(dt) {
   if (!navigator.getGamepads) return;
   const gp = [...navigator.getGamepads()].find(g => g && g.connected);
@@ -1005,12 +1148,12 @@ function pollPad(dt) {
   const a = b(0), bb = b(1), xx = b(2), yy = b(3);
   if (a && !pad.a) padA();
   if (bb && !pad.b) padB();
-  // X opens the deck. Y: holding it for 1 s in combat ends the turn (a bar fills across End Turn)
+  // X opens the deck. Y: holding it for END_HOLD s in combat ends the turn (a bar fills across End Turn)
   if (xx && !pad.x) padX();
   if (S.screen === "combat" && C && !S.modal && !C.choose) {
     if (yy) {
       if (!pad.y) { pad.yT = 0; pad.yFired = false; }
-      if (canAct() && !pad.yFired) { pad.yT += dt; S.endHold = clamp(pad.yT / 1, 0, 1); if (pad.yT >= 1) { pad.yFired = true; S.endHold = 0; S.padMode = true; endTurn(); } }
+      if (canAct() && !pad.yFired) { pad.yT += dt; S.endHold = clamp(pad.yT / END_HOLD, 0, 1); if (pad.yT >= END_HOLD) { pad.yFired = true; S.endHold = 0; S.padMode = true; endTurn(); } }
       else if (!canAct()) { pad.yT = 0; S.endHold = 0; }
     } else S.endHold = 0;
   } else S.endHold = 0;
@@ -1042,7 +1185,7 @@ function endRun(win) {
   if (!dbg) save.stats.bestZone = Math.max(save.stats.bestZone, run.zone);
   S.end = { win, gain, seed: run.seed, scrap: run.scrap, ore: Object.assign({}, run.ore), oreScrap, debug: dbg };
   save.run = null; run = null; C = null; S.modal = null;
-  S.screen = "runEnd";
+  S.screen = "runEnd"; sfx(win ? "runWin" : "defeat");
   writeSave();
 }
 
@@ -1059,8 +1202,11 @@ function act(fn, d = .18) {
 const val = n => typeof n === "function" ? n() : n;
 
 const SLOTS = [null, [700], [620, 800], [520, 670, 820], [450, 580, 710, 840]];
+// monsters get tougher by zone: Zone 2 x1.3, Zone 3 x1.6 on HP and attack damage (bosses are hand-tuned and exempt)
+const ZONE_POWER = [1, 1.3, 1.6];
+const zonePower = d => d.boss || !run ? 1 : ZONE_POWER[run.zone - 1] || 1;
 const mkEnemy = (id, uid, x) => {
-  const d = ENEMIES[id], hp = rr(d.hp[0], d.hp[1]);
+  const d = ENEMIES[id], hp = Math.round(rr(d.hp[0], d.hp[1]) * zonePower(d));
   return { id, def: d, hp, maxhp: hp, block: 0, str: 0, weak: 0, vuln: 0, rad: 0, mi: 0, override: null, dead: false, fade: 1, hitT: 0, lungeT: 0, x, tx: x, y: 325, odDone: false, uid, phase: 0, dmgTaken: 0 };
 };
 // x positions for a line-up: fixed slots by count, but a wide boss (the Home Base Core) gets room (3 enemies: turret, Core, turret use [545, 720, 895], tuned from the brief's 560/880 for the art widths)
@@ -1084,12 +1230,13 @@ function summonEnemies(src, ids) {
     relayout();
   }
   for (const e of fresh) e.x = e.tx;
+  if (fresh.length) sfx("summon");
 }
 const thornsOf = e => e.isP ? 0 : (e.def.thorns || 0) + (e.thornsTemp || 0);
 const sporeCount = () => [...C.hand, ...C.draw, ...C.disc].filter(c => c.id === "spore").length;
-const baseDmg = m => m.dmg + (m.perSpore || 0) * sporeCount();
-function healEnemy(e, n) { const h = Math.min(n, e.maxhp - e.hp); e.hp += h; if (h > 0) addFloat(e, `+${h}`, "#6aff8a"); }
-function addToDisc(id, n) { for (let i = 0; i < n; i++) C.disc.push({ id, up: false, uid: C.uid++, appear: 1 }); addFloat(C.P, `+${n} ${CARDS[id].n}`, "#8fe06a"); }
+const baseDmg = (m, e) => Math.round((m.dmg + (m.perSpore || 0) * sporeCount()) * (e ? zonePower(e.def) : 1));
+function healEnemy(e, n) { const h = Math.min(n, e.maxhp - e.hp); e.hp += h; if (h > 0) { addFloat(e, `+${h}`, "#6aff8a"); sfx("heal", { rate: .8 }); } }
+function addToDisc(id, n) { sfx("spore"); for (let i = 0; i < n; i++) C.disc.push({ id, up: false, uid: C.uid++, appear: 1 }); addFloat(C.P, `+${n} ${CARDS[id].n}`, "#8fe06a"); }
 
 function startCombat(allIds, kind) {
   const encIds = kind === "boss" && run.zone === 3 && run.overrideKey ? allIds.filter(id => id !== "turret") : allIds;   // the Override Key takes the turrets offline
@@ -1098,12 +1245,15 @@ function startCombat(allIds, kind) {
     kind, over: null, overT: 0, phase: "busy", turn: 0, Q: [], timer: .4, ins: -1, floats: [], sel: -1, choose: null, flash: 0, hoverCard: -1,
     P: { isP: true, hp: run.hp, maxhp: run.maxhp, block: 0, str: 0, weak: 0, vuln: 0, rad: 0, hitT: 0, pose: 0, poseT: 0 },
     enemies: [], draw: [], hand: [], disc: [], exh: [], energy: 0, nextEnergy: 0, charge: 0, heat: 0,
-    comp: { dog: 0, mouse: 0 }, pw: {}, pwv: {}, swordN: 0, atkN: 0, played: 0, uid: 1, banner: null, dogT: 0, mouseT: 0, oreGain: { cu: 0, ag: 0, au: 0 }
+    comp: { dog: 0, mouse: 0 }, pw: {}, pwv: {}, swordN: 0, atkN: 0, played: 0, uid: 1, banner: null, dogT: 0, mouseT: 0, oreGain: { cu: 0, ag: 0, au: 0 }, nf: run.nextFight || null
   };
+  run.nextFight = null;
   encIds.forEach((id, i) => C.enemies.push(mkEnemy(id, i, xs[i])));
+  preloadEnemyArt(encIds);
   for (const c of run.deck) C.draw.push(Object.assign(JSON.parse(JSON.stringify(c)), { uid: C.uid++, appear: 1 }));
   shuffle(C.draw);
   S.screen = "combat"; S.modal = null;
+  sfx(kind === "ambush" || kind === "patrol" ? "ambush" : kind === "boss" ? "bossIntro" : "battleStart");
   if (kind === "ambush" || kind === "patrol") { C.banner = { t: 1.6, text: kind === "patrol" ? "PATROL!" : "AMBUSH!" }; C.timer = 1.4; }
   else if (encIds.length < allIds.length) { C.banner = { t: 1.6, text: "Turrets offline" }; C.timer = 1.4; }
   if (hasRelic("impactDrill")) C.charge = 2;
@@ -1119,23 +1269,24 @@ function toHand(c) { c.appear = 0; if (C.hand.length >= 10) C.disc.push(c); else
 function drawCards(n) {
   for (let i = 0; i < n; i++) {
     if (C.hand.length >= 10) break;
-    if (!C.draw.length) { if (!C.disc.length) break; C.draw = shuffle(C.disc); C.disc = []; }
-    const c = C.draw.pop(); c.appear = 0; C.hand.push(c);
+    if (!C.draw.length) { if (!C.disc.length) break; C.draw = shuffle(C.disc); C.disc = []; sfx("shuffle"); }
+    const c = C.draw.pop(); c.appear = 0; C.hand.push(c); sfx("cardDraw", { delay: i * .06, vary: .1 });
   }
 }
 function applyStatus(u, key, n) {
   if (!n) return;
   u[key] += n;
+  if (n > 0) sfx(key === "rad" ? "rad" : key === "str" || key === "thorns" ? "buff" : "debuff");
   addFloat(u, `${STATUS[key].n} ${n > 0 ? "+" : ""}${n}`, STATUS[key].col);
 }
 // raw damage to hp after block; returns hp actually lost
 function takeDamage(t, n, pierce) {
   if (isShielded(t)) n = Math.floor(n / 2);   // the Core takes half while a Turret stands, from every source
-  if (n <= 0 && !pierce) { addFloat(t, "0", "#aab"); return 0; }
+  if (n <= 0 && !pierce) { addFloat(t, "0", "#aab"); sfx("blocked"); return 0; }
   let blocked = 0;
   if (!pierce && t.block > 0) { blocked = Math.min(t.block, n); t.block -= blocked; n -= blocked; }
-  if (n > 0) { t.hp -= n; t.hitT = .25; if (t.isP) C.flash = .35; addFloat(t, `-${n}`, "#ff6a5a"); }
-  else if (blocked) addFloat(t, "Blocked", "#9cc8ff");
+  if (n > 0) { t.hp -= n; t.hitT = .25; if (t.isP) C.flash = .35; addFloat(t, `-${n}`, "#ff6a5a"); sfx(t.isP ? "hurt" : n >= 15 ? "hitHeavy" : "hit", { vary: .06 }); }
+  else if (blocked) { addFloat(t, "Blocked", "#9cc8ff"); sfx("blocked", { vary: .06 }); }
   return n;
 }
 function calcDmg(src, tgt, base, mult = 1) {
@@ -1219,8 +1370,8 @@ function shakeCard(c) { c.shake = .35; }
 
 function playCard(idx, target) {
   const card = C.hand[idx], d = D(card);
-  if (d.unplayable || !canPay(card)) { shakeCard(card); return false; }
-  C.energy -= costOf(card);
+  if (d.unplayable || !canPay(card)) { shakeCard(card); sfx("denied"); return false; }
+  C.energy -= costOf(card); sfx(d.t === "power" ? "power" : "cardPlay", { vary: .05 });
   C.P.pose = d.t === "attack" ? 1 : 2; C.P.poseT = .3;
   if (d.ore) for (const k of ORE_KEYS) if (d.ore[k]) run.ore[k] -= d.ore[k];
   C.hand.splice(idx, 1);
@@ -1256,22 +1407,23 @@ function addHeat(n) {
   const thr = hasRelic("blasterR") ? 7 : 5;
   if (C.heat >= thr) {
     C.heat = 0;
-    addFloat(C.P, "OVERHEAT!", "#ff6030");
+    addFloat(C.P, "OVERHEAT!", "#ff6030"); sfx("overheat");
     toHand(mkCard("overheat"));
     if (C.pw.heatSink) drawCards(2 * C.pw.heatSink);
   }
 }
 
 function startPlayerTurn() {
-  act(() => { C.turn++; C.phase = "busy"; C.P.block = 0; C.sel = -1; C.swordN = 0; C.played = 0; for (const e of C.enemies) e.dmgTaken = 0; if (C.turn > 1) C.banner = { t: 1.1, text: "Your Turn" }; }, .05);
+  act(() => { C.turn++; C.phase = "busy"; C.P.block = 0; C.sel = -1; C.swordN = 0; C.played = 0; for (const e of C.enemies) e.dmgTaken = 0; if (C.turn > 1) { C.banner = { t: 1.1, text: "Your Turn" }; sfx("yourTurn"); } }, .05);
+  if (C.turn === 0 && C.nf) act(() => applyNextFight(C.nf), .25);   // buffs from events: turn 1 only
   act(() => { if (C.P.rad > 0) { takeDamage(C.P, C.P.rad, true); C.P.rad--; } }, .2);
   act(() => {
     if (C.pw.perpetual) { C.charge += C.pw.perpetual; addFloat(C.P, `+${C.pw.perpetual} Charge`, "#ffa44a"); }
     if (C.pw.wingmen) for (let k = 0; k < C.pw.wingmen; k++) for (let h = 0; h < 2; h++) act(() => { const e = pick(livingEnemies()); if (e) strike(e, 4, false); }, .15);
   }, .1);
-  act(() => { drawCards(5 + (C.turn === 1 && hasRelic("thirdEye") ? 2 : 0)); }, .3);
+  act(() => { drawCards(5 + (C.turn === 1 && hasRelic("thirdEye") ? 2 : 0) + (C.turn === 1 && C.nf ? C.nf.draw || 0 : 0)); }, .3);
   act(() => {
-    C.energy = Math.max(0, 3 + (C.turn === 1 && hasRelic("burstR") ? 1 : 0) + C.nextEnergy); C.nextEnergy = 0;
+    C.energy = Math.max(0, 3 + (C.turn === 1 && hasRelic("burstR") ? 1 : 0) + (C.turn === 1 && C.nf ? C.nf.energy || 0 : 0) + C.nextEnergy); C.nextEnergy = 0;
     if (C.turn === 1 && hasRelic("flareR")) for (const e of livingEnemies()) applyStatus(e, "vuln", 1);
   }, .1);
   act(() => { if (!C.over) C.phase = "player"; }, 0);
@@ -1295,7 +1447,7 @@ function endTurn() {
     }
   }, 0);
   act(() => { if (C.pw.fallout) for (const e of livingEnemies()) applyStatus(e, "rad", C.pwv.fallout); }, .25);
-  act(() => { C.P.weak = Math.max(0, C.P.weak - 1); C.P.vuln = Math.max(0, C.P.vuln - 1); C.banner = { t: 1.1, text: "Enemy Turn" }; }, .3);
+  act(() => { C.P.weak = Math.max(0, C.P.weak - 1); C.P.vuln = Math.max(0, C.P.vuln - 1); C.banner = { t: 1.1, text: "Enemy Turn" }; sfx("enemyTurn"); }, .3);
   // all enemy Block / temp Thorns expire together as the phase starts, so a support's ally Block (Knit, Shield Ally) survives whoever acts after it
   act(() => { for (const e of C.enemies) { if (!e.def.keepBlock) e.block = 0; e.thornsTemp = 0; } }, 0);
   for (const e of C.enemies) {
@@ -1319,12 +1471,12 @@ const movesOf = e => e.def.phases ? e.def.phases[e.phase].moves : e.def.moves;
 const moveOf = e => e.override || movesOf(e)[e.mi];
 function execMove(e) {
   const m = moveOf(e);
-  e.lungeT = .4;
+  e.lungeT = .4; if (m.dmg) sfx("lunge", { vary: .1 });
   addFloat(e, m.n, "#ffd9a0");
   if (m.breakBlock) act(() => { if (alive(e) && C.P.block > 0) { C.P.block = 0; addFloat(C.P, "Armor melted", "#ff9a6a"); } }, .15);
   if (m.dmg) for (let h = 0; h < (m.hits || 1); h++) act(() => {
     if (!alive(e)) return;
-    const lost = takeDamage(C.P, calcDmg(e, C.P, baseDmg(m)), false);
+    const lost = takeDamage(C.P, calcDmg(e, C.P, baseDmg(m, e)), false);
     if (m.drain && lost > 0) healEnemy(e, lost);
   }, .2);
   act(() => {
@@ -1358,19 +1510,19 @@ function refreshIntents() {
     if (!alive(e)) continue;
     if (e.def.overdrive && !e.odDone && e.hp <= e.maxhp / 2) {
       e.odDone = true; e.override = e.def.overdrive;
-      C.banner = { t: 1.2, text: e.def.overdrive.banner || "Overdrive!" };
+      C.banner = { t: 1.2, text: e.def.overdrive.banner || "Overdrive!" }; sfx("alarm");
     }
     const ph = e.def.phases;
     while (ph && e.phase + 1 < ph.length && e.hp <= ph[e.phase + 1].at) {
       const p = ph[++e.phase];
-      e.mi = 0; e.override = null; C.banner = { t: 1.4, text: p.banner };
+      e.mi = 0; e.override = null; C.banner = { t: 1.4, text: p.banner }; sfx("alarm");
       if (p.summon) summonEnemies(e, p.summon);
     }
   }
 }
 function afterAction() {
   for (const e of C.enemies) if (!e.dead && e.hp <= 0) {
-    e.dead = true; e.hp = 0; addFloat(e, "Defeated", "#ffd24a");
+    e.dead = true; e.hp = 0; addFloat(e, "Defeated", "#ffd24a"); sfx(e.def.boss ? "bossDeath" : "enemyDeath", { vary: e.def.boss ? 0 : .08 });
     if (!e.summoned && !e.def.noLoot) gainOre("cu", 1);
     const od = e.def.onDeath;
     if (od) {
@@ -1384,7 +1536,9 @@ function afterAction() {
   }
   refreshIntents();
   if (C.P.hp <= 0) { C.P.hp = 0; C.over = "lost"; C.overT = 1; C.Q.length = 0; C.choose = null; return; }
-  if (C.enemies.every(e => e.dead)) { C.over = "won"; C.overT = .9; C.Q.length = 0; C.choose = null; }
+  // one stinger per win: the run-ending boss gets Run Won, and an elite / boss that drops a relic gets the Relic stinger (from onWin)
+  const relicWin = (C.kind === "elite" || C.kind === "boss") && unownedRelics().length > 0;
+  if (C.enemies.every(e => e.dead)) { if (!(C.kind === "boss" && run.zone >= 3) && !relicWin) sfx("victory", { delay: .35 }); C.over = "won"; C.overT = .9; C.Q.length = 0; C.choose = null; }
 }
 
 function updateCombat(dt) {
@@ -1406,6 +1560,8 @@ function updateCombat(dt) {
       if (e.x !== e.tx) e.x = Math.abs(e.tx - e.x) < .5 ? e.tx : lerp(e.x, e.tx, 1 - Math.exp(-dt * 14));
     }
   }
+  if (C.P.block > (C.P.sndBlock || 0)) sfx("block"); C.P.sndBlock = C.P.block;
+  for (const e of C.enemies) { if (e.block > (e.sndBlock || 0) && !e.dead) sfx("block", { rate: .75 }); e.sndBlock = e.block; }
   C.P.hitT = Math.max(0, C.P.hitT - dt); C.flash = Math.max(0, C.flash - dt);
   C.P.poseT = Math.max(0, C.P.poseT - dt); C.dogT = Math.max(0, C.dogT - dt); C.mouseT = Math.max(0, C.mouseT - dt);
   for (const c of C.hand) { c.appear = Math.min(1, c.appear + dt * 5); if (c.shake) c.shake = Math.max(0, c.shake - dt); }
@@ -1420,29 +1576,80 @@ function onWin() {
   const kind = C.kind;
   if (kind === "elite") gainOre("ag", 1);
   if (kind === "boss") gainOre("au", 1);
+  const eb = run.pending && run.pending.eventBonus;   // fight started by an event: its bonus is paid on top of the normal reward
+  if (eb && eb.ore) for (const k in eb.ore) gainOre(k, eb.ore[k]);
   const oreG = Object.assign({}, C.oreGain);
   C = null;
   if (kind === "patrol" && run.pending && run.pending.patrolId != null) run.map.patrols = run.map.patrols.filter(p => p.id !== run.pending.patrolId);   // the squad is gone
   if (kind === "boss" && run.zone >= 3) { run.scrap += 75; endRun(true); return; }   // the last zone's boss (the Home Base Core) ends the run
-  const scrap = gainScrap(kind === "elite" ? rr(30, 40) : kind === "boss" ? 75 : kind === "ambush" ? rr(10, 20) : rr(15, 25));
+  const scrap = gainScrap((kind === "elite" ? rr(30, 40) : kind === "boss" ? 75 : kind === "ambush" ? rr(10, 20) : rr(15, 25)) + (eb && eb.scrap || 0));
   const pend = { screen: "reward", scrap, cards: kind === "ambush" ? [] : rollCards(kind, save.forge.survey ? 4 : 3), relic: null, ore: oreG, ambush: kind === "ambush", nextZone: kind === "boss" };
-  if (kind === "elite" || kind === "boss") { const pool = unownedRelics(); if (pool.length) { pend.relic = pick(pool); grantRelic(pend.relic); } }
+  if (kind === "elite" || kind === "boss") { const pool = unownedRelics(); if (pool.length) { pend.relic = pick(pool); grantRelic(pend.relic); sfx("relic", { delay: .2 }); } }
   run.pending = pend;
   saveRun(); S.screen = "reward";
 }
 function onLose() { run.hp = 0; endRun(false); }
 
 // ---------------------------------------------------------------- events
+// ---- event helpers. Costs go through hurt/heal/changeMaxHp; pickers set run.pending.res themselves and their choice returns null
+const isStatus = c => !c.fuse && CARDS[c.id].t === "status";
+const scrapUp = n => { sfx("buy"); return gainScrap(n); };
+const oreUp = (k, n) => { sfx("ore_" + k); return gainOre(k, n); };
+function hurt(n) { sfx("hurt"); run.hp -= n; if (run.hp > 0) return false; run.hp = 0; endRun(false); return true; }   // true = the run just ended
+function heal(n) { const h = Math.min(n, run.maxhp - run.hp); run.hp += h; if (h > 0) sfx("heal"); return h; }
+function changeMaxHp(n) { run.maxhp = Math.max(10, run.maxhp + n); if (n > 0) run.hp += n; run.hp = Math.min(run.hp, run.maxhp); }
+const randomCardId = (rar, fam) => pick(REWARD_IDS.filter(id => CARDS[id].r === rar && (!fam || CARDS[id].f === fam)));
+const eventRes = s => { run.pending.res = s; saveRun(); };
+function offerCards(title, ids, lead = "") {
+  openModal({
+    title, cards: ids.map(id => ({ id, up: false })), n: 1, cancel: true, skip: true,
+    onDone: ([c]) => { addCard(c.id); sfx("cardAdd"); eventRes(`${lead}You take ${cardName(c)}.`); },
+    onCancel: () => eventRes(`${lead}You leave the cards.`)
+  });
+}
+function pickFromDeck(title, filter, n, onDone, upTo) {
+  const cards = run.deck.filter(filter);
+  if (!cards.length) { eventRes("You have no cards that qualify."); return; }
+  openModal({ title, cards, n: Math.min(n, cards.length), upTo, cancel: true, onDone });
+}
+function upgradeRandom(n, filter = () => true) {
+  const out = shuffle(run.deck.filter(c => canUpgrade(c) && filter(c))).slice(0, n);
+  out.forEach(upgradeCard); if (out.length) sfx("upgrade");
+  return out.map(cardName);
+}
+function transformCard(c) {
+  const r = D(c).r === "B" ? "C" : D(c).r, id = randomCardId(r);
+  run.deck.splice(run.deck.indexOf(c), 1); addCard(id); sfx("cardAdd"); return CARDS[id].n;
+}
+function relicOrScrap() {
+  const pool = unownedRelics();
+  if (!pool.length) return `Nothing left to find but scrap. +${scrapUp(100)} Scrap.`;
+  const id = pick(pool); grantRelic(id); sfx("relic"); return `You find the ${RELICS[id].n} relic.`;
+}
+function raiseAlert(n) { for (let i = 0; i < n; i++) { run.alert++; if (run.alert % 8 === 0) { run.ambushDue++; if (run.zone === 3) spawnPatrol(); } } }
+function revealAround(x, y, r) { for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (inMap(x + dx, y + dy)) tileAt(x + dx, y + dy).seen = true; }
+function eventFight(enc, kind, bonus) { run.pending = { screen: "combat", kind, enc, eventBonus: bonus }; saveRun(); openPending(); }
+function addNextFight(o) { const nf = run.nextFight = run.nextFight || {}; for (const k in o) nf[k] = (nf[k] || 0) + o[k]; saveRun(); }
+const nextFightText = nf => [nf.block && `+${nf.block} Block`, nf.str && `+${nf.str} Strength`, nf.energy && `+${nf.energy} Energy`, nf.draw && `draw ${nf.draw} extra`, nf.weakAll && `enemies Weak ${nf.weakAll}`, nf.vulnAll && `enemies Vulnerable ${nf.vulnAll}`, nf.radAll && `enemies Radiation ${nf.radAll}`].filter(Boolean).join(", ");
+function applyNextFight(nf) {
+  if (nf.block) { C.P.block += nf.block; addFloat(C.P, `+${nf.block} Block`, "#9cc8ff"); }
+  if (nf.str) applyStatus(C.P, "str", nf.str);
+  for (const [k, s] of [["weakAll", "weak"], ["vulnAll", "vuln"], ["radAll", "rad"]]) if (nf[k]) for (const e of livingEnemies()) applyStatus(e, s, nf[k]);
+  C.banner = { t: 1.6, text: nextFightText(nf) };
+}
+const sporeCards = () => run.deck.filter(c => c.id === "spore").length;
+const threeCards = rar => { const ids = []; while (ids.length < 3) { const id = randomCardId(rar); if (!ids.includes(id)) ids.push(id); } return ids; };
+const NOTHING = { label: "Leave", fn: () => "You move on." };
 const EVENTS = {
   probe: {
-    img: "probe", title: "Crashed Probe", text: "A battered survey probe lies half-buried in the dust, its hatch still warm.",
+    zone: 1, img: "probe", title: "Crashed Probe", text: "A battered survey probe lies half-buried in the dust, its hatch still warm.",
     choices: [
       { label: "Take a random relic", fn: () => { const pool = unownedRelics(); if (pool.length) { const id = pick(pool); grantRelic(id); return `You pull the ${RELICS[id].n} relic from the wreck.`; } return `Nothing useful left. +${gainScrap(60)} Scrap.`; } },
       { label: "Strip it for 60 Scrap", fn: () => `You strip the probe for parts. +${gainScrap(60)} Scrap.` }
     ]
   },
   pool: {
-    img: "sporePool", title: "Spore Pool", text: "A glowing pool of spores bubbles at the edge of the landing zone. It smells sweet.",
+    zone: 2, img: "sporePool", title: "Spore Pool", text: "A glowing pool of spores bubbles in a clearing of the Spore Wilds. It smells sweet.",
     choices: [
       { label: "Drink: heal 15", fn: () => { const h = Math.min(15, run.maxhp - run.hp); run.hp += h; return `The spores taste like honey. +${h} HP.`; } },
       {
@@ -1456,13 +1663,170 @@ const EVENTS = {
     ]
   },
   mouse: {
-    img: "mouse", title: "Stranded Mouse", text: "A tiny alien creature cowers under a rock, one leg caught in a crack.",
+    zone: 1, img: "mouse", title: "Stranded Mouse", text: "A tiny alien creature cowers under a rock, one leg caught in a crack.",
     choices: [
       { label: "Take it along: add Mouse Helper to the deck", fn: () => { addCard("mouseHelper"); return "The mouse scampers into your pack. Mouse Helper added."; } },
       { label: "Leave it: nothing happens", fn: () => "You leave the mouse where it is." }
     ]
-  }
+  },
+  // ---- Zone 1: Landing Zone
+  wreckage: {
+    zone: 1, img: "wreckage", title: "Ship Wreckage", text: "The tail section of your landing craft lies half-buried in the dust, still ticking as it cools.",
+    choices: [
+      { label: "Strip the hull: +45 Scrap", fn: () => `You pry loose what's still good. +${scrapUp(45)} Scrap.` },
+      { label: "Raid the med-bay: heal 20", fn: () => `The med-kits still work. +${heal(20)} HP.` },
+      { label: "Pull the reactor rod: take 8 damage, Hot Rock+", fn: () => { if (hurt(8)) return null; addCard("hotRock", true); sfx("cardAdd"); return "The rod sears your hands. -8 HP. Hot Rock+ added."; } }
+    ]
+  },
+  crater: {
+    zone: 1, img: "crater", title: "Meteor Crater", text: "A fresh crater smokes at the edge of your path. Something at the bottom glitters silver.",
+    choices: [
+      { label: "Climb down and mine it: take 6 damage, +2 Silver", fn: () => { if (hurt(6)) return null; oreUp("ag", 2); return "The slope gives way on the climb out. -6 HP, +2 Silver."; } },
+      { label: "Scan it from the rim: upgrade a random card", fn: () => { const n = upgradeRandom(1); return n.length ? `The scan sharpens your kit. ${n[0]} upgraded.` : "The scan finds nothing to improve."; } },
+      { label: "Leave it", fn: () => "You leave the crater to cool." }
+    ]
+  },
+  supplyDrop: {
+    zone: 1, img: "supplyDrop", title: "Stray Supply Drop", text: "A crate from the orbital fleet hangs from a torn parachute, snagged on a rock spire.",
+    choices: [
+      { label: "Open the crate: choose 1 of 3 cards", fn: () => { offerCards("Choose a card from the crate", threeCards("U")); return null; } },
+      { label: "Salvage the parachute rig: +5 Max HP", fn: () => { changeMaxHp(5); sfx("heal"); return "The harness makes a fine plate carrier. +5 Max HP."; } }
+    ]
+  },
+  crawlerNest: {
+    zone: 1, img: "crawlerNest", title: "Crawler Nest", text: "Dozens of pale eggs pulse in a hollow under the rocks. Something larger skitters nearby.",
+    choices: [
+      { label: "Clear the nest: fight 3 Crawlers, +2 Silver", fn: () => { eventFight(["crawler", "crawler", "crawler"], "battle", { ore: { ag: 2 } }); return null; } },
+      { label: "Scrape the egg resin: +35 Scrap, add a Spore", fn: () => { addCard("spore"); sfx("spore"); return `The resin sells well, but it clings to your pack. +${scrapUp(35)} Scrap, Spore added.`; } },
+      { label: "Sneak around it", fn: () => "You tiptoe past the nest." }
+    ]
+  },
+  tradeDrone: {
+    zone: 1, img: "tradeDrone", title: "Stranded Trade Drone", text: "A merchant drone lies on its side, one rotor buzzing weakly. Its cargo hatch is sealed.",
+    choices: [
+      { label: "Repair it (10 Copper)", req: () => run.ore.cu < 10 ? "Need 10 Copper" : null, fn: () => { run.ore.cu -= 10; return `The drone whirs up and hands over a gift. ${relicOrScrap()}`; } },
+      { label: "Kick the hatch open", fn: () => rng.next() < .4 ? `The hatch pops. +${scrapUp(60)} Scrap.` : hurt(6) ? null : `A spring-loaded panel clips you. -6 HP, but +${scrapUp(15)} Scrap spills out.` },
+      { label: "Leave it", fn: () => "You leave the drone to its buzzing." }
+    ]
+  },
+  singingRocks: {
+    zone: 1, img: "singingRocks", title: "Singing Rocks", text: "Wind moans through hollow stone pillars in a slow, strange melody. Your thoughts sharpen.",
+    choices: [
+      { label: "Sit and listen: upgrade a card of your choice", fn: () => { pickFromDeck("Upgrade a card", canUpgrade, 1, ([c]) => { upgradeCard(c); sfx("upgrade"); eventRes(`The melody settles in your head. ${cardName(c)} upgraded.`); }); return null; } },
+      { label: "Snap off a crystal: +2 Silver, -3 Max HP", fn: () => { changeMaxHp(-3); oreUp("ag", 2); return "The crystal rings like a bell, then goes dull. +2 Silver, -3 Max HP."; } },
+      { label: "Move on", fn: () => "You walk on, the tune following you." }
+    ]
+  },
+  // ---- Zone 2: Spore Wilds
+  fairyRing: {
+    zone: 2, img: "fairyRing", title: "Mushroom Ring", text: "A perfect circle of glowing caps. Inside it, the air shimmers like heat haze.",
+    choices: [
+      { label: "Step inside: transform up to 2 cards", fn: () => { pickFromDeck("Transform up to 2 cards", c => !isStatus(c), 2, picked => { const n = picked.map(transformCard); eventRes(n.length ? `The haze reshapes your kit: ${n.join(", ")}.` : "You step out unchanged."); }, true); return null; } },
+      { label: "Eat a cap: heal 15, add a Spore", fn: () => { const h = heal(15); addCard("spore"); sfx("spore"); return `Warm and earthy. +${h} HP, Spore added.`; } },
+      { label: "Leave", fn: () => "You walk around the ring." }
+    ]
+  },
+  overgrownCache: {
+    zone: 2, img: "overgrownCache", title: "Overgrown Cache", text: "An old expedition crate, swallowed by fungus. You can see the latch through the growth.",
+    choices: [
+      { label: "Hack through the fungus: take 7 damage, +50 Scrap, pick a card", fn: () => { if (hurt(7)) return null; offerCards("Choose a card from the crate", rollCards("elite", 3), `Spores sting your arms. -7 HP, +${scrapUp(50)} Scrap. `); return null; } },
+      { label: "Burn the fungus away: remove all Spores", req: () => sporeCards() ? null : "No Spore cards", fn: () => { const n = sporeCards(); run.deck = run.deck.filter(c => c.id !== "spore"); sfx("cleanse"); return `The fungus and the crate go up together. ${n} Spore card${n === 1 ? "" : "s"} removed.`; } }
+    ]
+  },
+  cocoon: {
+    zone: 2, img: "cocoon", title: "Silk Cocoon", text: "A cocoon the size of a dog hangs from a fungal stalk. Something inside is moving.",
+    choices: [
+      { label: "Cut it open", fn: () => { if (rng.next() < .5) { eventFight(["sporeBat", "sporeBat"], "battle"); return null; } addCard("fetch"); sfx("cardAdd"); return `A docile glowworm crawls out and follows you. +${heal(5)} HP, Fetch! added.`; } },
+      { label: "Leave it hanging", fn: () => "You leave the cocoon to hatch on its own." }
+    ]
+  },
+  pollenGeyser: {
+    zone: 2, img: "pollenGeyser", title: "Pollen Geyser", text: "The ground hisses, then erupts in a towering plume of golden pollen.",
+    choices: [
+      { label: "Ride the blast: take 5 damage, reveal the lair area", fn: () => { if (hurt(5)) return null; revealAround(4, 10, 3); sfx("discover"); return "The plume lifts you high enough to see. -5 HP, the area around the lair is revealed."; } },
+      { label: "Bottle the pollen: next fight, enemies Weak 2", fn: () => { addNextFight({ weakAll: 2 }); return "You cork a flask of the stuff. Next fight: enemies start Weak."; } }
+    ]
+  },
+  mossPool: {
+    zone: 2, img: "mossPool", title: "Glowing Moss Pool", text: "Warm water glows blue-green under a carpet of moss. It feels wonderful on your aching legs.",
+    choices: [
+      { label: "Bathe: heal to full, add 2 Spores", fn: () => { const h = heal(run.maxhp); addCard("spore"); addCard("spore"); sfx("spore"); return `You soak until the aches vanish. +${h} HP, 2 Spores added.`; } },
+      { label: "Harvest the moss: upgrade 2 random Skills", fn: () => { const n = upgradeRandom(2, c => D(c).t === "skill"); return n.length ? `The moss makes a fine polish. Upgraded: ${n.join(", ")}.` : "You have no Skills left to improve."; } },
+      { label: "Leave", fn: () => "You leave the pool glowing behind you." }
+    ]
+  },
+  lostPup: {
+    zone: 2, img: "lostPup", title: "Lost Pup", text: "A Rot Hound pup whimpers under a root, one paw caught in a snare. It eyes you warily.",
+    choices: [
+      { label: "Free its paw: take 4 damage", fn: () => { if (hurt(4)) return null; if (!hasRelic("dogR")) { grantRelic("dogR"); sfx("relic"); return "It nips you, then licks the wound. -4 HP. The Dog joins you."; } addCard("goodBoy", true); sfx("cardAdd"); return "It nips you, then licks the wound. -4 HP. Good Boy+ added."; } },
+      { label: "Toss it scraps (20 Scrap)", req: () => run.scrap < 20 ? "Need 20 Scrap" : null, fn: () => { run.scrap -= 20; addNextFight({ block: 10 }); return "It wolfs the scraps and shadows you. Next fight: +10 Block."; } },
+      { label: "Leave it", fn: () => "You leave the pup to its snare." }
+    ]
+  },
+  swapMeet: {
+    zone: 2, img: "swapMeet", title: "Junk Trader", text: "A scrap-trading drone hovers over a blanket of salvage, fungus creeping up its legs. \"Swap? Swap?\" it chirps.",
+    choices: [
+      { label: "Trade a relic for another, +50 Scrap", req: () => !run.relics.length ? "No relic to trade" : !unownedRelics().length ? "No relics to swap for" : null, fn: () => { const give = pick(run.relics), get = pick(unownedRelics()); run.relics.splice(run.relics.indexOf(give), 1); grantRelic(get); sfx("relic"); return `${RELICS[give].n} for ${RELICS[get].n}. "Swap!" +${scrapUp(50)} Scrap.`; } },
+      { label: "Trade 15 Copper for 1 Gold", req: () => run.ore.cu < 15 ? "Need 15 Copper" : null, fn: () => { run.ore.cu -= 15; oreUp("au", 1); return "The drone weighs it and nods. -15 Copper, +1 Gold."; } },
+      { label: "Sell all your Silver (30 Scrap each)", req: () => run.ore.ag < 1 ? "Need 1 Silver" : null, fn: () => { const n = run.ore.ag; run.ore.ag = 0; return `"Shiny!" -${n} Silver, +${scrapUp(30 * n)} Scrap.`; } }
+    ]
+  },
+  // ---- Zone 3: Hive Gate
+  hiveTerminal: {
+    zone: 3, img: "hiveTerminal", title: "Hive Terminal", text: "An organic console pulses in the wall, glyphs crawling across a membrane screen.",
+    choices: [
+      { label: "Wipe the alarm log: clear Alert, remove a patrol", fn: () => { run.alert = 0; run.ambushDue = 0; const ps = run.map.patrols || [], had = ps.length > 0; if (had) ps.splice(rr(0, ps.length - 1), 1); sfx("cleanse"); return "The hive forgets you were ever here. Alert cleared" + (had ? ", and a patrol is called off." : "."); } },
+      { label: "Download the gate layout: reveal the map, +4 Alert", fn: () => { run.hiveMap = true; raiseAlert(4); sfx("discover"); return "The whole Gate unfolds in your visor, patrols included. The download is noisy: +4 Alert."; } }
+    ]
+  },
+  larvaNursery: {
+    zone: 3, img: "larvaNursery", title: "Larva Nursery", text: "Rows of translucent sacs line the chamber walls. In the middle, a pool of glittering royal jelly.",
+    choices: [
+      { label: "Purge the nursery: fight 2 Larva Clusters (elite)", fn: () => { eventFight(["larvaCluster", "larvaCluster"], "elite"); return null; } },
+      { label: "Steal the royal jelly: +8 Max HP, +8 Alert", fn: () => { changeMaxHp(8); raiseAlert(8); sfx("heal"); return "It tastes like power. +8 Max HP. The sacs shriek: +8 Alert, an ambush is coming."; } },
+      { label: "Back away", fn: () => "You slip out without a sound." }
+    ]
+  },
+  fallenMiner: {
+    zone: 3, img: "fallenMiner", title: "Fallen Miner", text: "A miner from an earlier expedition, sealed in amber resin. Their pack is still on their back.",
+    choices: [
+      { label: "Cut out their gear: take 10 damage, pick a Rare", fn: () => { if (hurt(10)) return null; offerCards("Choose a card from their pack", threeCards("R"), "The resin burns. -10 HP. "); return null; } },
+      { label: "Take their tags: +100 Scrap", fn: () => `Someone will pay for these. +${scrapUp(100)} Scrap.` },
+      { label: "Bury them properly: remove a card", fn: () => { pickFromDeck("Remove a card from your deck", () => true, 1, ([c]) => { run.deck.splice(run.deck.indexOf(c), 1); eventRes(`You lay them to rest and let ${cardName(c)} go with them.`); }); return null; } }
+    ]
+  },
+  psionicEcho: {
+    zone: 3, img: "psionicEcho", title: "Psionic Echo", text: "A voice that sounds like your own whispers from the fog, offering to help.",
+    choices: [
+      { label: "Let it in: duplicate a card, -6 Max HP", fn: () => { pickFromDeck("Duplicate a card", c => !isStatus(c), 1, ([c]) => { run.deck.push(JSON.parse(JSON.stringify(c))); changeMaxHp(-6); sfx("cardAdd"); eventRes(`It copies ${cardName(c)} and takes something in return. -6 Max HP.`); }); return null; } },
+      { label: "Push it back: take 10 damage, next fight +3 Strength", fn: () => { if (hurt(10)) return null; addNextFight({ str: 3 }); return "You drive it out, and the anger stays. -10 HP. Next fight: +3 Strength."; } }
+    ]
+  },
+  acidMoat: {
+    zone: 3, img: "acidMoat", title: "Acid Moat", text: "A relic gleams on a ledge across a channel of hissing green acid.",
+    choices: [
+      { label: "Wade across: take 14 damage", fn: () => hurt(14) ? null : `The acid eats through your boots. -14 HP. ${relicOrScrap()}` },
+      { label: "Lay down a Silver stepping-stone", req: () => run.ore.ag < 1 ? "Need 1 Silver" : null, fn: () => { run.ore.ag--; return `The Silver holds just long enough. -1 Silver. ${relicOrScrap()}`; } },
+      { label: "Leave it", fn: () => "Not worth the burns." }
+    ]
+  },
+  obelisk: {
+    zone: 3, img: "obelisk", title: "Glyph Obelisk", text: "A tall black stone carved with glowing hive glyphs stands in the fog. The glyphs rearrange themselves as you watch.",
+    choices: [
+      { label: "Press your hand to the glyphs: upgrade 3 cards, take 12 damage", fn: () => { if (hurt(12)) return null; const n = upgradeRandom(3); return `The glyphs burn into your palm. -12 HP.${n.length ? ` Upgraded: ${n.join(", ")}.` : " Nothing left to upgrade."}`; } },
+      { label: "Trace a single glyph: next fight +1 Energy, draw 2", fn: () => { addNextFight({ energy: 1, draw: 2 }); return "One shape stays in your mind. Next fight: +1 Energy and 2 extra cards on turn 1."; } },
+      { label: "Walk away", fn: () => "You turn your eyes from the stone." }
+    ]
+  },
+  sealedChest: {
+    zone: 3, img: "sealedChest", title: "Sealed Chest", text: "An ornate chest sits alone in a hive tunnel, oddly clean, with no resin on it at all.",
+    choices: [
+      { label: "Pry it open", fn: () => { const r = rng.next(); if (r < 1 / 3) return `The lid gives. ${relicOrScrap()}`; if (r < 2 / 3) return `Inside, a stash of salvage. +${scrapUp(120)} Scrap.`; eventFight(["mimic"], "battle", { ore: { au: 1 } }); return null; } },
+      { label: "Leave it alone", fn: () => "Too clean. You leave it be." }
+    ]
+  },
 };
+for (const id in EVENTS) { const k = "ev_" + EVENTS[id].img; ART_FILES[k] = ART_FILES[k] || `assets/event-${EVENTS[id].img}.png`; }
 
 // ---------------------------------------------------------------- ui toolkit
 const M = { x: -1, y: -1 };
@@ -1493,7 +1857,7 @@ function btn(x, y, w, h, label, fn, o = {}) {
   const ic = o.icon && artReady("ui");
   T(label, x + w / 2 + (ic ? 10 : 0), y + h / 2 + 1, o.size || 16, o.off ? "#667" : "#fff", "center", true);
   if (ic) uiIcon(o.icon[0], o.icon[1], x + 18, y + h / 2, 22);
-  if (!o.off) hit(x, y, w, h, fn);
+  if (!o.off) hit(x, y, w, h, () => { sfx("click"); fn(); });
 }
 function setTip(items, ax, ay) { tip = { items, ax, ay }; }
 function drawTip() {
@@ -1677,7 +2041,7 @@ function drawIntentIcon(kind, x, y) {
 function intentInfo(e) {
   const m = moveOf(e), kinds = [];
   let num = "";
-  if (m.dmg) { const d = calcDmg(e, C.P, baseDmg(m)); kinds.push("attack"); num = m.hits > 1 ? `${d}×${m.hits}` : String(d); }
+  if (m.dmg) { const d = calcDmg(e, C.P, baseDmg(m, e)); kinds.push("attack"); num = m.hits > 1 ? `${d}×${m.hits}` : String(d); }
   if (m.block || m.allyBlock || m.allBlock || m.reflect) kinds.push("block");
   if (m.apply || m.addDisc || m.breakBlock || m.drainEnergy) kinds.push("debuff");
   if (m.str || m.heal || m.allyStr || m.thornsTemp || m.healAlly) kinds.push("buff");
@@ -1686,6 +2050,20 @@ function intentInfo(e) {
   return { m, kinds, num };
 }
 const enemyArtKey = id => "e_" + (id.startsWith("drone") ? "drone" : id);
+// starts loading the art for every monster a zone can field (and whatever they summon), so it's ready before the first fight
+function preloadEnemyArt(list) {
+  const ids = new Set();
+  const add = v => {
+    if (Array.isArray(v)) return v.forEach(add);
+    if (v && typeof v === "object") return Object.values(v).forEach(add);
+    if (typeof v !== "string" || !ENEMIES[v] || ids.has(v)) return;
+    ids.add(v);
+    const d = ENEMIES[v];
+    for (const m of [...(d.moves || []), d.overdrive || {}, ...(d.phases || []).flatMap(p => [p, ...p.moves])]) if (m.summon) add(m.summon);
+  };
+  add(list);
+  for (const id of ids) artReady(enemyArtKey(id));
+}
 function enemyTop(e) {
   const d = e.def;
   return artReady(enemyArtKey(e.id)) ? d.h * (d.boss ? 1.15 : 1.25) * (d.artScale || 1) + (d.fly ? d.h * .2 + 6 : 0) : d.h;
@@ -1706,6 +2084,7 @@ function drawEnemyBody(e, x, y) {
     if (e.hitT > 0) flashSprite(dx - 6, dy - 6, w + 12, th + 12, "#ffffff", e.hitT * 2, g => g.drawImage(img, tb.x, tb.y, tb.w, tb.h, dx, dy, w, th));
     return true;
   }
+  if (artPending(key)) return true;   // art is on its way: show nothing for that moment, never the placeholder
   ctx.lineWidth = 3; ctx.strokeStyle = "#0d0f14"; ctx.fillStyle = col;
   if (d.shape === "blob") {
     const sq = Math.sin(t * 3 + e.uid) * 2;
@@ -1953,7 +2332,8 @@ function drawEnemy(e) {
     ix += 26;
   });
   if (info.num) {
-    T(info.num, ix - 6, iy, 20, "#ff9a8a", "left", true);
+    ctx.font = `bold 20px ${FONT}`; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = 5; ctx.strokeStyle = "#1a0505"; ctx.strokeText(info.num, ix - 6, iy);   // dark outline: readable on the orange sky and the dark zones alike
+    T(info.num, ix - 6, iy, 20, "#ff2418", "left", true);
     tipHit(ix - 10, iy - 15, numW + 8, 30, `int:${e.uid}:num`);
     if (over(ix - 10, iy - 15, numW + 8, 30)) setTip(intentTips(e, info, "attack"), e.x + 44, iy);
   }
@@ -2188,8 +2568,8 @@ function selectCard(i) {
   const c = C.hand[i];
   if (!c) return;
   if (C.sel === i) { C.sel = -1; return; }
-  if (D(c).unplayable || !canPay(c)) { shakeCard(c); return; }
-  C.sel = i;
+  if (D(c).unplayable || !canPay(c)) { shakeCard(c); sfx("denied"); return; }
+  C.sel = i; sfx("select");
 }
 function openPile(title, arr) {
   const cards = arr.slice();
@@ -2200,6 +2580,7 @@ function openDeck() {
   const cards = run.deck.slice().sort((a, b) => FAM_ORDER.indexOf(D(a).f) - FAM_ORDER.indexOf(D(b).f) || RAR_ORD[D(a).r] - RAR_ORD[D(b).r] || D(a).n.localeCompare(D(b).n));
   openModal({ title: `Deck (${cards.length})`, cards, n: 0, cancel: true });
 }
+function closeModal() { const m = S.modal; S.modal = null; if (m && m.onCancel) m.onCancel(); }
 function openModal(m) { S.scroll = 0; S.modal = Object.assign({ picked: [], cancel: false, n: 0 }, m); }
 
 // generic card grid used by deck/pile viewers, camp upgrade, removals, and in-combat choices
@@ -2226,11 +2607,11 @@ function drawGrid(g, isChoose) {
   ctx.restore();
   if (g.preview === "upgrade" && hoverCard && canUpgrade(hoverCard)) {
     T("Before", 830, 100, 14, "#9ab", "center", true); drawCard(hoverCard, 830, 205, 1);
-    T("After", 830, 330, 14, "#8dff95", "center", true); drawCard({ id: hoverCard.id, up: true }, 830, 435, 1);
+    T("After", 830, 330, 14, "#8dff95", "center", true); drawCard(upgradedPreview(hoverCard), 830, 435, 1);
   }
   if (maxScroll > 0) T("Scroll for more", 480, 598, 12, "#789", "center");
-  if (g.n > 1 && g.picked.length === g.n) btn(420, 592, 120, 38, "Confirm", () => { if (isChoose) finishChoose(); else { const m = S.modal; S.modal = null; m.onDone(m.picked); } }, { bg: "#2a4a2a", bd: "#8aff9a" });
-  if (g.cancel) btn(820, 592, 120, 38, g.n > 0 ? "Cancel" : "Close", () => { S.modal = null; });
+  if (g.n > 1 && (g.picked.length === g.n || g.upTo)) btn(420, 592, 120, 38, "Confirm", () => { if (isChoose) finishChoose(); else { const m = S.modal; S.modal = null; m.onDone(m.picked); } }, { bg: "#2a4a2a", bd: "#8aff9a" });
+  if (g.cancel) btn(820, 592, 120, 38, g.skip ? "Skip" : g.n > 0 ? "Cancel" : "Close", closeModal);
 }
 function gridPick(g, c, isChoose) {
   if (g.n === 1) { g.picked = [c]; if (isChoose) finishChoose(); else { const m = S.modal; S.modal = null; m.onDone([c]); } return; }
@@ -2243,8 +2624,8 @@ function buyForge(it) {
   const lv = save.forge[it.key];
   if (lv >= it.max) return;
   const cost = it.cost(lv);
-  if (save.bank < cost) { S.toast = { text: "Not enough Scrap", t: 1.6 }; return; }
-  save.bank -= cost; save.forge[it.key]++; writeSave();
+  if (save.bank < cost) { S.toast = { text: "Not enough Scrap", t: 1.6 }; sfx("denied"); return; }
+  save.bank -= cost; save.forge[it.key]++; sfx("upgrade"); writeSave();
 }
 function startNewRun() {
   if (save.run && S.confirmAbandon <= 0) { S.confirmAbandon = 4; return; }
@@ -2359,6 +2740,7 @@ function drawHiveMapIcon(cx, cy, r, alpha) {
 function drawPatrolIcon(cx, cy, hgt) {
   const key = "e_hiveGuard", img = artReady(key);
   if (img) { const tb = trimBox(key, img), sc = hgt / tb.h, w = tb.w * sc; ctx.drawImage(img, tb.x, tb.y, tb.w, tb.h, cx - w / 2, cy - hgt / 2, w, hgt); return; }
+  if (artPending(key)) return;
   const s = hgt / 44; ctx.save(); ctx.translate(cx, cy); ctx.lineWidth = 2; ctx.strokeStyle = "#0d0f14";
   ctx.beginPath(); ctx.arc(0, 2 * s, 17 * s, Math.PI, TAU); ctx.lineTo(15 * s, 18 * s); ctx.lineTo(-15 * s, 18 * s); ctx.closePath(); ctx.fillStyle = "#2a2236"; ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(0, -18 * s); ctx.lineTo(4 * s, -26 * s); ctx.lineTo(-4 * s, -26 * s); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -2421,6 +2803,7 @@ function mapHud() {
     T(vis.length || run.hiveMap ? `Patrols: ${vis.length} (hunting: ${vis.filter(hunting).length})` : "Patrols: ?", 540, 216, 13, "#ff6a5a", "left", true);
   }
   drawRelicRow(526, 236);
+  if (run.nextFight && nextFightText(run.nextFight)) T("Next fight: " + nextFightText(run.nextFight), 540, 260, 12, "#9ad0ff", "left", true);
   // legend (Zone 2 adds spores and the Antidote; Zone 3 adds five entries and goes to 3 columns)
   T("Legend", 540, 276, 14, "#cfc6bb", "left", true);
   const leg = ["battle", "elite", "event", "camp", "trader", "cache", "cu", "ag", "au", "boss"];
@@ -2447,6 +2830,7 @@ function mapHud() {
 }
 function drawMap() {
   const tint = ZONE_TINT[run.zone - 1], m = run.map;
+  if (S.artZone !== run.zone) { S.artZone = run.zone; preloadEnemyArt(ENC["z" + run.zone]); }
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, tint[1]); g.addColorStop(1, tint[0]); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   rp(GX - 6, GY - 6, MW * TILE + 12, MH * TILE + 12, 8); ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.fill();
   let hoverTile = null;
@@ -2603,7 +2987,7 @@ function drawReward() {
       drawRelic(id, x, y - 50, 32, false);
       T(RELICS[id].n, x, y + 10, 18, "#fff", "center", true);
       ctx.font = `13px ${FONT}`; wrap(RELICS[id].d, 210).forEach((l, k) => T(l, x, y + 40 + k * 17, 13, "#cfc6bb", "center"));
-      hit(x - 120, y - 110, 240, 220, () => { grantRelic(id); run.pending = null; saveRun(); S.screen = "map"; });
+      hit(x - 120, y - 110, 240, 220, () => { grantRelic(id); sfx("relic"); run.pending = null; saveRun(); S.screen = "map"; });
     });
     return;
   }
@@ -2621,7 +3005,7 @@ function drawReward() {
     const card = { id, up: false }, x = x0 + i * sp, y = 350, hv = over(x - 72, y - 102, 144, 204);
     drawCard(card, x, y - (hv ? 10 : 0), hv ? 1.3 : 1.2);
     if (hv) hovTip = [card, x + 90, y - 60];
-    hit(x - 72, y - 102, 144, 204, () => { addCard(id); leave(); });
+    hit(x - 72, y - 102, 144, 204, () => { addCard(id); sfx("cardAdd"); leave(); });
   });
   if (hovTip) setTip(cardTips(hovTip[0]), hovTip[1], hovTip[2]);
   btn(380, 540, 200, 48, p.nextZone ? "Descend" : "Skip", leave, { size: 18 });
@@ -2638,13 +3022,14 @@ function drawCamp() {
     if (!off) hit(x, 190, 300, 240, fn);
   };
   const heal = Math.ceil(run.maxhp * .3);
-  big(130, "Rest", `Heal ${heal} HP (30% of max)`, () => { const h = Math.min(heal, run.maxhp - run.hp); run.hp += h; S.toast = { text: `Rested: +${h} HP`, t: 2.5 }; completeNode(); });
-  big(530, "Workbench", "Upgrade a card (3 Copper) or fuse two cards into one with ore.", () => { run.pending = { screen: "bench" }; S.bench = { sel: [] }; S.scroll = 0; S.screen = "bench"; saveRun(); });
+  big(130, "Rest", `Heal ${heal} HP (30% of max)`, () => { const h = Math.min(heal, run.maxhp - run.hp); run.hp += h; S.toast = { text: `Rested: +${h} HP`, t: 2.5 }; sfx("rest"); completeNode(); });
+  big(530, "Workbench", "Upgrade a card (20 Copper) or fuse two cards into one with ore.", () => { run.pending = { screen: "bench" }; S.bench = { sel: [] }; S.scroll = 0; S.screen = "bench"; saveRun(); });
   mapHud2();
 }
 
 // ---------------------------------------------------------------- workbench
-const fuseCost = (a, b) => { const r = Math.max(RAR_RANK[D(a).r], RAR_RANK[D(b).r]); return r <= 1 ? { cu: 4 } : r === 2 ? { cu: 2, ag: 1 } : { ag: 2, au: 1 }; };
+const UPGRADE_CU = 20;
+const fuseCost = (a, b) => { const r = Math.max(RAR_RANK[D(a).r], RAR_RANK[D(b).r]); return r <= 1 ? { cu: 30 } : r === 2 ? { cu: 30, ag: 2 } : { cu: 40, ag: 3, au: 1 }; };
 const canAffordOre = cost => ORE_KEYS.every(k => !cost[k] || run.ore[k] >= cost[k]);
 const oreCostText = cost => ORE_KEYS.filter(k => cost[k]).map(k => `${cost[k]} ${ORE[k].n}`).join(" + ");
 function drawBench() {
@@ -2684,20 +3069,23 @@ function drawBench() {
   const both = sel.length === 2, okFuse = both && sel.every(isFusable);
   let result = null, fcost = null;
   if (okFuse) { result = { fuse: [{ id: sel[0].id, up: sel[0].up }, { id: sel[1].id, up: sel[1].up }] }; fcost = fuseCost(sel[0], sel[1]); }
-  T("Result", 752, 292, 13, "#9ab", "center", true);
-  if (result) drawCard(result, 752, 390, .85); else { ctx.setLineDash([6, 5]); ctx.strokeStyle = "rgba(255,255,255,.2)"; ctx.lineWidth = 2; rp(752 - 51, 390 - 72, 102, 144, 8); ctx.stroke(); ctx.setLineDash([]); }
+  const upPrev = !result && sel.length === 1 && canUpgrade(sel[0]);
+  T(upPrev ? "After upgrade" : "Result", 752, 292, 13, upPrev ? "#8dff95" : "#9ab", "center", true);
+  if (upPrev) drawCard(upgradedPreview(sel[0]), 752, 390, .85);
+  else if (result) drawCard(result, 752, 390, .85); else { ctx.setLineDash([6, 5]); ctx.strokeStyle = "rgba(255,255,255,.2)"; ctx.lineWidth = 2; rp(752 - 51, 390 - 72, 102, 144, 8); ctx.stroke(); ctx.setLineDash([]); }
   let msg = "";
   if (both && !okFuse) msg = "Powers, Status and fused cards can't be fused.";
   else if (okFuse) msg = `Fuse cost: ${oreCostText(fcost)}`;
-  else if (sel.length === 1) msg = canUpgrade(sel[0]) ? "Upgrade cost: 3 Copper" : "Already upgraded.";
+  else if (sel.length === 1) msg = canUpgrade(sel[0]) ? `Upgrade cost: ${UPGRADE_CU} Copper` : "Already upgraded.";
   T(msg, 752, 484, 14, okFuse && !canAffordOre(fcost) ? "#ff8a7a" : "#ffe27a", "center", true);
-  const canUp = sel.length === 1 && canUpgrade(sel[0]) && run.ore.cu >= 3;
-  btn(574, 504, 172, 44, "Upgrade · 3 Cu", () => {
-    run.ore.cu -= 3; upgradeCard(sel[0]); B.sel = []; saveRun(); S.toast = { text: "Card upgraded", t: 1.8 };
+  const canUp = sel.length === 1 && canUpgrade(sel[0]) && run.ore.cu >= UPGRADE_CU;
+  btn(574, 504, 172, 44, `Upgrade · ${UPGRADE_CU} Cu`, () => {
+    run.ore.cu -= UPGRADE_CU; upgradeCard(sel[0]); B.sel = []; saveRun(); S.toast = { text: "Card upgraded", t: 1.8 };
   }, { off: !canUp, size: 15, bd: "#8aff9a" });
   const canFu = okFuse && canAffordOre(fcost);
   btn(758, 504, 172, 44, "Fuse", () => {
     for (const k of ORE_KEYS) run.ore[k] -= fcost[k] || 0;
+    sfx("fuse");
     for (const c of sel) run.deck.splice(run.deck.indexOf(c), 1);
     run.deck.push(result); B.sel = []; saveRun(); S.toast = { text: `Fused: ${D(result).n}`, t: 2.2 };
   }, { off: !canFu, size: 16, bd: "#ffb050" });
@@ -2749,8 +3137,8 @@ function drawTrader() {
   if (S.toast) { ctx.globalAlpha = clamp(S.toast.t, 0, 1); T(S.toast.text, 480, 612, 16, "#ff9a8a", "center", true); ctx.globalAlpha = 1; }
   mapHud2();
 }
-function buyCard(c) { if (run.scrap < c.price) { S.toast = { text: "Not enough Scrap", t: 1.6 }; return; } run.scrap -= c.price; c.sold = true; addCard(c.id); saveRun(); }
-function buyRelic(r) { if (run.scrap < r.price) { S.toast = { text: "Not enough Scrap", t: 1.6 }; return; } run.scrap -= r.price; r.sold = true; grantRelic(r.id); saveRun(); }
+function buyCard(c) { if (run.scrap < c.price) { S.toast = { text: "Not enough Scrap", t: 1.6 }; sfx("denied"); return; } sfx("buy"); run.scrap -= c.price; c.sold = true; addCard(c.id); saveRun(); }
+function buyRelic(r) { if (run.scrap < r.price) { S.toast = { text: "Not enough Scrap", t: 1.6 }; sfx("denied"); return; } sfx("buy"); sfx("relic", { delay: .15 }); run.scrap -= r.price; r.sold = true; grantRelic(r.id); saveRun(); }
 function drawEvent() {
   const p = run.pending, ev = EVENTS[p.id]; panelBg("#0e1424", "#06080f", "bgEvent", .4);
   const im = artReady("ev_" + ev.img), ty = im ? 408 : 190;
@@ -2765,10 +3153,13 @@ function drawEvent() {
   ctx.font = `17px ${FONT}`;
   wrap(p.res || ev.text, 700).forEach((l, i) => T(l, 480, ty + i * 24, 17, "#dfe6f2", "center"));
   if (p.res) btn(380, im ? 480 : 400, 200, 52, "Continue", () => completeNode(), { size: 18 });
-  else ev.choices.forEach((c, i) => btn(180, (im ? 470 : 330) + i * (im ? 58 : 76), 600, im ? 50 : 58, c.label, () => {
-    const r = c.fn();
-    if (r != null) { p.res = r; saveRun(); }
-  }, { size: 17, bd: "#9ac0ff" }));
+  else ev.choices.forEach((c, i) => {
+    const why = c.req && c.req();   // a reason string greys the choice out
+    btn(180, (im ? 470 : 330) + i * (im ? 54 : 76), 600, im ? 46 : 58, why ? `${c.label} (${why})` : c.label, () => {
+      const r = c.fn();
+      if (r != null) { p.res = r; saveRun(); }
+    }, { size: 17, bd: "#9ac0ff", off: !!why });
+  });
   mapHud2();
 }
 function drawCache() {
@@ -2815,6 +3206,13 @@ function dbgFight(kind, pickEnc) {
   C = null; S.modal = null; run.cur = null; run.queued = null;
   run.pending = { screen: "combat", kind, enc: pickEnc() }; saveRun(); openPending();
 }
+function dbgEvent(id) {   // open an event on a dummy tile (no tile is marked used), in the event's own zone
+  if (!dbgRun()) return;
+  C = null; S.modal = null; run.queued = null;
+  if (run.zone !== EVENTS[id].zone) { enterZone(EVENTS[id].zone); run.shipRest = false; }
+  run.cur = null; run.pending = { screen: "event", id, res: null }; saveRun(); openPending();
+  S.toast = { text: "Event: " + EVENTS[id].title, t: 2 };
+}
 function drawDebug() {
   const d = S.dbg;
   if (!d.open) { btn(896, 612, 60, 22, "Debug", () => { d.open = true; }, { size: 11, bg: "#3a1a3a", hi: "#5a2a5a", bd: "#ff9ad0" }); return; }
@@ -2845,6 +3243,7 @@ function drawDebug() {
   bt(2, Y + 206, "Boss", () => dbgFight("boss", () => chooseEncounter("boss", 5)), blocked);
   bt(0, Y + 236, "Ambush", () => dbgFight("ambush", () => chooseEncounter("battle", 9)), blocked);
   bt(1, Y + 236, "Patrol", () => dbgFight("patrol", () => pick(ENC.z3.patrol)), blocked);
+  bt(2, Y + 236, "Event ▸", () => { const ids = Object.keys(EVENTS); dbgEvent(ids[(d.ev = ((d.ev ?? -1) + 1) % ids.length)]); }, blocked);   // cycles through every event
   sec("In a fight", Y + 272);
   const inFight = !!C && S.screen === "combat";
   bt(0, Y + 282, "Kill all", R(() => { for (const e of C.enemies) e.hp = 0; }), !inFight);
@@ -2901,13 +3300,18 @@ function frame(now) {
   S.time += dt;
   if (S.toast) { S.toast.t -= dt; if (S.toast.t <= 0) S.toast = null; }
   if (S.confirmAbandon > 0) S.confirmAbandon -= dt;
-  updateMap(dt); pollPad(dt);
+  updateMap(dt); pollPad(dt); updateMusic(dt);
   if (S.screen === "combat" && C) updateCombat(dt);
   draw();
   requestAnimationFrame(frame);
 }
 function mouseXY(e) { S.padMode = false; const r = canvas.getBoundingClientRect(); M.x = (e.clientX - r.left) * W / r.width; M.y = (e.clientY - r.top) * H / r.height; }
 canvas.addEventListener("mousemove", mouseXY);
+for (const ev of ["pointerdown", "keydown"]) window.addEventListener(ev, unlockAudio);
+const soundBtn = document.querySelector(".s6-sound");
+if (soundBtn) { soundBtn.classList.toggle("muted", Snd.mute); soundBtn.addEventListener("click", () => { unlockAudio(); setMute(!Snd.mute); soundBtn.blur(); }); }
+const musicBtn = document.querySelector(".s6-music");
+if (musicBtn) { musicBtn.classList.toggle("muted", Snd.musicOff); musicBtn.addEventListener("click", () => { unlockAudio(); setMusicOff(!Snd.musicOff); musicBtn.blur(); }); }
 canvas.addEventListener("click", e => {
   mouseXY(e);
   for (let i = hits.length - 1; i >= 0; i--) { const h = hits[i]; if (M.x >= h.x && M.x <= h.x + h.w && M.y >= h.y && M.y <= h.y + h.h) { h.fn(); return; } }
@@ -2915,7 +3319,9 @@ canvas.addEventListener("click", e => {
 canvas.addEventListener("contextmenu", e => { e.preventDefault(); if (C && S.screen === "combat") C.sel = -1; });
 canvas.addEventListener("wheel", e => { if (S.modal || (C && C.choose) || S.screen === "bench") { S.scroll += e.deltaY * .6; e.preventDefault(); } }, { passive: false });
 window.addEventListener("keydown", e => {
-  if (e.key === "Escape") { if (S.modal && S.modal.cancel) S.modal = null; else if (C) C.sel = -1; return; }
+  if (e.key === "m" || e.key === "M") { setMute(!Snd.mute); return; }
+  if (e.key === "n" || e.key === "N") { setMusicOff(!Snd.musicOff); return; }
+  if (e.key === "Escape") { if (S.modal && S.modal.cancel) closeModal(); else if (C) C.sel = -1; return; }
   if (S.screen === "map" && run && !S.modal) {
     const dirs = { ArrowLeft: [-1, 0], a: [-1, 0], A: [-1, 0], ArrowRight: [1, 0], d: [1, 0], D: [1, 0], ArrowUp: [0, -1], w: [0, -1], W: [0, -1], ArrowDown: [0, 1], s: [0, 1], S: [0, 1] };
     if (dirs[e.key]) { e.preventDefault(); moveDir(...dirs[e.key]); return; }
@@ -2946,7 +3352,15 @@ function bootFight(key) {
   saveRun(); openPending();
 }
 if (save.run && !(save.run.map && save.run.map.tiles && save.run.ore)) { save.run = null; writeSave(); S.toast = { text: "Old run discarded after update", t: 6 }; }
+function bootEvent(id) {   // ?event=<id>: a debug run that opens that event
+  if (!EVENTS[id]) return;
+  newRun(); run.debug = true; run.pending = null;
+  if (EVENTS[id].zone !== 1) enterZone(EVENTS[id].zone);
+  run.cur = null; run.pending = { screen: "event", id, res: null };
+  saveRun(); openPending();
+}
 if (params.has("fight")) bootFight(params.get("fight"));
+else if (params.has("event")) bootEvent(params.get("event"));
 requestAnimationFrame(frame);
-window.__s6 = { get hits() { return prevHits; }, get run() { return run; }, get C() { return C; }, S, CARDS, RELICS, ENEMIES, save, playCard, endTurn, canAct, finishChoose, costOf, padMove, padA, padB, digTile, canDig, canReach, clickTile, moveDir, confirmMap, updateMap, tileAt, openTrader, openPending, completeNode, enterZone, shipRest, movePatrols, spawnPatrol, patrolAt, hunting, isRevealed, draw, canPay, D, gainOre, step: dt => { S.time += dt; if (C) updateCombat(dt); updateMap(dt); pollPad(dt); } };
+window.__s6 = { EVENTS, newRun, makePending, hurt, raiseAlert, startCombat, onWin, get hits() { return prevHits; }, get run() { return run; }, get C() { return C; }, S, CARDS, RELICS, ENEMIES, save, playCard, endTurn, canAct, finishChoose, costOf, padMove, padA, padB, digTile, canDig, canReach, clickTile, moveDir, confirmMap, updateMap, tileAt, openTrader, openPending, completeNode, enterZone, shipRest, movePatrols, spawnPatrol, patrolAt, hunting, isRevealed, draw, canPay, D, gainOre, step: dt => { S.time += dt; if (C) updateCombat(dt); updateMap(dt); pollPad(dt); } };
 })();
