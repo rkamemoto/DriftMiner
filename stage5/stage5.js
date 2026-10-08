@@ -139,12 +139,88 @@ function sfx(name) {
   }
 }
 
+// ---------------------------------------------------------------- music
+// Two soundtrack sets: Google Flow Music (default) and Codex's rendered set. M / pad View cycles flow -> codex -> off.
+// Each set has <track>.ogg (+ .mp3 fallback) and loops.json with loopStart/loopEnd; the file plays its intro once, then loops.
+const MUSIC_SETS = { flow: { dir: "assets/music/flow/", gain: 1 }, codex: { dir: "assets/music/", gain: 1.3 } };
+const MUSIC_ORDER = ["flow", "codex", "off"];
+const MUSIC_VOL = .45, MUSIC_KEY = "driftminer.stage5.music";
+const Music = { set: "flow", out: null, loops: {}, buffers: {}, loading: {}, want: null, playing: null, src: null, srcGain: null, toast: 0 };
+try { Music.set = localStorage.getItem(MUSIC_KEY) || "flow"; } catch (e) { /* storage unavailable */ }
+if (MUSIC_ORDER.includes(params.get("music"))) Music.set = params.get("music");
+if (!MUSIC_ORDER.includes(Music.set)) Music.set = "flow";
+const musicOn = () => Music.set !== "off";
+function loadMusic(name) {
+  const set = Music.set, key = set + "/" + name, a = Sfx.ctx;
+  if (Music.buffers[key] || Music.loading[key] || !a || set === "off") return;
+  const dir = MUSIC_SETS[set].dir;
+  Music.loading[key] = true;
+  if (!Music.loops[set]) Music.loops[set] = fetch(dir + "loops.json").then(r => r.json()).catch(() => ({}));
+  const decode = ext => fetch(dir + name + "." + ext).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(b => a.decodeAudioData(b));
+  decode("ogg").catch(() => decode("mp3"))
+    .then(buf => Music.loops[set].then(loops => { Music.buffers[key] = { buf, loop: loops[name] || null }; }))
+    .catch(err => console.warn("music: could not load " + key, err))
+    .finally(() => { Music.loading[key] = false; });
+}
+function stopMusic(fade = .5) {
+  if (!Music.src) return;
+  const t = Sfx.ctx.currentTime, src = Music.src;
+  Music.srcGain.gain.setTargetAtTime(0, t, fade / 4);
+  try { src.stop(t + fade + .1); } catch (e) { /* already stopped */ }
+  Music.src = Music.srcGain = null; Music.playing = null;
+}
+function startMusic(name) {
+  const a = Sfx.ctx, entry = Music.buffers[Music.set + "/" + name];
+  if (!Music.out) { Music.out = a.createGain(); Music.out.gain.value = 0; Music.out.connect(a.destination); }
+  const src = a.createBufferSource(), g = a.createGain();
+  src.buffer = entry.buf;
+  if (entry.loop && !name.startsWith("jingle")) {
+    src.loop = true;
+    src.loopEnd = Math.min(entry.loop.loopEnd, entry.buf.duration);
+    src.loopStart = Math.min(entry.loop.loopStart, src.loopEnd - .1);
+  }
+  g.gain.value = MUSIC_SETS[Music.set].gain;
+  src.connect(g).connect(Music.out);
+  src.start();
+  src.onended = () => { if (Music.src === src) { Music.src = Music.srcGain = null; } };
+  Music.src = src; Music.srcGain = g; Music.playing = name;
+}
+// which track the game wants right now (null = silence)
+function musicWanted() {
+  if (mode === "title" || mode === "shop" || mode === "next") return "bgm-title";
+  if (mode === "clear") return "jingle-clear";
+  if (mode === "over") return "jingle-gameover";
+  if (!G || G.overT > 0 || G.bossKilled) return null;           // fade out under the last explosion / death
+  const boss = G.level === 5 ? "bgm-boss-final" : "bgm-boss";
+  if (G.boss) return boss;
+  loadMusic(boss);                                               // preload so the boss theme starts on cue
+  return G.warn > 0 ? null : "bgm-5-" + G.level;                 // drop out for the WARNING siren
+}
+function updateMusic(dt) {
+  if (Music.toast > 0) Music.toast -= dt;
+  const a = Sfx.ctx; if (!a || a.state !== "running") return;
+  const want = musicOn() ? musicWanted() : null;
+  if (want !== Music.want) { Music.want = want; if (Music.playing !== want) stopMusic(); }
+  if (want && Music.playing !== want && !Music.src) {
+    loadMusic(want);
+    if (Music.buffers[Music.set + "/" + want]) startMusic(want);
+  }
+  if (Music.out) Music.out.gain.setTargetAtTime(mode === "play" && G && G.paused ? MUSIC_VOL * .35 : MUSIC_VOL, a.currentTime, .1);
+}
+function cycleMusic() {
+  Music.set = MUSIC_ORDER[(MUSIC_ORDER.indexOf(Music.set) + 1) % MUSIC_ORDER.length];
+  try { localStorage.setItem(MUSIC_KEY, Music.set); } catch (e) { /* ignore */ }
+  if (Sfx.ctx) stopMusic(.2);
+  Music.want = null; Music.toast = 1.8;
+}
+const musicLabel = () => "MUSIC: " + { flow: "FLOW", codex: "CODEX", off: "OFF" }[Music.set];
+
 // ---------------------------------------------------------------- input
 const keys = new Set();
 const actions = new Set();
 const act = a => actions.add(a);
 const KEYMAP = {
-  " ": ["heart", "confirm"], e: "heart", c: "heart", p: "pause", escape: "pause", f: "togglefire",
+  " ": ["heart", "confirm"], e: "heart", c: "heart", p: "pause", escape: "pause", f: "togglefire", m: "music",
   enter: "confirm",
   arrowleft: "left", a: "left", arrowright: "right", d: "right", arrowup: "up", w: "up", arrowdown: "down", s: "down"
 };
@@ -184,6 +260,7 @@ function pollPad() {
   if (edge(1) || edge(3) || edge(4)) act("heart");
   if (edge(9)) act("pause");
   if (edge(2)) act("togglefire");
+  if (edge(8)) act("music");
   if (edge(0)) act("confirm");
   if (edge(14)) act("left"); if (edge(15)) act("right"); if (edge(12)) act("up"); if (edge(13)) act("down");
   const nx = Math.abs(rawX) > .6 ? Math.sign(rawX) : 0, ny = Math.abs(rawY) > .6 ? Math.sign(rawY) : 0;
@@ -1383,7 +1460,7 @@ function enterClear() {
   writeSave();
   G.bullets.length = 0; G.ebullets.length = 0; G.enemies.length = 0; G.drops.length = 0; G.debris.length = 0;
   mode = "clear"; modeT = 0;
-  sfx("clear");
+  if (!musicOn()) sfx("clear");   // the music set has its own clear jingle
 }
 function shopItems() { return [...WEAPONS, "hp", "shield", "go", "reset"]; }
 let resetArm = 0;   // seconds left to confirm a reset (press twice)
@@ -1406,6 +1483,8 @@ const NEXT_BTN = i => ({ x: W / 2 - 150 + i * 190, y: 420, w: 110, h: 80 });
 function inRect(pt, r) { return pt.x >= r.x && pt.x <= r.x + r.w && pt.y >= r.y && pt.y <= r.y + r.h; }
 function update(dt) {
   modeT += dt;
+  if (actions.has("music")) cycleMusic();
+  updateMusic(dt);
   if (mode === "title") {
     world.time += dt; world.scroll += 40 * dt;
     const unlocked = unlockedLevel();
@@ -3483,6 +3562,7 @@ function drawTitle() {
   keycap("Enter", W / 2 + 230, 520, 60); padButton("A", "#7ee3a1", W / 2 + 230, 556);
   ctx.restore(); ctx.save();
   drawLabel("Carry the Power Crystal into the alien homeworld. The fleet is right behind you.", W / 2, 76, 15, "#d7e6f0", "center", 500);
+  if (Music.toast <= 0) { keycap("M", 34, H - 26); drawLabel(musicLabel(), 58, H - 34, 13, "#9fb8c2"); }
   ctx.restore();
 }
 function drawOver() {
@@ -3614,6 +3694,7 @@ function draw() {
   else if (mode === "clear") drawClear();
   else if (mode === "shop") drawShop();
   else if (mode === "next") drawNext();
+  if (Music.toast > 0) { ctx.save(); ctx.globalAlpha = clamp(Music.toast / .4, 0, 1); drawLabel(musicLabel(), W / 2, H - 30, 14, "#9ff5e8", "center"); ctx.restore(); }
 }
 
 let lastTs = 0;
@@ -3627,7 +3708,7 @@ function frame(ts) {
   requestAnimationFrame(frame);
 }
 // test hooks (used by automated checks; harmless in play)
-window.__s5 = { get G() { return G; }, get mode() { return mode; }, startLevel, get save() { return save; }, step: (dt, noDraw) => { setView(worldView()); update(dt); if (!noDraw) draw(); actions.clear(); mouse.click = false; } };
+window.__s5 = { get G() { return G; }, get mode() { return mode; }, get music() { return Music; }, startLevel, get save() { return save; }, step: (dt, noDraw) => { setView(worldView()); update(dt); if (!noDraw) draw(); actions.clear(); mouse.click = false; } };
 if (params.get("debug") === "shop") { startLevel(1); mode = "shop"; modeT = 0; menuSel = 0; save.bank = Math.max(save.bank, 3000); } else if (params.get("debug") === "boss") { startLevel(titleLevel, true); } else if (params.get("level")) { startLevel(titleLevel); }
 requestAnimationFrame(frame);
 })();

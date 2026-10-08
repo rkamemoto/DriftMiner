@@ -6,3 +6,7 @@ node_modules/
 .claude/launch.json
 tmp/
 desktop.ini
+
+# Stage 5 music renderer scratch output (WAV masters, loop checks)
+tools/stage5_music/out/
+__pycache__/

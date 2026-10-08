@@ -52,3 +52,19 @@ serial numbers and repairs Ogg page CRCs so rerenders are byte-for-byte stable.
 - Two complete consecutive renders produced identical SHA-256 hashes for all
   20 encoded files and `loops.json`.
 
+
+## Google Flow Music set (the game's default)
+
+The Flow Music WAV downloads live in `stage5/assets/music/*.wav`. Turn them into
+game files with:
+
+```powershell
+python tools/stage5_music/prepare_flow.py
+```
+
+It finds a seamless loop in each track, crossfades the seam, cuts the two jingles
+down (Flow returned full-length songs), and writes `.ogg` + `.mp3` and `loops.json`
+to `stage5/assets/music/flow/`.
+
+In game, **M** (or the pad's View button) cycles the music: Flow, then Codex, then off.
+`stage5.html?music=codex` also picks a set. The choice is remembered.
