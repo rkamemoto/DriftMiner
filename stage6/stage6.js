@@ -325,7 +325,7 @@ const RAR_ORD = { B: 0, C: 1, U: 2, R: 3, S: 4 };
 
 // v entries are numbers or [base, upgraded]; fx(x, v) queues actions through the primitives on x.
 const CARDS = {
-  strike: { n: "Strike", f: "basic", r: "B", c: 1, t: "attack", tg: 1, v: [[6, 9]], tx: v => `Deal ${v[0]}.`, fx: (x, v) => x.hit(x.t, v[0]) },
+  strike: { n: "Strike", f: "basic", r: "B", c: 1, t: "attack", tg: 1, v: [[5, 8]], tx: v => `Deal ${v[0]}.`, fx: (x, v) => x.hit(x.t, v[0]) },
   guard: { n: "Guard", f: "basic", r: "B", c: 1, t: "skill", v: [[5, 8]], tx: v => `Gain ${v[0]} Block.`, fx: (x, v) => x.block(v[0]) },
   // Drill
   pilotBore: { n: "Pilot Bore", f: "drill", r: "C", c: 1, t: "attack", tg: 1, v: [[6, 9]], tx: v => `Deal ${v[0]}. Gain 1 Charge. If this kills, Mine 1.`, fx: (x, v) => { const t = x.t; x.hit(t, v[0]); x.q(() => { if (t && t.hp <= 0) x.mine(1); }); x.charge(1); } },

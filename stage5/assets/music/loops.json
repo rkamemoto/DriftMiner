@@ -1,0 +1,42 @@
+{
+  "bgm-5-1": {
+    "bpm": 172,
+    "loopStart": 2.7907,
+    "loopEnd": 69.7674
+  },
+  "bgm-5-2": {
+    "bpm": 180,
+    "loopStart": 5.3333,
+    "loopEnd": 69.3333
+  },
+  "bgm-5-3": {
+    "bpm": 168,
+    "loopStart": 5.7143,
+    "loopEnd": 74.2857
+  },
+  "bgm-5-4": {
+    "bpm": 196,
+    "loopStart": 4.898,
+    "loopEnd": 63.6735
+  },
+  "bgm-5-5": {
+    "bpm": 160,
+    "loopStart": 6.0,
+    "loopEnd": 78.0
+  },
+  "bgm-boss": {
+    "bpm": 180,
+    "loopStart": 5.3333,
+    "loopEnd": 48.0
+  },
+  "bgm-boss-final": {
+    "bpm": 184,
+    "loopStart": 10.4348,
+    "loopEnd": 73.0435
+  },
+  "bgm-title": {
+    "bpm": 140,
+    "loopStart": 6.8571,
+    "loopEnd": 34.2857
+  }
+}
